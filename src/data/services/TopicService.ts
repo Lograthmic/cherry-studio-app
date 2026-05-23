@@ -1,0 +1,401 @@
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
+
+import { type CursorPaginationResponse, DataApiErrorFactory } from '@/data/types/apiTypes';
+import type {
+  ActiveNodeResponse,
+  CreateTopicDto,
+  ListTopicsQuery,
+  OrderRequest,
+  Topic,
+  UpdateTopicDto,
+} from '@/data/types/topic';
+
+import type { Database } from '../db/client';
+import { messageTable, pinTable, topicTable } from '../db/schema';
+import { encodeCursor, splitCursor } from './utils/cursor';
+import { applyMoves, insertWithOrderKey } from './utils/orderKey';
+import { timestampToISO } from './utils/rowMappers';
+
+const defaultLimit = 50;
+const maxLimit = 200;
+const firstPageCursor: TopicCursor = { orderKey: '', section: 'pin' };
+
+type DbOrTx = Database | Parameters<Parameters<Database['transaction']>[0]>[0];
+type TopicRow = typeof topicTable.$inferSelect;
+
+type TopicCursor =
+  | { orderKey: string; section: 'pin' }
+  | { id: null; section: 'topic'; updatedAt: null }
+  | { id: string; section: 'topic'; updatedAt: number };
+
+export class TopicService {
+  constructor(private readonly db: Database) {}
+
+  async getById(id: string): Promise<Topic> {
+    const [row] = await this.db
+      .select()
+      .from(topicTable)
+      .where(and(eq(topicTable.id, id), isNull(topicTable.deletedAt)))
+      .limit(1);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Topic', id);
+    }
+
+    return rowToTopic(row);
+  }
+
+  async create(dto: CreateTopicDto): Promise<Topic> {
+    const groupId = dto.groupId ?? null;
+
+    const row = (await this.db.transaction(async (tx) => {
+      if (dto.sourceNodeId) {
+        const [source] = await tx
+          .select({ id: messageTable.id })
+          .from(messageTable)
+          .where(and(eq(messageTable.id, dto.sourceNodeId), isNull(messageTable.deletedAt)))
+          .limit(1);
+
+        if (!source) {
+          throw DataApiErrorFactory.notFound('Message', dto.sourceNodeId);
+        }
+      }
+
+      return insertWithOrderKey(
+        tx,
+        topicTable,
+        {
+          activeNodeId: dto.sourceNodeId ?? null,
+          assistantId: dto.assistantId ?? null,
+          groupId,
+          name: dto.name ?? '',
+        },
+        {
+          scope: topicScopePredicate(groupId),
+        },
+      );
+    })) as TopicRow;
+
+    return rowToTopic(row);
+  }
+
+  async update(id: string, dto: UpdateTopicDto): Promise<Topic> {
+    return await this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ id: topicTable.id })
+        .from(topicTable)
+        .where(and(eq(topicTable.id, id), isNull(topicTable.deletedAt)))
+        .limit(1);
+
+      if (!existing) {
+        throw DataApiErrorFactory.notFound('Topic', id);
+      }
+
+      const updates: Partial<typeof topicTable.$inferInsert> = {};
+      if (dto.assistantId !== undefined) {
+        updates.assistantId = dto.assistantId;
+      }
+      if (dto.groupId !== undefined) {
+        updates.groupId = dto.groupId;
+      }
+      if (dto.isNameManuallyEdited !== undefined) {
+        updates.isNameManuallyEdited = dto.isNameManuallyEdited;
+      }
+      if (dto.name !== undefined) {
+        updates.name = dto.name;
+      }
+
+      const [row] = await tx
+        .update(topicTable)
+        .set(updates)
+        .where(eq(topicTable.id, id))
+        .returning();
+      if (!row) {
+        throw DataApiErrorFactory.notFound('Topic', id);
+      }
+
+      return rowToTopic(row);
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.getById(id);
+
+    await this.db.transaction(async (tx) => {
+      await tx.delete(messageTable).where(eq(messageTable.topicId, id));
+      await tx
+        .delete(pinTable)
+        .where(and(eq(pinTable.entityType, 'topic'), eq(pinTable.entityId, id)));
+      await tx.delete(topicTable).where(eq(topicTable.id, id));
+    });
+  }
+
+  async setActiveNode(topicId: string, nodeId: string): Promise<ActiveNodeResponse> {
+    await this.db.transaction((tx) => this.setActiveNodeTx(tx, topicId, nodeId));
+    return { activeNodeId: nodeId };
+  }
+
+  async setActiveNodeTx(
+    tx: DbOrTx,
+    topicId: string,
+    nodeId: string,
+    options: { assumeValid?: boolean } = {},
+  ): Promise<void> {
+    if (!options.assumeValid) {
+      const [topic] = await tx
+        .select({ id: topicTable.id })
+        .from(topicTable)
+        .where(and(eq(topicTable.id, topicId), isNull(topicTable.deletedAt)))
+        .limit(1);
+
+      if (!topic) {
+        throw DataApiErrorFactory.notFound('Topic', topicId);
+      }
+
+      const [message] = await tx
+        .select({ topicId: messageTable.topicId })
+        .from(messageTable)
+        .where(and(eq(messageTable.id, nodeId), isNull(messageTable.deletedAt)))
+        .limit(1);
+
+      if (!message || message.topicId !== topicId) {
+        throw DataApiErrorFactory.notFound('Message', nodeId);
+      }
+    }
+
+    const updated = await tx
+      .update(topicTable)
+      .set({ activeNodeId: nodeId })
+      .where(and(eq(topicTable.id, topicId), isNull(topicTable.deletedAt)))
+      .returning({ id: topicTable.id });
+
+    if (updated.length !== 1) {
+      throw DataApiErrorFactory.notFound('Topic', topicId);
+    }
+  }
+
+  async listByCursor(params: ListTopicsQuery = {}): Promise<CursorPaginationResponse<Topic>> {
+    const limit = Math.min(params.limit ?? defaultLimit, maxLimit);
+    const cursor = params.cursor ? decodeTopicCursor(params.cursor) : firstPageCursor;
+    const search = buildSearchPredicate(params.q);
+    const items: { pinOrderKey?: string; topic: Topic }[] = [];
+
+    if (cursor.section === 'pin') {
+      const pinAfter = cursor.orderKey ? gt(pinTable.orderKey, cursor.orderKey) : undefined;
+      const pinRows = await this.db
+        .select({ pinOrderKey: pinTable.orderKey, topic: topicTable })
+        .from(topicTable)
+        .innerJoin(
+          pinTable,
+          and(eq(pinTable.entityType, 'topic'), eq(pinTable.entityId, topicTable.id)),
+        )
+        .where(and(isNull(topicTable.deletedAt), pinAfter, search))
+        .orderBy(asc(pinTable.orderKey), asc(topicTable.id))
+        .limit(limit + 1);
+
+      if (pinRows.length === 0 && cursor.orderKey !== '') {
+        return { items: [], nextCursor: encodeTopicSectionStart() };
+      }
+
+      const hasMorePinned = pinRows.length > limit;
+      for (const row of pinRows.slice(0, limit)) {
+        items.push({ pinOrderKey: row.pinOrderKey, topic: rowToTopic(row.topic) });
+      }
+
+      if (hasMorePinned) {
+        const last = items[items.length - 1];
+        return {
+          items: items.map((item) => item.topic),
+          nextCursor: encodePinCursor(last?.pinOrderKey ?? ''),
+        };
+      }
+
+      if (items.length >= limit) {
+        return {
+          items: items.map((item) => item.topic),
+          nextCursor: encodeTopicSectionStart(),
+        };
+      }
+    }
+
+    const remaining = limit - items.length;
+    const pinnedSubquery = this.db
+      .select({ id: pinTable.entityId })
+      .from(pinTable)
+      .where(eq(pinTable.entityType, 'topic'));
+
+    let topicAfter: SQL | undefined;
+    if (cursor.section === 'topic' && cursor.updatedAt !== null) {
+      topicAfter = or(
+        lt(topicTable.updatedAt, cursor.updatedAt),
+        and(eq(topicTable.updatedAt, cursor.updatedAt), gt(topicTable.id, cursor.id)),
+      );
+    }
+
+    const topicRows = await this.db
+      .select()
+      .from(topicTable)
+      .where(
+        and(
+          isNull(topicTable.deletedAt),
+          notInArray(topicTable.id, pinnedSubquery),
+          topicAfter,
+          search,
+        ),
+      )
+      .orderBy(desc(topicTable.updatedAt), asc(topicTable.id))
+      .limit(remaining + 1);
+
+    const hasMoreTopics = topicRows.length > remaining;
+    for (const row of topicRows.slice(0, remaining)) {
+      items.push({ topic: rowToTopic(row) });
+    }
+
+    const nextCursor =
+      hasMoreTopics && topicRows[remaining - 1]
+        ? encodeTopicCursor(topicRows[remaining - 1].updatedAt, topicRows[remaining - 1].id)
+        : undefined;
+
+    return { items: items.map((item) => item.topic), nextCursor };
+  }
+
+  async reorder(id: string, anchor: OrderRequest): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const [target] = await tx
+        .select({ groupId: topicTable.groupId })
+        .from(topicTable)
+        .where(and(eq(topicTable.id, id), isNull(topicTable.deletedAt)))
+        .limit(1);
+
+      if (!target) {
+        throw DataApiErrorFactory.notFound('Topic', id);
+      }
+
+      await applyMoves(tx, topicTable, [{ anchor, id }], {
+        pkColumn: topicTable.id,
+        resourceName: 'Topic',
+        scope: topicScopePredicate(target.groupId),
+      });
+    });
+  }
+
+  async reorderBatch(moves: { anchor: OrderRequest; id: string }[]): Promise<void> {
+    if (moves.length === 0) {
+      return;
+    }
+
+    await this.db.transaction(async (tx) => {
+      const ids = moves.map((move) => move.id);
+      const targets = await tx
+        .select({ groupId: topicTable.groupId, id: topicTable.id })
+        .from(topicTable)
+        .where(and(inArray(topicTable.id, ids), isNull(topicTable.deletedAt)));
+
+      if (targets.length !== ids.length) {
+        const found = new Set(targets.map((target) => target.id));
+        const missing = ids.find((id) => !found.has(id)) ?? ids[0];
+        throw DataApiErrorFactory.notFound('Topic', missing);
+      }
+
+      const scopeValues = new Set(targets.map((target) => target.groupId));
+      if (scopeValues.size > 1) {
+        const scopeList = [...scopeValues].map((scope) => scope ?? '<null>').join(', ');
+        throw DataApiErrorFactory.validation(
+          { _root: [`reorderBatch: batch spans multiple groupId scopes (${scopeList})`] },
+          `reorderBatch: batch spans multiple groupId scopes (${scopeList})`,
+        );
+      }
+
+      const [scopeValue] = [...scopeValues];
+      await applyMoves(tx, topicTable, moves, {
+        pkColumn: topicTable.id,
+        resourceName: 'Topic',
+        scope: topicScopePredicate(scopeValue ?? null),
+      });
+    });
+  }
+}
+
+export function rowToTopic(row: TopicRow): Topic {
+  return {
+    ...(row.activeNodeId ? { activeNodeId: row.activeNodeId } : {}),
+    ...(row.assistantId ? { assistantId: row.assistantId } : {}),
+    createdAt: timestampToISO(row.createdAt),
+    ...(row.groupId ? { groupId: row.groupId } : {}),
+    id: row.id,
+    isNameManuallyEdited: row.isNameManuallyEdited,
+    name: row.name,
+    orderKey: row.orderKey,
+    updatedAt: timestampToISO(row.updatedAt),
+  };
+}
+
+function topicScopePredicate(groupId: null | string): SQL {
+  return groupId === null ? isNull(topicTable.groupId) : eq(topicTable.groupId, groupId);
+}
+
+function buildSearchPredicate(query: string | undefined): SQL | undefined {
+  const trimmed = query?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const pattern = `%${trimmed.replace(/[\\%_]/g, '\\$&')}%`;
+  return sql`${topicTable.name} LIKE ${pattern} ESCAPE '\\'`;
+}
+
+function decodeTopicCursor(raw: string): TopicCursor {
+  const outer = splitCursor(raw);
+  if (!outer) {
+    return firstPageCursor;
+  }
+
+  if (outer.key === 'pin') {
+    return { orderKey: outer.id, section: 'pin' };
+  }
+
+  if (outer.key === 'topic') {
+    if (outer.id === '') {
+      return { id: null, section: 'topic', updatedAt: null };
+    }
+
+    const inner = splitCursor(outer.id);
+    if (!inner?.id) {
+      return firstPageCursor;
+    }
+
+    const updatedAt = Number(inner.key);
+    if (!Number.isFinite(updatedAt)) {
+      return firstPageCursor;
+    }
+
+    return { id: inner.id, section: 'topic', updatedAt };
+  }
+
+  return firstPageCursor;
+}
+
+function encodePinCursor(orderKey: string): string {
+  return encodeCursor('pin', orderKey);
+}
+
+function encodeTopicCursor(updatedAt: number, id: string): string {
+  return `topic:${encodeCursor(String(updatedAt), id)}`;
+}
+
+function encodeTopicSectionStart(): string {
+  return 'topic:';
+}

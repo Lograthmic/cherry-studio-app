@@ -1,19 +1,22 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "noImplicitAny": false,
-    "esModuleInterop": true,
-    "jsx": "react",
     "strict": true,
-    "baseUrl": "src",
+    "types": ["jest"],
     "paths": {
-      "@/*": ["./*"],
-      "@db/*": ["../db/*"],
-      "@db": ["../db/index"],
-      "@database/*": ["./database/*"],
-      "@database": ["./database/index"],
-      "@/modules/*": ["../modules/*"]
+      "@cherrystudio/provider-registry": ["./packages/provider-registry/src/index.ts"],
+      "@cherrystudio/provider-registry/mobile": [
+        "./packages/provider-registry/src/mobileLoader.ts"
+      ],
+      "@cherrystudio/provider-registry/*": ["./packages/provider-registry/src/*"],
+      "@cherrystudio/ui": ["./packages/ui/src/index.ts"],
+      "@cherrystudio/ui/*": ["./packages/ui/src/*"],
+      "lucide-uniwind": ["./packages/lucide-uniwind/src/index.ts"],
+      "lucide-uniwind/*": ["./packages/lucide-uniwind/src/*"],
+      "@src/*": ["./src/*"],
+      "@/*": ["./src/*"],
+      "@/assets/*": ["./assets/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

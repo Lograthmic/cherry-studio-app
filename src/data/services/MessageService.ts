@@ -1,0 +1,917 @@
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+
+import { DataApiErrorFactory } from '@/data/types/apiTypes';
+import type {
+  ActiveNodeStrategy,
+  BranchMessage,
+  BranchMessagesResponse,
+  CreateMessageDto,
+  DeleteMessageResponse,
+  Message,
+  MessageData,
+  SiblingsGroup,
+  TreeNode,
+  TreeResponse,
+  UpdateMessageDto,
+} from '@/data/types/message';
+import type { UniqueModelId } from '@/data/types/model';
+
+import type { Database } from '../db/client';
+import { messageTable, topicTable } from '../db/schema';
+import type { TopicService } from './TopicService';
+import { getBranchMessagePageIds } from './utils/branchMessagePagination';
+import { timestampToISO } from './utils/rowMappers';
+
+const previewLength = 50;
+const defaultLimit = 20;
+
+type MessageRow = typeof messageTable.$inferSelect;
+
+export type BranchMessagesParams = {
+  cursor?: string;
+  includeSiblings?: boolean;
+  limit?: number;
+  nodeId?: string;
+};
+
+export interface ReserveAssistantTurnPlaceholder
+  extends Omit<CreateMessageDto, 'parentId' | 'setAsActive' | 'siblingsGroupId'> {
+  id?: string;
+}
+
+export interface ReserveAssistantTurnInput {
+  placeholders: ReserveAssistantTurnPlaceholder[];
+  siblingsGroupId?: number;
+  topicId: string;
+  userMessage: { dto: CreateMessageDto; mode: 'create' } | { id: string; mode: 'existing' };
+}
+
+export interface ReserveAssistantTurnResult {
+  placeholders: Message[];
+  userMessage: Message;
+}
+
+export class MessageService {
+  constructor(
+    private readonly db: Database,
+    private readonly topicService: TopicService,
+  ) {}
+
+  async getTree(
+    topicId: string,
+    options: { depth?: number; nodeId?: string; rootId?: string } = {},
+  ): Promise<TreeResponse> {
+    const { depth = 1 } = options;
+    const [topic] = await this.db
+      .select()
+      .from(topicTable)
+      .where(and(eq(topicTable.id, topicId), isNull(topicTable.deletedAt)))
+      .limit(1);
+
+    if (!topic) {
+      throw DataApiErrorFactory.notFound('Topic', topicId);
+    }
+
+    const activeNodeId = options.nodeId ?? topic.activeNodeId;
+    let rootId = options.rootId;
+
+    if (!rootId) {
+      const [root] = await this.db
+        .select({ id: messageTable.id })
+        .from(messageTable)
+        .where(
+          and(
+            eq(messageTable.topicId, topicId),
+            isNull(messageTable.parentId),
+            isNull(messageTable.deletedAt),
+          ),
+        )
+        .limit(1);
+      rootId = root?.id;
+    }
+
+    if (!rootId) {
+      return { activeNodeId: null, nodes: [], siblingsGroups: [] };
+    }
+
+    const activePath = new Set<string>();
+    if (activeNodeId) {
+      const pathRows = await this.db.all<{ id: string }>(sql`
+        WITH RECURSIVE path AS (
+          SELECT id, parent_id FROM message WHERE id = ${activeNodeId} AND deleted_at IS NULL
+          UNION ALL
+          SELECT m.id, m.parent_id FROM message m
+          INNER JOIN path p ON m.id = p.parent_id
+          WHERE m.deleted_at IS NULL
+        )
+        SELECT id FROM path
+      `);
+      for (const row of pathRows) {
+        activePath.add(row.id);
+      }
+    }
+
+    const maxDepth = depth === -1 ? 999 : depth;
+    const treeDepthRows = await this.db.all<{ id: string; tree_depth: number }>(sql`
+      WITH RECURSIVE tree AS (
+        SELECT id, 0 as tree_depth FROM message WHERE id = ${rootId} AND deleted_at IS NULL
+        UNION ALL
+        SELECT m.id, t.tree_depth + 1 FROM message m
+        INNER JOIN tree t ON m.parent_id = t.id
+        WHERE t.tree_depth < ${maxDepth} AND m.deleted_at IS NULL
+      )
+      SELECT id, tree_depth FROM tree
+    `);
+
+    const depthById = new Map(treeDepthRows.map((row) => [row.id, row.tree_depth]));
+    const baseRows =
+      treeDepthRows.length === 0
+        ? []
+        : await this.db
+            .select()
+            .from(messageTable)
+            .where(
+              inArray(
+                messageTable.id,
+                treeDepthRows.map((row) => row.id),
+              ),
+            );
+
+    const treeRows: (MessageRow & { treeDepth: number })[] = baseRows.map((row) => ({
+      ...row,
+      treeDepth: depthById.get(row.id) ?? 0,
+    }));
+    const loadedIds = new Set(treeRows.map((row) => row.id));
+    const missingActivePathIds = [...activePath].filter((id) => !loadedIds.has(id));
+
+    if (missingActivePathIds.length > 0) {
+      const additionalRows = await this.db
+        .select()
+        .from(messageTable)
+        .where(and(inArray(messageTable.id, missingActivePathIds), isNull(messageTable.deletedAt)));
+      for (const row of additionalRows) {
+        treeRows.push({ ...row, treeDepth: maxDepth + 1 });
+        loadedIds.add(row.id);
+      }
+    }
+
+    const activePathArray = [...activePath];
+    if (activePathArray.length > 0) {
+      const childrenRows = await this.db
+        .select()
+        .from(messageTable)
+        .where(
+          and(inArray(messageTable.parentId, activePathArray), isNull(messageTable.deletedAt)),
+        );
+
+      for (const row of childrenRows) {
+        if (!loadedIds.has(row.id)) {
+          treeRows.push({ ...row, treeDepth: maxDepth + 1 });
+          loadedIds.add(row.id);
+        }
+      }
+    }
+
+    if (treeRows.length === 0) {
+      return { activeNodeId: null, nodes: [], siblingsGroups: [] };
+    }
+
+    const messagesById = new Map<string, Message>();
+    const childrenMap = new Map<string, string[]>();
+    const depthMap = new Map<string, number>();
+
+    for (const row of treeRows) {
+      const message = rowToMessage(row);
+      messagesById.set(message.id, message);
+      depthMap.set(message.id, row.treeDepth);
+
+      const parentId = message.parentId ?? 'root';
+      const children = childrenMap.get(parentId) ?? [];
+      children.push(message.id);
+      childrenMap.set(parentId, children);
+    }
+
+    const resultNodes: TreeNode[] = [];
+    const siblingsGroups: SiblingsGroup[] = [];
+    const visitedGroups = new Set<string>();
+
+    for (const message of messagesById.values()) {
+      const currentDepth = depthMap.get(message.id) ?? 0;
+      const shouldInclude =
+        depth === -1 ||
+        currentDepth <= depth ||
+        activePath.has(message.id) ||
+        message.id === activeNodeId;
+
+      if (!shouldInclude) {
+        continue;
+      }
+
+      resultNodes.push(messageToTreeNode(message, (childrenMap.get(message.id) ?? []).length > 0));
+
+      if (message.siblingsGroupId !== 0) {
+        const groupKey = groupKeyFor(message.parentId, message.siblingsGroupId);
+        if (!visitedGroups.has(groupKey)) {
+          visitedGroups.add(groupKey);
+          const groupMessages = [...messagesById.values()].filter(
+            (candidate) =>
+              candidate.parentId === message.parentId &&
+              candidate.siblingsGroupId === message.siblingsGroupId,
+          );
+
+          if (groupMessages.length > 1) {
+            siblingsGroups.push({
+              nodes: groupMessages.map((candidate) => {
+                const node = messageToTreeNode(
+                  candidate,
+                  (childrenMap.get(candidate.id) ?? []).length > 0,
+                );
+                const { parentId: _parentId, ...nodeWithoutParent } = node;
+                return nodeWithoutParent;
+              }),
+              parentId: message.parentId ?? 'root',
+              siblingsGroupId: message.siblingsGroupId,
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      activeNodeId: topic.activeNodeId,
+      nodes: resultNodes,
+      siblingsGroups,
+    };
+  }
+
+  async getBranchMessages(
+    topicId: string,
+    params: BranchMessagesParams = {},
+  ): Promise<BranchMessagesResponse> {
+    const { cursor, includeSiblings = true, limit = defaultLimit } = params;
+    const [topic] = await this.db
+      .select()
+      .from(topicTable)
+      .where(and(eq(topicTable.id, topicId), isNull(topicTable.deletedAt)))
+      .limit(1);
+
+    if (!topic) {
+      throw DataApiErrorFactory.notFound('Topic', topicId);
+    }
+
+    const nodeId = params.nodeId ?? topic.activeNodeId;
+    if (!nodeId) {
+      return {
+        activeNodeId: null,
+        assistantId: topic.assistantId,
+        items: [],
+        nextCursor: undefined,
+      };
+    }
+
+    const pathIdRows = await this.db.all<{ id: string }>(sql`
+      WITH RECURSIVE path AS (
+        SELECT id, parent_id FROM message WHERE id = ${nodeId} AND deleted_at IS NULL
+        UNION ALL
+        SELECT m.id, m.parent_id FROM message m
+        INNER JOIN path p ON m.id = p.parent_id
+        WHERE m.deleted_at IS NULL
+      )
+      SELECT id FROM path
+    `);
+
+    if (pathIdRows.length === 0) {
+      throw DataApiErrorFactory.notFound('Message', nodeId);
+    }
+
+    const pathIds = pathIdRows.map((row) => row.id).reverse();
+    const page = getBranchMessagePageIds(pathIds, { cursor, limit });
+    if (page === null) {
+      throw DataApiErrorFactory.notFound('Message (cursor)', cursor);
+    }
+
+    const pageRows =
+      page.ids.length === 0
+        ? []
+        : await this.db.select().from(messageTable).where(inArray(messageTable.id, page.ids));
+    const pageOrder = new Map(page.ids.map((id, index) => [id, index]));
+    const paginatedPath = pageRows.sort(
+      (a, b) =>
+        (pageOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (pageOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+    );
+    const items = includeSiblings
+      ? await this.buildBranchMessagesWithSiblings(paginatedPath)
+      : paginatedPath.map((row) => ({ message: rowToMessage(row) }));
+
+    return {
+      activeNodeId: topic.activeNodeId,
+      assistantId: topic.assistantId,
+      items,
+      nextCursor: page.nextCursor,
+    };
+  }
+
+  async getById(id: string): Promise<Message> {
+    const [row] = await this.db
+      .select()
+      .from(messageTable)
+      .where(and(eq(messageTable.id, id), isNull(messageTable.deletedAt)))
+      .limit(1);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Message', id);
+    }
+
+    return rowToMessage(row);
+  }
+
+  async getChildrenByParentId(parentId: string): Promise<Message[]> {
+    const rows = await this.db
+      .select()
+      .from(messageTable)
+      .where(and(eq(messageTable.parentId, parentId), isNull(messageTable.deletedAt)));
+    return rows.map(rowToMessage);
+  }
+
+  async updateSiblingsGroupId(id: string, siblingsGroupId: number): Promise<void> {
+    await this.db.update(messageTable).set({ siblingsGroupId }).where(eq(messageTable.id, id));
+  }
+
+  async createSibling(sourceId: string, data: MessageData): Promise<Message> {
+    return await this.db.transaction(async (tx) => {
+      const [source] = await tx
+        .select()
+        .from(messageTable)
+        .where(eq(messageTable.id, sourceId))
+        .limit(1);
+      if (!source) {
+        throw DataApiErrorFactory.notFound('Message', sourceId);
+      }
+
+      let siblingsGroupId = source.siblingsGroupId;
+      if (siblingsGroupId === 0) {
+        siblingsGroupId = Date.now();
+        await tx.update(messageTable).set({ siblingsGroupId }).where(eq(messageTable.id, sourceId));
+      }
+
+      const [row] = await tx
+        .insert(messageTable)
+        .values({
+          data,
+          parentId: source.parentId,
+          role: source.role,
+          siblingsGroupId,
+          status: 'pending',
+          topicId: source.topicId,
+        })
+        .returning();
+
+      await this.topicService.setActiveNodeTx(tx, source.topicId, row.id, { assumeValid: true });
+      return rowToMessage(row);
+    });
+  }
+
+  async create(topicId: string, dto: CreateMessageDto): Promise<Message> {
+    return await this.db.transaction(async (tx) => {
+      const [topic] = await tx
+        .select()
+        .from(topicTable)
+        .where(and(eq(topicTable.id, topicId), isNull(topicTable.deletedAt)))
+        .limit(1);
+
+      if (!topic) {
+        throw DataApiErrorFactory.notFound('Topic', topicId);
+      }
+
+      const resolvedParentId = await resolveParentId(tx, topicId, topic.activeNodeId, dto.parentId);
+      const [row] = await tx
+        .insert(messageTable)
+        .values({
+          data: dto.data,
+          modelId: dto.modelId ?? null,
+          modelSnapshot: dto.modelSnapshot ?? null,
+          parentId: resolvedParentId,
+          role: dto.role,
+          siblingsGroupId: dto.siblingsGroupId ?? 0,
+          stats: dto.stats ?? null,
+          status: dto.status ?? 'pending',
+          topicId,
+          traceId: dto.traceId ?? null,
+        })
+        .returning();
+
+      if (dto.setAsActive !== false) {
+        await this.topicService.setActiveNodeTx(tx, topicId, row.id, { assumeValid: true });
+      }
+
+      return rowToMessage(row);
+    });
+  }
+
+  async reserveAssistantTurn(
+    input: ReserveAssistantTurnInput,
+  ): Promise<ReserveAssistantTurnResult> {
+    return await this.db.transaction(async (tx) => {
+      const [topic] = await tx
+        .select({ id: topicTable.id })
+        .from(topicTable)
+        .where(and(eq(topicTable.id, input.topicId), isNull(topicTable.deletedAt)))
+        .limit(1);
+
+      if (!topic) {
+        throw DataApiErrorFactory.notFound('Topic', input.topicId);
+      }
+
+      let userMessage: Message;
+      if (input.userMessage.mode === 'create') {
+        const dto = input.userMessage.dto;
+        const resolvedParentId =
+          dto.parentId === undefined || dto.parentId === null
+            ? await resolveExplicitRoot(tx, input.topicId)
+            : await validateParent(tx, input.topicId, dto.parentId);
+        const [row] = await tx
+          .insert(messageTable)
+          .values({
+            data: dto.data,
+            modelId: dto.modelId ?? null,
+            modelSnapshot: dto.modelSnapshot ?? null,
+            parentId: resolvedParentId,
+            role: dto.role,
+            siblingsGroupId: dto.siblingsGroupId ?? 0,
+            stats: dto.stats ?? null,
+            status: dto.status ?? 'pending',
+            topicId: input.topicId,
+            traceId: dto.traceId ?? null,
+          })
+          .returning();
+        userMessage = rowToMessage(row);
+      } else {
+        const [row] = await tx
+          .select()
+          .from(messageTable)
+          .where(and(eq(messageTable.id, input.userMessage.id), isNull(messageTable.deletedAt)))
+          .limit(1);
+        if (!row) {
+          throw DataApiErrorFactory.notFound('Message', input.userMessage.id);
+        }
+        if (row.topicId !== input.topicId) {
+          throw DataApiErrorFactory.invalidOperation(
+            'reserve assistant turn',
+            'User message does not belong to this topic',
+          );
+        }
+        userMessage = rowToMessage(row);
+      }
+
+      if (input.siblingsGroupId !== undefined) {
+        await tx
+          .update(messageTable)
+          .set({ siblingsGroupId: input.siblingsGroupId })
+          .where(
+            and(eq(messageTable.parentId, userMessage.id), eq(messageTable.siblingsGroupId, 0)),
+          );
+      }
+
+      const placeholders: Message[] = [];
+      for (const placeholder of input.placeholders) {
+        const [row] = await tx
+          .insert(messageTable)
+          .values({
+            ...(placeholder.id ? { id: placeholder.id } : {}),
+            data: placeholder.data,
+            modelId: placeholder.modelId ?? null,
+            modelSnapshot: placeholder.modelSnapshot ?? null,
+            parentId: userMessage.id,
+            role: placeholder.role,
+            siblingsGroupId: input.siblingsGroupId ?? 0,
+            stats: placeholder.stats ?? null,
+            status: placeholder.status ?? 'pending',
+            topicId: input.topicId,
+            traceId: placeholder.traceId ?? null,
+          })
+          .returning();
+        placeholders.push(rowToMessage(row));
+      }
+
+      const newActiveNodeId = placeholders.at(-1)?.id ?? userMessage.id;
+      await this.topicService.setActiveNodeTx(tx, input.topicId, newActiveNodeId, {
+        assumeValid: true,
+      });
+
+      return { placeholders, userMessage };
+    });
+  }
+
+  async update(id: string, dto: UpdateMessageDto): Promise<Message> {
+    if (dto.parentId !== undefined && dto.parentId !== null) {
+      const descendants = await this.getDescendantIds(id);
+      if (descendants.includes(dto.parentId)) {
+        throw DataApiErrorFactory.invalidOperation('move message', 'would create cycle');
+      }
+    }
+
+    return await this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(messageTable)
+        .where(and(eq(messageTable.id, id), isNull(messageTable.deletedAt)))
+        .limit(1);
+
+      if (!existing) {
+        throw DataApiErrorFactory.notFound('Message', id);
+      }
+
+      if (
+        dto.parentId !== undefined &&
+        dto.parentId !== existing.parentId &&
+        dto.parentId !== null
+      ) {
+        await validateParent(tx, existing.topicId, dto.parentId);
+      }
+
+      const updates: Partial<typeof messageTable.$inferInsert> = {};
+      if (dto.data !== undefined) {
+        updates.data = dto.data;
+      }
+      if (dto.parentId !== undefined) {
+        updates.parentId = dto.parentId;
+      }
+      if (dto.siblingsGroupId !== undefined) {
+        updates.siblingsGroupId = dto.siblingsGroupId;
+      }
+      if (dto.stats !== undefined) {
+        updates.stats = dto.stats;
+      }
+      if (dto.status !== undefined) {
+        updates.status = dto.status;
+      }
+      if (dto.traceId !== undefined) {
+        updates.traceId = dto.traceId;
+      }
+
+      const [row] = await tx
+        .update(messageTable)
+        .set(updates)
+        .where(eq(messageTable.id, id))
+        .returning();
+      if (!row) {
+        throw DataApiErrorFactory.notFound('Message', id);
+      }
+
+      return rowToMessage(row);
+    });
+  }
+
+  async delete(
+    id: string,
+    cascade = false,
+    activeNodeStrategy: ActiveNodeStrategy = 'parent',
+  ): Promise<DeleteMessageResponse> {
+    const message = await this.getById(id);
+    const [topic] = await this.db
+      .select()
+      .from(topicTable)
+      .where(and(eq(topicTable.id, message.topicId), isNull(topicTable.deletedAt)))
+      .limit(1);
+
+    if (!topic) {
+      throw DataApiErrorFactory.notFound('Topic', message.topicId);
+    }
+
+    if (message.parentId === null && !cascade) {
+      throw DataApiErrorFactory.invalidOperation('delete root message', 'cascade=true required');
+    }
+
+    const descendantIds = cascade ? await this.getDescendantIds(id) : [];
+
+    return await this.db.transaction(async (tx) => {
+      let deletedIds: string[];
+      let newActiveNodeId: null | string | undefined;
+      let reparentedIds: string[] | undefined;
+
+      if (cascade) {
+        deletedIds = [id, ...descendantIds];
+        if (topic.activeNodeId && deletedIds.includes(topic.activeNodeId)) {
+          newActiveNodeId = activeNodeStrategy === 'clear' ? null : message.parentId;
+        }
+
+        await tx.delete(messageTable).where(inArray(messageTable.id, deletedIds));
+      } else {
+        const children = await tx
+          .select({ id: messageTable.id })
+          .from(messageTable)
+          .where(and(eq(messageTable.parentId, id), isNull(messageTable.deletedAt)));
+        reparentedIds = children.map((child) => child.id);
+
+        if (reparentedIds.length > 0) {
+          await tx
+            .update(messageTable)
+            .set({ parentId: message.parentId })
+            .where(inArray(messageTable.id, reparentedIds));
+        }
+
+        deletedIds = [id];
+        if (topic.activeNodeId === id) {
+          newActiveNodeId = activeNodeStrategy === 'clear' ? null : message.parentId;
+        }
+
+        await tx.delete(messageTable).where(eq(messageTable.id, id));
+      }
+
+      if (newActiveNodeId !== undefined) {
+        if (newActiveNodeId === null) {
+          await tx
+            .update(topicTable)
+            .set({ activeNodeId: null })
+            .where(eq(topicTable.id, message.topicId));
+        } else {
+          await this.topicService.setActiveNodeTx(tx, message.topicId, newActiveNodeId, {
+            assumeValid: true,
+          });
+        }
+      }
+
+      return {
+        deletedIds,
+        ...(newActiveNodeId !== undefined ? { newActiveNodeId } : {}),
+        ...(reparentedIds?.length ? { reparentedIds } : {}),
+      };
+    });
+  }
+
+  async getPathToNode(nodeId: string): Promise<Message[]> {
+    const ancestorIdRows = await this.db.all<{ id: string }>(sql`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, parent_id FROM message WHERE id = ${nodeId} AND deleted_at IS NULL
+        UNION ALL
+        SELECT m.id, m.parent_id FROM message m
+        INNER JOIN ancestors a ON m.id = a.parent_id
+        WHERE m.deleted_at IS NULL
+      )
+      SELECT id FROM ancestors
+    `);
+
+    if (ancestorIdRows.length === 0) {
+      throw DataApiErrorFactory.notFound('Message', nodeId);
+    }
+
+    const ancestorIds = ancestorIdRows.map((row) => row.id);
+    const ancestorRows = await this.db
+      .select()
+      .from(messageTable)
+      .where(inArray(messageTable.id, ancestorIds));
+    const ancestorOrder = new Map(ancestorIds.map((id, index) => [id, index]));
+
+    return ancestorRows
+      .sort(
+        (a, b) =>
+          (ancestorOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (ancestorOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      )
+      .reverse()
+      .map(rowToMessage);
+  }
+
+  async getPathThrough(topicId: string, nodeId: string): Promise<Message[]> {
+    const [node] = await this.db
+      .select({ id: messageTable.id })
+      .from(messageTable)
+      .where(
+        and(
+          eq(messageTable.id, nodeId),
+          eq(messageTable.topicId, topicId),
+          isNull(messageTable.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!node) {
+      throw DataApiErrorFactory.notFound('Message', nodeId);
+    }
+
+    const [leaf] = await this.db.all<{ id: string }>(sql`
+      WITH RECURSIVE subtree AS (
+        SELECT id, created_at FROM message
+          WHERE id = ${nodeId} AND topic_id = ${topicId} AND deleted_at IS NULL
+        UNION ALL
+        SELECT m.id, m.created_at FROM message m
+          INNER JOIN subtree s ON m.parent_id = s.id
+          WHERE m.deleted_at IS NULL
+      )
+      SELECT s.id FROM subtree s
+      WHERE NOT EXISTS (
+        SELECT 1 FROM message c
+        WHERE c.parent_id = s.id AND c.deleted_at IS NULL
+      )
+      ORDER BY s.created_at DESC
+      LIMIT 1
+    `);
+
+    return await this.getPathToNode(leaf?.id ?? nodeId);
+  }
+
+  private async buildBranchMessagesWithSiblings(pathRows: MessageRow[]): Promise<BranchMessage[]> {
+    const uniqueGroups = new Set<string>();
+    const groupsToQuery: { parentId: null | string; siblingsGroupId: number }[] = [];
+
+    for (const message of pathRows) {
+      if (message.siblingsGroupId !== 0) {
+        const key = groupKeyFor(message.parentId, message.siblingsGroupId);
+        if (!uniqueGroups.has(key)) {
+          uniqueGroups.add(key);
+          groupsToQuery.push({
+            parentId: message.parentId,
+            siblingsGroupId: message.siblingsGroupId,
+          });
+        }
+      }
+    }
+
+    const siblingsMap = new Map<string, Message[]>();
+    if (groupsToQuery.length > 0) {
+      const conditions = groupsToQuery.map((group) =>
+        and(
+          group.parentId === null
+            ? isNull(messageTable.parentId)
+            : eq(messageTable.parentId, group.parentId),
+          eq(messageTable.siblingsGroupId, group.siblingsGroupId),
+        ),
+      );
+
+      const siblingRows = await this.db
+        .select()
+        .from(messageTable)
+        .where(and(isNull(messageTable.deletedAt), or(...conditions)));
+
+      for (const row of siblingRows) {
+        const key = groupKeyFor(row.parentId, row.siblingsGroupId);
+        const group = siblingsMap.get(key) ?? [];
+        group.push(rowToMessage(row));
+        siblingsMap.set(key, group);
+      }
+    }
+
+    return pathRows.map((row) => {
+      const message = rowToMessage(row);
+      const group =
+        row.siblingsGroupId !== 0
+          ? siblingsMap.get(groupKeyFor(row.parentId, row.siblingsGroupId))
+          : undefined;
+      const siblingsGroup =
+        group && group.length > 1 ? group.filter((item) => item.id !== message.id) : undefined;
+
+      return {
+        message,
+        ...(siblingsGroup ? { siblingsGroup } : {}),
+      };
+    });
+  }
+
+  private async getDescendantIds(id: string): Promise<string[]> {
+    const result = await this.db.all<{ id: string }>(sql`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM message WHERE parent_id = ${id} AND deleted_at IS NULL
+        UNION ALL
+        SELECT m.id FROM message m
+        INNER JOIN descendants d ON m.parent_id = d.id
+        WHERE m.deleted_at IS NULL
+      )
+      SELECT id FROM descendants
+    `);
+
+    return result.map((row) => row.id);
+  }
+}
+
+export function rowToMessage(row: MessageRow): Message {
+  return {
+    createdAt: timestampToISO(row.createdAt),
+    data: row.data,
+    id: row.id,
+    modelId: (row.modelId ?? null) as UniqueModelId | null,
+    modelSnapshot: row.modelSnapshot ?? null,
+    parentId: row.parentId,
+    role: row.role as Message['role'],
+    searchableText: row.searchableText,
+    siblingsGroupId: row.siblingsGroupId,
+    stats: row.stats ?? null,
+    status: row.status as Message['status'],
+    topicId: row.topicId,
+    traceId: row.traceId,
+    updatedAt: timestampToISO(row.updatedAt),
+  };
+}
+
+function messageToTreeNode(message: Message, hasChildren: boolean): TreeNode {
+  return {
+    createdAt: message.createdAt,
+    hasChildren,
+    id: message.id,
+    modelId: message.modelId,
+    parentId: message.parentId,
+    preview: extractPreview(message),
+    role: message.role === 'system' ? 'assistant' : message.role,
+    status: message.status,
+  };
+}
+
+function extractPreview(message: Message): string {
+  const parts = message.data.parts ?? [];
+  for (const part of parts) {
+    if (part.type === 'text' && typeof part.text === 'string') {
+      const text = part.text.trim();
+      if (text.length > 0) {
+        return text.length > previewLength ? `${text.slice(0, previewLength)}...` : text;
+      }
+    }
+  }
+
+  const blocks = message.data.blocks ?? [];
+  for (const block of blocks) {
+    if ('content' in block && typeof block.content === 'string') {
+      const text = block.content.trim();
+      if (text.length > 0) {
+        return text.length > previewLength ? `${text.slice(0, previewLength)}...` : text;
+      }
+    }
+  }
+
+  return '';
+}
+
+async function resolveParentId(
+  tx: any,
+  topicId: string,
+  activeNodeId: null | string,
+  inputParentId: null | string | undefined,
+): Promise<null | string> {
+  if (inputParentId === undefined) {
+    if (activeNodeId) {
+      return activeNodeId;
+    }
+
+    const [existingRoot] = await tx
+      .select({ id: messageTable.id })
+      .from(messageTable)
+      .where(and(eq(messageTable.topicId, topicId), isNull(messageTable.parentId)))
+      .limit(1);
+
+    if (existingRoot) {
+      throw DataApiErrorFactory.invalidOperation(
+        'create message',
+        'Topic has messages but no activeNodeId. Please specify parentId explicitly.',
+      );
+    }
+
+    return null;
+  }
+
+  if (inputParentId === null) {
+    return await resolveExplicitRoot(tx, topicId);
+  }
+
+  return await validateParent(tx, topicId, inputParentId);
+}
+
+async function resolveExplicitRoot(tx: any, topicId: string): Promise<null> {
+  const [existingRoot] = await tx
+    .select({ id: messageTable.id })
+    .from(messageTable)
+    .where(and(eq(messageTable.topicId, topicId), isNull(messageTable.parentId)))
+    .limit(1);
+
+  if (existingRoot) {
+    throw DataApiErrorFactory.invalidOperation(
+      'create root message',
+      'Topic already has a root message',
+    );
+  }
+
+  return null;
+}
+
+async function validateParent(tx: any, topicId: string, parentId: string): Promise<string> {
+  const [parent] = await tx
+    .select()
+    .from(messageTable)
+    .where(and(eq(messageTable.id, parentId), isNull(messageTable.deletedAt)))
+    .limit(1);
+
+  if (!parent) {
+    throw DataApiErrorFactory.notFound('Message', parentId);
+  }
+
+  if (parent.topicId !== topicId) {
+    throw DataApiErrorFactory.invalidOperation(
+      'create message',
+      'Parent message does not belong to this topic',
+    );
+  }
+
+  return parentId;
+}
+
+function groupKeyFor(parentId: null | string, siblingsGroupId: number) {
+  return `${parentId ?? '__root__'}-${siblingsGroupId}`;
+}

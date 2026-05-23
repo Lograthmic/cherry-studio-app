@@ -1,133 +1,56 @@
-# 🍒 Welcome to Cherry Studio App
+# Welcome to your Expo app 👋
 
-English | [中文](./README-zh.md)
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-🍒 Cherry Studio App —— The official mobile version of Cherry Studio, bringing powerful LLMs (Large Language Models) interaction to your iOS and Android devices.
+## Get started
 
-🌟 **Support the Project:** [Sponsor](https://github.com/CherryHQ/cherry-studio/blob/main/docs/zh/guides/sponsor.md) | Give the repo a Star!
-
-## ✨ Key Features
-
-- **Multi-LLM Provider Support**: (Gradually integrating) OpenAI, Gemini, Anthropic, and more.
-- **AI Assistants & Conversations**: Access preset assistants and engage in smooth multi-model conversations.
-- **Mobile Optimized**: Designed specifically for iOS/Android with light/dark theme support.
-- **Core Tools**: Conversation management, history search, data migration.
-
-## 🛠️ Tech Stack
-
-- **Framework**: Expo React Native
-- **Package Manager**: Pnpm
-- **UI**: Tamagui
-- **Routing**: React Navigation
-- **State Management**: Redux Toolkit
-
-## 🚀 Development
-
-> Related development documentation is in the docs folder
-
-1. **Clone the repository**
+1. Install dependencies
 
    ```bash
-    git clone https://github.com/CherryHQ/cherry-studio-app.git
+   npm install
    ```
 
-2. **Enter the directory**
+2. Start the app
 
    ```bash
-    cd cherry-studio-app
+   npx expo start
    ```
 
-3. **Install dependencies**
+In the output, you'll find options to open the app in a
 
-   ```bash
-    pnpm install
-   ```
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-4. **Generate database**
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-```bash
-npx drizzle-kit generate
-```
+## Get a fresh project
 
-5. **Build the MCP Streamable Http**
-
-```bash
-cd packages/react-native-streamable-http
-npm install
-npm run build
-```
-
-6. **Start the application**
-
-iOS:
+When you're ready, run:
 
 ```bash
-npx expo prebuild -p ios
-
-cd ios # Add self-signed certificate
-
-npx expo run:ios -d
+npm run reset-project
 ```
 
-Android:
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-```bash
-npx expo prebuild -p android
+### Other setup steps
 
-cd android # Add Android SDK path to local.properties
+- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
+- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
+- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
-npx expo run:android -d
-```
+## Learn more
 
-### Android SDK Setup
+To learn more about developing your project with Expo, look at the following resources:
 
-#### For windows users:
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
-```
-sdk.dir=C:\\Users\\UserName\\AppData\\Local\\Android\\sdk
-```
+## Join the community
 
-or (for newer versions of Android Studio / IntelliJ IDEA):
+Join our community of developers creating universal apps.
 
-```
-sdk.dir=C\:\\Users\\USERNAME\\AppData\\Local\\Android\\sdk
-```
-
-Where USERNAME your PC user name. Also, make sure the folder is sdk or Sdk.
-
-Example:
-
-```
-sdk.dir=C:\\Users\\USERNAME\\AppData\\Local\\Android\\sdk
-```
-
-or:
-
-```
-sdk.dir=C\:\\Users\\USERNAME\\AppData\\Local\\Android\\Sdk
-```
-
-#### For Mac users:
-
-```
-sdk.dir = /Users/USERNAME/Library/Android/sdk
-```
-
-Where USERNAME is your OSX username.
-
-You can also use environment variables in your path, for example:
-
-```bash
-export ANDROID_HOME=/Users/$(whoami)/Library/Android/sdk
-export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
-```
-
-#### For Linux (Ubuntu) users:
-
-```
-sdk.dir = /home/USERNAME/Android/Sdk
-```
-
-Where USERNAME is your Linux username.
-
-> Please use physical devices or simulators for development, do not use Expo Go
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

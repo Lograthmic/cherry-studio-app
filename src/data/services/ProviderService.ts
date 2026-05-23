@@ -1,0 +1,319 @@
+import { asc, eq, inArray } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+
+import type { Database } from '@/data/db/client';
+import type { UserProviderInsert, UserProviderSelect } from '@/data/db/schema/userProvider';
+import { userProviderTable } from '@/data/db/schema/userProvider';
+import { DataApiErrorFactory } from '@/data/types/apiTypes';
+import type {
+  ApiKeyEntry,
+  AuthConfig,
+  AuthType,
+  EndpointConfig,
+  EndpointConfigs,
+  Provider,
+  ProviderSettings,
+  RuntimeApiFeatures,
+} from '@/data/types/provider';
+import {
+  DEFAULT_API_FEATURES as DEFAULT_FEATURES,
+  DEFAULT_PROVIDER_SETTINGS,
+} from '@/data/types/provider';
+
+import { providerRegistryService } from './providerRegistryService';
+import { insertManyWithOrderKey, insertWithOrderKey } from './utils/orderKey';
+
+export type CreateProviderInput = {
+  apiFeatures?: UserProviderInsert['apiFeatures'];
+  apiKeys?: ApiKeyEntry[];
+  authConfig?: UserProviderInsert['authConfig'];
+  defaultChatEndpoint?: UserProviderInsert['defaultChatEndpoint'];
+  endpointConfigs?: EndpointConfigs | null;
+  isEnabled?: boolean;
+  name: string;
+  presetProviderId?: string | null;
+  providerId: string;
+  providerSettings?: ProviderSettings | null;
+};
+
+type ProviderInputWithoutOrderKey = Omit<UserProviderInsert, 'orderKey'>;
+export type UpdateProviderInput = {
+  apiFeatures?: Partial<RuntimeApiFeatures> | null;
+  authConfig?: AuthConfig | null;
+  defaultChatEndpoint?: UserProviderInsert['defaultChatEndpoint'] | null;
+  endpointConfigs?: EndpointConfigs | null;
+  isEnabled?: boolean;
+  name?: string;
+  providerSettings?: ProviderSettings | null;
+};
+
+export type ListProviderApiKeysQuery = {
+  enabled?: boolean;
+};
+
+export type UpdateApiKeyInput = {
+  isEnabled?: boolean;
+  key?: string;
+  label?: string;
+};
+
+function normalizeApiKeys(apiKeys: ApiKeyEntry[] | undefined): ApiKeyEntry[] {
+  const seenIds = new Set<string>();
+  const seenKeys = new Set<string>();
+
+  return (apiKeys ?? []).map((entry) => {
+    const id = entry.id || uuidv4();
+    const key = entry.key.trim();
+
+    if (!key) {
+      throw DataApiErrorFactory.validation({ key: ['API key cannot be empty'] });
+    }
+
+    if (seenIds.has(id)) {
+      throw DataApiErrorFactory.conflict('API key id already exists', 'API key');
+    }
+
+    if (seenKeys.has(key)) {
+      throw DataApiErrorFactory.conflict('API key already exists', 'API key');
+    }
+
+    seenIds.add(id);
+    seenKeys.add(key);
+
+    return {
+      id,
+      isEnabled: entry.isEnabled,
+      key,
+      ...(entry.label ? { label: entry.label } : {}),
+    };
+  });
+}
+
+function rowToProvider(row: UserProviderSelect): Provider {
+  const metadata = providerRegistryService.getProviderDisplayMetadata(
+    row.providerId,
+    row.presetProviderId ?? undefined,
+  );
+  const apiKeys = (row.apiKeys ?? []).map(({ key: _key, ...rest }) => rest);
+  const authType: AuthType = row.authConfig?.type ?? 'api-key';
+
+  return {
+    apiFeatures: {
+      ...DEFAULT_FEATURES,
+      ...row.apiFeatures,
+    },
+    apiKeys,
+    authType,
+    defaultChatEndpoint: row.defaultChatEndpoint ?? undefined,
+    description: metadata.description,
+    endpointConfigs: row.endpointConfigs as EndpointConfigs | undefined,
+    id: row.providerId,
+    isEnabled: row.isEnabled,
+    name: row.name,
+    presetProviderId: row.presetProviderId ?? undefined,
+    settings: {
+      ...DEFAULT_PROVIDER_SETTINGS,
+      ...(row.providerSettings as Partial<ProviderSettings> | null),
+    },
+    websites: metadata.websites,
+  };
+}
+
+function toInsert(input: CreateProviderInput): ProviderInputWithoutOrderKey {
+  return {
+    apiFeatures: input.apiFeatures ?? null,
+    apiKeys: normalizeApiKeys(input.apiKeys),
+    authConfig: input.authConfig ?? null,
+    defaultChatEndpoint: input.defaultChatEndpoint ?? null,
+    endpointConfigs: input.endpointConfigs ?? null,
+    isEnabled: input.isEnabled ?? true,
+    name: input.name,
+    presetProviderId: input.presetProviderId ?? null,
+    providerId: input.providerId,
+    providerSettings: input.providerSettings ?? null,
+  };
+}
+
+export class ProviderService {
+  constructor(private readonly db: Database) {}
+
+  async list(query: { enabled?: boolean } = {}): Promise<Provider[]> {
+    const rows =
+      query.enabled === undefined
+        ? await this.db.select().from(userProviderTable).orderBy(asc(userProviderTable.orderKey))
+        : await this.db
+            .select()
+            .from(userProviderTable)
+            .where(eq(userProviderTable.isEnabled, query.enabled))
+            .orderBy(asc(userProviderTable.orderKey));
+
+    return rows.map(rowToProvider);
+  }
+
+  async getByProviderId(providerId: string): Promise<Provider> {
+    const [row] = await this.db
+      .select()
+      .from(userProviderTable)
+      .where(eq(userProviderTable.providerId, providerId))
+      .limit(1);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    return rowToProvider(row);
+  }
+
+  async getRowByProviderId(providerId: string): Promise<UserProviderSelect | null> {
+    const [row] = await this.db
+      .select()
+      .from(userProviderTable)
+      .where(eq(userProviderTable.providerId, providerId))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async listApiKeys(
+    providerId: string,
+    query: ListProviderApiKeysQuery = {},
+  ): Promise<{ keys: ApiKeyEntry[] }> {
+    const row = await this.getRowByProviderId(providerId);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    const keys = row.apiKeys ?? [];
+
+    return {
+      keys: query.enabled ? keys.filter((entry) => entry.isEnabled) : keys,
+    };
+  }
+
+  async getAuthConfig(providerId: string): Promise<AuthConfig | null> {
+    const row = await this.getRowByProviderId(providerId);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    return row.authConfig ?? null;
+  }
+
+  async create(input: CreateProviderInput): Promise<Provider> {
+    const row = (await this.db.transaction((tx) =>
+      insertWithOrderKey(tx, userProviderTable, toInsert(input), {
+        scope: undefined,
+      }),
+    )) as UserProviderSelect;
+
+    return rowToProvider(row);
+  }
+
+  async update(providerId: string, input: UpdateProviderInput): Promise<Provider> {
+    const updates: Partial<UserProviderInsert> = {};
+
+    if (input.apiFeatures !== undefined) {
+      updates.apiFeatures = input.apiFeatures;
+    }
+    if (input.authConfig !== undefined) {
+      updates.authConfig = input.authConfig;
+    }
+    if (input.defaultChatEndpoint !== undefined) {
+      updates.defaultChatEndpoint = input.defaultChatEndpoint;
+    }
+    if (input.endpointConfigs !== undefined) {
+      updates.endpointConfigs = input.endpointConfigs as Partial<
+        Record<string, EndpointConfig>
+      > | null;
+    }
+    if (input.isEnabled !== undefined) {
+      updates.isEnabled = input.isEnabled;
+    }
+    if (input.name !== undefined) {
+      updates.name = input.name;
+    }
+    if (input.providerSettings !== undefined) {
+      updates.providerSettings = input.providerSettings;
+    }
+
+    const [row] = await this.db
+      .update(userProviderTable)
+      .set(updates)
+      .where(eq(userProviderTable.providerId, providerId))
+      .returning();
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    return rowToProvider(row);
+  }
+
+  async replaceApiKeys(providerId: string, apiKeys: ApiKeyEntry[]): Promise<Provider> {
+    const normalizedApiKeys = normalizeApiKeys(apiKeys);
+    const [row] = await this.db
+      .update(userProviderTable)
+      .set({ apiKeys: normalizedApiKeys })
+      .where(eq(userProviderTable.providerId, providerId))
+      .returning();
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    return rowToProvider(row);
+  }
+
+  async updateApiKey(
+    providerId: string,
+    keyId: string,
+    updates: UpdateApiKeyInput,
+  ): Promise<Provider> {
+    const row = await this.getRowByProviderId(providerId);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    const keys = row.apiKeys ?? [];
+    const existingKey = keys.find((entry) => entry.id === keyId);
+
+    if (!existingKey) {
+      throw DataApiErrorFactory.notFound('API key', keyId);
+    }
+
+    const nextKeys = keys.map((entry) =>
+      entry.id === keyId
+        ? {
+            ...entry,
+            ...(updates.key !== undefined ? { key: updates.key } : {}),
+            ...(updates.label !== undefined ? { label: updates.label } : {}),
+            ...(updates.isEnabled !== undefined ? { isEnabled: updates.isEnabled } : {}),
+          }
+        : entry,
+    );
+
+    return this.replaceApiKeys(providerId, nextKeys);
+  }
+
+  async batchUpsert(inputs: CreateProviderInput[]): Promise<void> {
+    if (inputs.length === 0) {
+      return;
+    }
+
+    await this.db.transaction(async (tx) => {
+      const providerIds = inputs.map((input) => input.providerId);
+      const existingRows = await tx
+        .select({ providerId: userProviderTable.providerId })
+        .from(userProviderTable)
+        .where(inArray(userProviderTable.providerId, providerIds));
+      const existing = new Set(existingRows.map((row) => row.providerId));
+      const newRows = inputs.filter((input) => !existing.has(input.providerId)).map(toInsert);
+
+      if (newRows.length > 0) {
+        await insertManyWithOrderKey(tx, userProviderTable, newRows, {});
+      }
+    });
+  }
+}

@@ -1,12 +1,13 @@
-const { getDefaultConfig } = require('expo/metro-config')
-const { withUniwindConfig } = require('uniwind/metro')
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+const { withUniwindConfig } = require('uniwind/metro');
 
-const config = getDefaultConfig(__dirname)
+const config = getDefaultConfig(__dirname);
 
-config.resolver.sourceExts.push('sql')
+config.resolver.sourceExts.push('sql');
+config.watchFolders.push(path.resolve(__dirname, 'packages'));
 
-// 添加对 @cherrystudio/ai-core 的支持
-config.resolver.resolverMainFields = ['react-native', 'browser', 'main']
-config.resolver.platforms = ['ios', 'android', 'native', 'web']
-
-module.exports = withUniwindConfig(config, { cssEntryFile: './global.css' })
+module.exports = withUniwindConfig(config, {
+  cssEntryFile: './src/styles/global.css',
+  dtsFile: './src/types/uniwind-types.d.ts',
+});

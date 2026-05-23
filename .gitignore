@@ -3,13 +3,6 @@
 # dependencies
 node_modules/
 
-# pnpm
-.pnpm-store/
-pnpm-debug.log*
-
-# IDEA
-.idea
-
 # Expo
 .expo/
 dist/
@@ -17,6 +10,7 @@ web-build/
 expo-env.d.ts
 
 # Native
+.kotlin/
 *.orig.*
 *.jks
 *.p8
@@ -42,37 +36,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-app-example
 
-# build (root level only, not modules/)
-/android
+# generated native folders
 /ios
-*.ipa
-*.apk
+/android
 
-#.env
-.env
-
-
-
-# Cheyne
-*.txt
-package-lock.json
-
-COMMIT_MESSAGE.md
-README_START.md
-screenshot.png
-TOP_ENTRY_IMPLEMENTATION.md
-.cursor/
-
-.claude/
-.codex/
-.gemini/
-.qwen/
-plan/*
-# coverage
-coverage/
-# Local modules build artifacts
-modules/*/android/build/
-modules/*/ios/build/
-modules/*/.gradle/
+.zed/*

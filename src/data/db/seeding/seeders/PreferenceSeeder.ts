@@ -1,0 +1,71 @@
+import { preferenceTable } from '@/data/db/schema';
+import { DefaultPreferences } from '@/data/preference';
+
+import { hashObject } from '../hashObject';
+import type { DatabaseSeeder } from '../types';
+
+export class PreferenceSeeder implements DatabaseSeeder {
+  readonly name = 'preference';
+  readonly description = 'Insert default preference values';
+  readonly version: string;
+
+  constructor() {
+    this.version = hashObject(DefaultPreferences);
+  }
+
+  async run(db: Parameters<DatabaseSeeder['run']>[0]) {
+    const preferences = await db
+      .select({
+        scope: preferenceTable.scope,
+        key: preferenceTable.key,
+      })
+      .from(preferenceTable);
+
+    // Convert existing preferences to a Set for quick lookup.
+    const existingPreferences = new Set(
+      preferences.map((preference) => `${preference.scope}.${preference.key}`),
+    );
+    // Collect all new preferences to insert.
+    const newPreferences: {
+      scope: string;
+      key: string;
+      value: unknown;
+    }[] = [];
+
+    // Process each scope in DefaultPreferences.
+    for (const [scope, scopeData] of Object.entries(DefaultPreferences)) {
+      // Process each key-value pair in the scope.
+      for (const [key, value] of Object.entries(scopeData)) {
+        const preferenceKey = `${scope}.${key}`;
+
+        // Skip if this preference already exists.
+        if (existingPreferences.has(preferenceKey)) {
+          continue;
+        }
+
+        // Add to new preferences array.
+        newPreferences.push({
+          scope,
+          key,
+          value,
+        });
+      }
+    }
+
+    if (newPreferences.length === 0) {
+      return;
+    }
+
+    // Insert new preferences without overwriting existing user values.
+    await db.transaction((tx) => {
+      for (const preference of newPreferences) {
+        tx.insert(preferenceTable)
+          .values(preference)
+          .onConflictDoNothing({
+            target: [preferenceTable.scope, preferenceTable.key],
+          })
+          .run();
+      }
+    });
+  }
+}
