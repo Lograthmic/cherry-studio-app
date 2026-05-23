@@ -10,7 +10,6 @@ import { useDrawerActions, useDrawerPanelState } from '@/components/drawer/Drawe
 import { DrawerTopicList } from '@/components/drawer/DrawerTopicList';
 import { drawerContentLayoutTransition } from '@/components/drawer/drawerAnimation';
 import { useDrawerHeaderAnimation } from '@/components/drawer/hooks/useDrawerHeaderAnimation';
-import { GlassView, TouchableGlass } from '../glass';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 const StyledAnimatedView = withUniwind(Animated.View);
