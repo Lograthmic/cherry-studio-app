@@ -1,36 +1,28 @@
 import { BottomSheet, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
-import {
-  type ChatInputActionId,
-  ChatInputActionList,
-} from '@/components/chat/input/ChatInputActionList';
-import { ChatInputActionSheetHeader } from '@/components/chat/input/ChatInputActionSheetHeader';
+import { ChatInputActionList } from '@/components/chat/input/components/ChatInputActionList';
+import { ChatInputActionSheetHeader } from '@/components/chat/input/components/ChatInputActionSheetHeader';
 import {
   ChatInputCameraTile,
   ChatInputMediaStrip,
   ChatInputPhotoPreviewTile,
   ChatInputPhotosTile,
-} from '@/components/chat/input/ChatInputMediaStrip';
-import { ChatInputSelectedPhotoBar } from '@/components/chat/input/ChatInputSelectedPhotoBar';
-import { useChatInputPhotoPicker } from '@/components/chat/input/hooks/useChatInputPhotoPicker';
-
-type ChatInputActionSheetProps = {
-  isOpen: boolean;
-  onActionSelect: (actionId: ChatInputActionId) => void;
-  onClose: () => void;
-  selectedActionId: ChatInputActionId | null;
-};
+} from '@/components/chat/input/components/ChatInputMediaStrip';
+import { ChatInputSelectedPhotoBar } from '@/components/chat/input/components/ChatInputSelectedPhotoBar';
+import {
+  useChatInputActions,
+  useChatInputMedia,
+  useChatInputState,
+} from '@/components/chat/input/context/ChatInputProvider';
+import type { ChatInputActionId } from '@/components/chat/input/utils/chatInputActions';
 
 const chatInputActionSheetSnapPoints = ['50%', '70%'];
 
-export function ChatInputActionSheet({
-  isOpen,
-  onActionSelect,
-  onClose,
-  selectedActionId,
-}: ChatInputActionSheetProps) {
-  const { actions, state } = useChatInputPhotoPicker(isOpen);
+export function ChatInputActionSheet() {
+  const { closeActionSheet, selectAction } = useChatInputActions();
+  const { isActionSheetOpen, selectedToolId } = useChatInputState();
+  const { actions, state } = useChatInputMedia();
   const {
     clearSelectedPhotos,
     launchCamera,
@@ -48,23 +40,23 @@ export function ChatInputActionSheet({
   const handleActionPress = useCallback(
     (actionId: ChatInputActionId) => {
       clearSelectedPhotos();
-      onActionSelect(actionId);
-      onClose();
+      selectAction(actionId);
+      closeActionSheet();
     },
-    [clearSelectedPhotos, onActionSelect, onClose],
+    [clearSelectedPhotos, closeActionSheet, selectAction],
   );
   const handleSelectedPhotosAdd = useCallback(() => undefined, []);
 
   const handleClose = useCallback(() => {
     clearSelectedPhotos();
-    onClose();
-  }, [clearSelectedPhotos, onClose]);
+    closeActionSheet();
+  }, [clearSelectedPhotos, closeActionSheet]);
 
   return (
     <BottomSheet
       enablePanDownToClose
       enableDynamicSizing={false}
-      index={isOpen ? 0 : -1}
+      index={isActionSheetOpen ? 0 : -1}
       snapPoints={chatInputActionSheetSnapPoints}
       onClose={handleClose}
     >
@@ -91,7 +83,7 @@ export function ChatInputActionSheet({
           </View>
           <View className="h-px bg-border" />
           <ChatInputActionList
-            selectedActionId={selectedActionId}
+            selectedActionId={selectedToolId}
             onActionPress={handleActionPress}
           />
         </View>

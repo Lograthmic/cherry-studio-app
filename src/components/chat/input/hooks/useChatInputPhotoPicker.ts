@@ -2,6 +2,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import {
+  filterChatInputSelectedPhotoIds,
+  getChatInputSelectedPhotoOrder,
+  getNextChatInputSelectedPhotoIds,
+} from '@/components/chat/input/utils/chatInputPhotoSelection';
+
 export type ChatInputPhotoAccess = 'all' | 'limited' | 'none';
 
 export type ChatInputPhotoPreview = {
@@ -90,12 +96,7 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
   const shouldShowPhotosTile = photoAccess !== 'all';
 
   const selectedPhotoOrder = useMemo(() => {
-    const order = new Map<string, number>();
-    selectedPhotoIds.forEach((photoId, index) => {
-      order.set(photoId, index + 1);
-    });
-
-    return order;
+    return getChatInputSelectedPhotoOrder(selectedPhotoIds);
   }, [selectedPhotoIds]);
 
   const applyPhotoLibrarySnapshot = useCallback((snapshot: PhotoLibrarySnapshot) => {
@@ -107,8 +108,9 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
       return;
     }
 
-    const previewIds = new Set(snapshot.photoPreviews.map((preview) => preview.id));
-    setSelectedPhotoIds((current) => current.filter((photoId) => previewIds.has(photoId)));
+    setSelectedPhotoIds((current) =>
+      filterChatInputSelectedPhotoIds(current, snapshot.photoAccess, snapshot.photoPreviews),
+    );
   }, []);
 
   const refreshPhotoPermissionsAndPreviews = useCallback(async () => {
@@ -186,13 +188,7 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
   }, [refreshPhotoPermissionsAndPreviews]);
 
   const togglePhotoSelection = useCallback((photoId: string) => {
-    setSelectedPhotoIds((current) => {
-      if (current.includes(photoId)) {
-        return current.filter((selectedPhotoId) => selectedPhotoId !== photoId);
-      }
-
-      return [...current, photoId];
-    });
+    setSelectedPhotoIds((current) => getNextChatInputSelectedPhotoIds(current, photoId));
   }, []);
 
   const clearSelectedPhotos = useCallback(() => {

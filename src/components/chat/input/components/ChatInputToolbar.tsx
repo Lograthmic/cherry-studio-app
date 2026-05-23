@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { withUniwind } from 'uniwind';
 
-import type { ChatInputAction } from '@/components/chat/input/ChatInputActionList';
+import type { ChatInputAction } from '@/components/chat/input/utils/chatInputActions';
 
 type ChatInputToolbarProps = {
   onToolClear: () => void;
