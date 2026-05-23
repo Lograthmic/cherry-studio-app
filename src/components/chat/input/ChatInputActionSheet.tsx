@@ -17,12 +17,19 @@ import { useChatInputPhotoPicker } from '@/components/chat/input/hooks/useChatIn
 
 type ChatInputActionSheetProps = {
   isOpen: boolean;
+  onActionSelect: (actionId: ChatInputActionId) => void;
   onClose: () => void;
+  selectedActionId: ChatInputActionId | null;
 };
 
 const chatInputActionSheetSnapPoints = ['50%', '70%'];
 
-export function ChatInputActionSheet({ isOpen, onClose }: ChatInputActionSheetProps) {
+export function ChatInputActionSheet({
+  isOpen,
+  onActionSelect,
+  onClose,
+  selectedActionId,
+}: ChatInputActionSheetProps) {
   const { actions, state } = useChatInputPhotoPicker(isOpen);
   const {
     clearSelectedPhotos,
@@ -38,7 +45,14 @@ export function ChatInputActionSheet({ isOpen, onClose }: ChatInputActionSheetPr
     selectedPhotoOrder,
     shouldShowPhotosTile,
   } = state;
-  const handleActionPress = useCallback((_actionId: ChatInputActionId) => undefined, []);
+  const handleActionPress = useCallback(
+    (actionId: ChatInputActionId) => {
+      clearSelectedPhotos();
+      onActionSelect(actionId);
+      onClose();
+    },
+    [clearSelectedPhotos, onActionSelect, onClose],
+  );
   const handleSelectedPhotosAdd = useCallback(() => undefined, []);
 
   const handleClose = useCallback(() => {
@@ -46,14 +60,11 @@ export function ChatInputActionSheet({ isOpen, onClose }: ChatInputActionSheetPr
     onClose();
   }, [clearSelectedPhotos, onClose]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
     <BottomSheet
       enablePanDownToClose
       enableDynamicSizing={false}
+      index={isOpen ? 0 : -1}
       snapPoints={chatInputActionSheetSnapPoints}
       onClose={handleClose}
     >
@@ -79,7 +90,10 @@ export function ChatInputActionSheet({ isOpen, onClose }: ChatInputActionSheetPr
             </ChatInputMediaStrip>
           </View>
           <View className="h-px bg-border" />
-          <ChatInputActionList onActionPress={handleActionPress} />
+          <ChatInputActionList
+            selectedActionId={selectedActionId}
+            onActionPress={handleActionPress}
+          />
         </View>
         <ChatInputSelectedPhotoBar
           selectedPhotoCount={selectedPhotoCount}
