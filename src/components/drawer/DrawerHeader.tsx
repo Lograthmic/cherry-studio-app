@@ -159,25 +159,27 @@ function SearchFieldLayer({
 }: SearchFieldLayerProps) {
   return (
     <StyledAnimatedView
-      className="absolute top-0 overflow-hidden rounded-3xl"
+      className={`absolute top-0 rounded-3xl ${searchControlSurfaceClassName}`}
       pointerEvents={isSearchVisible ? 'auto' : 'none'}
       style={[{ height: controlSize }, style]}
     >
-      <DrawerSearchField
-        editable={isSearchVisible}
-        height={controlSize}
-        inputRef={inputRef}
-        onChange={setSearchText}
-        searchIconStyle={iconStyle}
-        value={searchText}
-      />
-      <StyledPressable
-        accessibilityLabel={accessibilityLabel}
-        accessibilityRole="button"
-        className="absolute inset-0"
-        onPress={onSearchPress}
-        pointerEvents={isSearchVisible ? 'none' : 'auto'}
-      />
+      <View className="flex-1 overflow-hidden rounded-3xl">
+        <DrawerSearchField
+          editable={isSearchVisible}
+          height={controlSize}
+          inputRef={inputRef}
+          onChange={setSearchText}
+          searchIconStyle={iconStyle}
+          value={searchText}
+        />
+        <StyledPressable
+          accessibilityLabel={accessibilityLabel}
+          accessibilityRole="button"
+          className="absolute inset-0"
+          onPress={onSearchPress}
+          pointerEvents={isSearchVisible ? 'none' : 'auto'}
+        />
+      </View>
     </StyledAnimatedView>
   );
 }
