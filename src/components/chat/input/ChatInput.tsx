@@ -2,7 +2,7 @@ import { TextArea } from 'heroui-native/text-area';
 import { PlusIcon } from 'lucide-uniwind';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, Pressable, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -39,6 +39,15 @@ const inputSurfaceStyle = {
   maxHeight: chatInputMaxTextAreaHeight,
   minHeight: chatInputMinTextAreaHeight,
 };
+const styles = StyleSheet.create({
+  transparentInputSurface: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    borderWidth: 0,
+    boxShadow: 'none',
+    elevation: 0,
+  },
+});
 
 export function ChatInput() {
   const { t } = useTranslation();
@@ -118,11 +127,14 @@ export function ChatInput() {
               ].join(' ')}
               numberOfLines={6}
               placeholder={t('chat.inputPlaceholder')}
-              style={{
-                maxHeight: chatInputMaxTextAreaHeight,
-                minHeight: chatInputMinTextAreaHeight,
-                textAlignVertical: 'center',
-              }}
+              style={[
+                styles.transparentInputSurface,
+                {
+                  maxHeight: chatInputMaxTextAreaHeight,
+                  minHeight: chatInputMinTextAreaHeight,
+                  textAlignVertical: 'center',
+                },
+              ]}
               value={draft}
               onBlur={() => setIsInputFocused(false)}
               onChangeText={setDraft}
