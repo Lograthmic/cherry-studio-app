@@ -13,8 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
-import { SettingsSection } from '@/screens/SettingsScreen';
 import { isAndroid } from '@/config/constants';
+import { SettingsSection } from './components/SettingsSection';
 
 const ANDROID_GRANT_READ_URI_PERMISSION_FLAG = 1;
 

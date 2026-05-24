@@ -6,17 +6,15 @@ import { withUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
 import {
-  ProviderApiManagementSection,
-  ProviderModelList,
-  useProviderDetailSettings,
-} from '@/screens/SettingsScreen/ProviderScreen';
-import {
   buildApiKeyEntriesFromInput,
   canEditProviderEndpoint,
   shouldShowApiKeys,
   useProviderApiServiceDraft,
   useProviderApiServiceQueries,
 } from '@/screens/SettingsScreen/ProviderScreen/apiService';
+import { ProviderApiManagementSection } from './components/ProviderApiManagementSection';
+import { ProviderModelList } from './components/ProviderModelList';
+import { useProviderDetailSettings } from './detail';
 
 const StyledPressable = withUniwind(Pressable);
 

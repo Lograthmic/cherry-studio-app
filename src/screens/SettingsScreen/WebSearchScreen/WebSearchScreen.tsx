@@ -6,16 +6,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
-import {
-  SettingNumberInput,
-  SettingSelect,
-  SettingsSection,
-  SettingsServiceRow,
-  type SettingsServiceRowProps,
-  useWebSearchProviderPreferences,
-} from '@/screens/SettingsScreen';
 import type { WebSearchProviderId } from '@/data/preference';
 import { PRESETS_WEB_SEARCH_PROVIDERS } from '@/data/presets/webSearchProviders';
+import { SettingNumberInput } from '../components/SettingNumberInput';
+import { SettingSelect } from '../components/SettingSelect';
+import { SettingsSection } from '../components/SettingsSection';
+import { SettingsServiceRow, type SettingsServiceRowProps } from '../components/SettingsServiceRow';
+import { useWebSearchProviderPreferences } from '../hooks/useWebSearchProviderPreferences';
 
 export default function WebSearchSettingsScreen() {
   const { t } = useTranslation();

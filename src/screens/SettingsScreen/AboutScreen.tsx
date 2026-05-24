@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Image, Linking, ScrollView, Text, View } from 'react-native';
 
 import { BackHeader, type HeaderToolbarAction } from '@/components/headers';
-import { SettingsSection } from '@/screens/SettingsScreen';
+import { SettingsSection } from './components/SettingsSection';
 
 const APP_VERSION = Constants.expoConfig?.version ?? 'latest';
 

@@ -9,11 +9,11 @@ import { Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { useUniwind, withUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
-import { SettingsSection } from '@/screens/SettingsScreen';
-import { SettingsServiceRow, type SettingsServiceRowProps } from '@/screens/SettingsScreen';
 import { isLiquidGlassAvailable } from '@/config/constants';
 import { useDataQuery } from '@/data/hooks';
 import { queryKeys } from '@/data/queries';
+import { SettingsSection } from './components/SettingsSection';
+import { SettingsServiceRow, type SettingsServiceRowProps } from './components/SettingsServiceRow';
 
 const StyledPressable = withUniwind(Pressable);
 

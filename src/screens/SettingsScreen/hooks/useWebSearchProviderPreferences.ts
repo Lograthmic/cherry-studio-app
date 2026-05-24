@@ -1,8 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { SettingSelectOption } from '@/screens/SettingsScreen';
-import { mergeWebSearchProviderOverride } from '@/screens/SettingsScreen/WebSearchScreen';
 import { useMultiplePreferences } from '@/data/hooks';
 import type {
   WebSearchCapability,
@@ -14,6 +12,8 @@ import {
   getWebSearchProvidersByCapability,
   type WebSearchProviderPreset,
 } from '@/data/presets/webSearchProviders';
+import type { SettingSelectOption } from '../components/SettingSelect';
+import { mergeWebSearchProviderOverride } from '../WebSearchScreen/utils/providerSettings';
 
 const preferenceMapping = {
   compressionCutoffLimit: 'chat.web_search.compression.cutoff_limit',

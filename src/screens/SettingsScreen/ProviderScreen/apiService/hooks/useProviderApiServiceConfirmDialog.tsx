@@ -1,4 +1,4 @@
-import { useSettingsConfirmDialog } from '@/screens/SettingsScreen';
+import { useSettingsConfirmDialog } from '../../../hooks/useSettingsConfirmDialog';
 
 export function useProviderApiServiceConfirmDialog() {
   return useSettingsConfirmDialog();

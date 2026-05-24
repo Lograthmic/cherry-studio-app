@@ -5,13 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { Linking, ScrollView, View } from 'react-native';
 
 import { BackHeader, type HeaderToolbarAction } from '@/components/headers';
-import { useWebSearchProviderPreferences } from '@/screens/SettingsScreen';
+import { WEB_SEARCH_PROVIDER_IDS, type WebSearchProviderId } from '@/data/preference';
+import { useWebSearchProviderPreferences } from '../hooks/useWebSearchProviderPreferences';
+import { WebSearchApiManagementSection } from './components/WebSearchApiManagementSection';
 import {
   getWebSearchProviderOfficialWebsite,
   getWebSearchProviderPreset,
-  WebSearchApiManagementSection,
-} from '@/screens/SettingsScreen/WebSearchScreen';
-import { WEB_SEARCH_PROVIDER_IDS, type WebSearchProviderId } from '@/data/preference';
+} from './utils/providerSettings';
 
 function isWebSearchProviderId(value: string): value is WebSearchProviderId {
   return WEB_SEARCH_PROVIDER_IDS.includes(value as WebSearchProviderId);

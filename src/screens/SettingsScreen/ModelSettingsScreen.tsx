@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { ScrollView, Text, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
-import { SettingsSection } from '@/screens/SettingsScreen';
 import {
   getModelSettingOptionLabel,
   MODEL_SETTING_KIND_TITLE_KEYS,
@@ -13,6 +12,7 @@ import {
   type ModelSettingKind,
   useModelSettingSelections,
 } from '@/components/modelPicker';
+import { SettingsSection } from './components/SettingsSection';
 
 const MODEL_SETTING_ICONS = {
   default: '⭐',
