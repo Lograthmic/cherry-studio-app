@@ -46,6 +46,14 @@ export function ChatInputActionSheet() {
     [clearSelectedPhotos, closeActionSheet, selectAction],
   );
   const handleSelectedPhotosAdd = useCallback(() => undefined, []);
+  const handlePhotosPress = useCallback(() => {
+    if (photoAccess === 'limited') {
+      void presentLimitedPhotoPermissionsPicker();
+      return;
+    }
+
+    void launchImageLibrary();
+  }, [launchImageLibrary, photoAccess, presentLimitedPhotoPermissionsPicker]);
 
   const handleClose = useCallback(() => {
     clearSelectedPhotos();
@@ -70,7 +78,7 @@ export function ChatInputActionSheet() {
             />
             <ChatInputMediaStrip>
               <ChatInputCameraTile onPress={launchCamera} />
-              {shouldShowPhotosTile ? <ChatInputPhotosTile onPress={launchImageLibrary} /> : null}
+              {shouldShowPhotosTile ? <ChatInputPhotosTile onPress={handlePhotosPress} /> : null}
               {photoPreviews.map((photo) => (
                 <ChatInputPhotoPreviewTile
                   key={photo.id}

@@ -120,7 +120,12 @@ function PhotoPreviewTile({
       onPress={onPress}
       style={[styles.mediaTile, isSelected ? styles.photoPreviewTileSelected : null]}
     >
-      <Image contentFit="cover" source={{ uri }} style={StyleSheet.absoluteFill} />
+      <Image
+        cachePolicy="memory-disk"
+        contentFit="cover"
+        source={uri}
+        style={StyleSheet.absoluteFill}
+      />
       {isSelected ? (
         <View
           className="items-center justify-center rounded-full"

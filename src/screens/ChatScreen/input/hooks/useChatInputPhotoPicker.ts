@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 
 import {
   filterChatInputSelectedPhotoIds,
@@ -16,6 +17,7 @@ export type ChatInputPhotoPreview = {
 };
 
 const maxPhotoPreviewCount = 20;
+const photoPermissionsPickerRefreshDelay = 500;
 
 type PhotoLibrarySnapshot = {
   photoAccess: ChatInputPhotoAccess;
@@ -88,6 +90,10 @@ async function readPhotoLibrarySnapshot(): Promise<PhotoLibrarySnapshot> {
 }
 
 export function useChatInputPhotoPicker(isOpen: boolean) {
+  const isOpenRef = useRef(isOpen);
+  const photoPermissionsPickerRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [photoAccess, setPhotoAccess] = useState<ChatInputPhotoAccess | null>(null);
   const [photoPreviews, setPhotoPreviews] = useState<ChatInputPhotoPreview[]>([]);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
@@ -119,6 +125,10 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
   }, [applyPhotoLibrarySnapshot]);
 
   useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
     }
@@ -143,6 +153,46 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
       isMounted = false;
     };
   }, [applyPhotoLibrarySnapshot, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const subscription = MediaLibrary.addListener(() => {
+      void refreshPhotoPermissionsAndPreviews();
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isOpen, refreshPhotoPermissionsAndPreviews]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleAppStateChange = (status: AppStateStatus) => {
+      if (status === 'active' && isOpenRef.current) {
+        void refreshPhotoPermissionsAndPreviews();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isOpen, refreshPhotoPermissionsAndPreviews]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPermissionsPickerRefreshTimeoutRef.current) {
+        clearTimeout(photoPermissionsPickerRefreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const launchCamera = useCallback(async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -184,7 +234,15 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
 
   const presentLimitedPhotoPermissionsPicker = useCallback(async () => {
     await MediaLibrary.presentPermissionsPicker(['photo']);
-    await refreshPhotoPermissionsAndPreviews();
+    if (photoPermissionsPickerRefreshTimeoutRef.current) {
+      clearTimeout(photoPermissionsPickerRefreshTimeoutRef.current);
+    }
+    photoPermissionsPickerRefreshTimeoutRef.current = setTimeout(() => {
+      if (isOpenRef.current) {
+        void refreshPhotoPermissionsAndPreviews();
+      }
+      photoPermissionsPickerRefreshTimeoutRef.current = null;
+    }, photoPermissionsPickerRefreshDelay);
   }, [refreshPhotoPermissionsAndPreviews]);
 
   const togglePhotoSelection = useCallback((photoId: string) => {
