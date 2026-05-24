@@ -1,4 +1,16 @@
 export const queryKeys = {
+  assistants: {
+    detail: (assistantId: string) => [`/assistants/${assistantId}`] as const,
+    list: (
+      params: {
+        id?: string;
+        limit?: number;
+        page?: number;
+        search?: string;
+        tagIds?: string[];
+      } = {},
+    ) => ['/assistants', params] as const,
+  },
   topics: {
     list: (params: { cursor?: string; limit?: number; q?: string } = {}) =>
       ['/topics', params] as const,
@@ -21,5 +33,9 @@ export const queryKeys = {
   preferences: {
     all: ['preferences'] as const,
     key: (key: string) => ['preferences', key] as const,
+  },
+  tags: {
+    detail: (tagId: string) => [`/tags/${tagId}`] as const,
+    list: () => ['/tags'] as const,
   },
 };

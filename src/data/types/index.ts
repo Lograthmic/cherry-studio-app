@@ -4,5 +4,6 @@ export * from './entityType';
 export * from './message';
 export * from './model';
 export * from './provider';
+export * from './tag';
 export * from './topic';
 export * from './uiParts';
