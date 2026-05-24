@@ -1,4 +1,4 @@
-import { GlobeIcon, ImageIcon, LightbulbIcon, PaperclipIcon } from 'lucide-uniwind';
+import { BrainIcon, GlobeIcon, ImageIcon, PaperclipIcon } from 'lucide-uniwind';
 import type { ComponentType } from 'react';
 import type { SvgProps } from 'react-native-svg';
 
@@ -17,7 +17,7 @@ export const chatInputActions = [
     titleKey: 'chat.actions.createImage',
   },
   {
-    icon: LightbulbIcon,
+    icon: BrainIcon,
     id: 'think',
     tagTitleKey: 'chat.tools.think',
     titleKey: 'chat.actions.think',

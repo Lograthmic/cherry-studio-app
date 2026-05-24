@@ -22,6 +22,7 @@ import {
   useChatInputActions,
   useChatInputState,
 } from '@/screens/ChatScreen/input/context/ChatInputProvider';
+import { shouldShowChatInputReasoningEffortTag } from '@/screens/ChatScreen/input/utils/chatInputReasoning';
 
 const mergedInputOffset = chatInputMinTextAreaHeight + chatInputControlGap;
 const inputSurfaceClassName =
@@ -42,10 +43,16 @@ const inputControlSurfaceStyle = {
 };
 
 export function ChatInputSurface() {
-  const { clearSelectedTool } = useChatInputActions();
-  const { isInputFocused, selectedTool } = useChatInputState();
+  const { clearReasoningEffort, clearSelectedTool } = useChatInputActions();
+  const { isInputFocused, isReasoningEffortSelected, reasoningEffort, selectedTool } =
+    useChatInputState();
   const surfaceContentProgress = useSharedValue(0);
-  const hasSurfaceContent = isInputFocused || selectedTool !== undefined;
+  const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
+    isReasoningEffortSelected,
+    reasoningEffort,
+  );
+  const hasSurfaceContent =
+    isInputFocused || selectedTool !== undefined || shouldShowReasoningEffortTag;
 
   useEffect(() => {
     surfaceContentProgress.value = withTiming(hasSurfaceContent ? 1 : 0, chatInputTimingConfig);
@@ -106,7 +113,12 @@ export function ChatInputSurface() {
             className="overflow-hidden rounded-3xl"
             layout={chatInputLayoutTransition}
           >
-            <ChatInputToolbar selectedTool={selectedTool} onToolClear={clearSelectedTool} />
+            <ChatInputToolbar
+              shouldShowReasoningEffortTag={shouldShowReasoningEffortTag}
+              selectedTool={selectedTool}
+              onReasoningEffortClear={clearReasoningEffort}
+              onToolClear={clearSelectedTool}
+            />
             <ChatInputTextArea />
           </StyledAnimatedView>
         </StyledAnimatedView>

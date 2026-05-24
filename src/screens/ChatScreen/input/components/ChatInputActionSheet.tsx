@@ -1,5 +1,5 @@
 import { BottomSheet, BottomSheetView } from '@expo/ui/community/bottom-sheet';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ChatInputActionList } from '@/screens/ChatScreen/input/components/ChatInputActionList';
 import { ChatInputActionSheetHeader } from '@/screens/ChatScreen/input/components/ChatInputActionSheetHeader';
@@ -9,6 +9,7 @@ import {
   ChatInputPhotoPreviewTile,
   ChatInputPhotosTile,
 } from '@/screens/ChatScreen/input/components/ChatInputMediaStrip';
+import { ChatInputReasoningSheetPage } from '@/screens/ChatScreen/input/components/ChatInputReasoningSheetPage';
 import { ChatInputSelectedPhotoBar } from '@/screens/ChatScreen/input/components/ChatInputSelectedPhotoBar';
 import {
   useChatInputActions,
@@ -18,10 +19,12 @@ import {
 import type { ChatInputActionId } from '@/screens/ChatScreen/input/utils/chatInputActions';
 
 const chatInputActionSheetSnapPoints = ['50%', '70%'];
+type ChatInputActionSheetPage = 'main' | 'reasoning';
 
 export function ChatInputActionSheet() {
-  const { closeActionSheet, selectAction } = useChatInputActions();
-  const { isActionSheetOpen, selectedToolId } = useChatInputState();
+  const { closeActionSheet, selectAction, selectReasoningEffort } = useChatInputActions();
+  const { isActionSheetOpen, reasoningEffort, selectedToolId } = useChatInputState();
+  const [sheetPage, setSheetPage] = useState<ChatInputActionSheetPage>('main');
   const { actions, state } = useChatInputMedia();
   const {
     clearSelectedPhotos,
@@ -45,6 +48,20 @@ export function ChatInputActionSheet() {
     },
     [clearSelectedPhotos, closeActionSheet, selectAction],
   );
+  const handleReasoningEffortChange = useCallback(
+    (nextReasoningEffort: Parameters<typeof selectReasoningEffort>[0]) => {
+      selectReasoningEffort(nextReasoningEffort);
+      setSheetPage('main');
+    },
+    [selectReasoningEffort],
+  );
+  const handleReasoningPress = useCallback(() => {
+    clearSelectedPhotos();
+    setSheetPage('reasoning');
+  }, [clearSelectedPhotos]);
+  const handleReasoningBack = useCallback(() => {
+    setSheetPage('main');
+  }, []);
   const handleSelectedPhotosAdd = useCallback(() => undefined, []);
   const handlePhotosPress = useCallback(() => {
     if (photoAccess === 'limited') {
@@ -57,6 +74,7 @@ export function ChatInputActionSheet() {
 
   const handleClose = useCallback(() => {
     clearSelectedPhotos();
+    setSheetPage('main');
     closeActionSheet();
   }, [clearSelectedPhotos, closeActionSheet]);
 
@@ -69,36 +87,48 @@ export function ChatInputActionSheet() {
       onClose={handleClose}
     >
       <BottomSheetView style={styles.sheetViewport}>
-        <View className="gap-4 px-4 pt-2" style={styles.sheetContent}>
-          <View className="gap-3">
-            <ChatInputActionSheetHeader
-              photoAccess={photoAccess}
-              onAllPhotosPress={launchImageLibrary}
-              onLimitedPhotoAccessPress={presentLimitedPhotoPermissionsPicker}
+        {sheetPage === 'main' ? (
+          <View className="gap-4 px-4 pt-2" style={styles.sheetContent}>
+            <View className="gap-3">
+              <ChatInputActionSheetHeader
+                photoAccess={photoAccess}
+                onAllPhotosPress={launchImageLibrary}
+                onLimitedPhotoAccessPress={presentLimitedPhotoPermissionsPicker}
+              />
+              <ChatInputMediaStrip>
+                <ChatInputCameraTile onPress={launchCamera} />
+                {shouldShowPhotosTile ? <ChatInputPhotosTile onPress={handlePhotosPress} /> : null}
+                {photoPreviews.map((photo) => (
+                  <ChatInputPhotoPreviewTile
+                    key={photo.id}
+                    selectionOrder={selectedPhotoOrder.get(photo.id)}
+                    uri={photo.uri}
+                    onPress={() => togglePhotoSelection(photo.id)}
+                  />
+                ))}
+              </ChatInputMediaStrip>
+            </View>
+            <View className="h-px bg-border" />
+            <ChatInputActionList
+              reasoningEffort={reasoningEffort}
+              selectedActionId={selectedToolId}
+              onActionPress={handleActionPress}
+              onReasoningPress={handleReasoningPress}
             />
-            <ChatInputMediaStrip>
-              <ChatInputCameraTile onPress={launchCamera} />
-              {shouldShowPhotosTile ? <ChatInputPhotosTile onPress={handlePhotosPress} /> : null}
-              {photoPreviews.map((photo) => (
-                <ChatInputPhotoPreviewTile
-                  key={photo.id}
-                  selectionOrder={selectedPhotoOrder.get(photo.id)}
-                  uri={photo.uri}
-                  onPress={() => togglePhotoSelection(photo.id)}
-                />
-              ))}
-            </ChatInputMediaStrip>
           </View>
-          <View className="h-px bg-border" />
-          <ChatInputActionList
-            selectedActionId={selectedToolId}
-            onActionPress={handleActionPress}
+        ) : (
+          <ChatInputReasoningSheetPage
+            reasoningEffort={reasoningEffort}
+            onBack={handleReasoningBack}
+            onReasoningEffortChange={handleReasoningEffortChange}
           />
-        </View>
-        <ChatInputSelectedPhotoBar
-          selectedPhotoCount={selectedPhotoCount}
-          onPress={handleSelectedPhotosAdd}
-        />
+        )}
+        {sheetPage === 'main' ? (
+          <ChatInputSelectedPhotoBar
+            selectedPhotoCount={selectedPhotoCount}
+            onPress={handleSelectedPhotosAdd}
+          />
+        ) : null}
       </BottomSheetView>
     </BottomSheet>
   );

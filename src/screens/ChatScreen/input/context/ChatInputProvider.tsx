@@ -17,6 +17,10 @@ import {
   getChatInputAction,
   toggleChatInputAction,
 } from '@/screens/ChatScreen/input/utils/chatInputActions';
+import {
+  CHAT_INPUT_DEFAULT_REASONING_EFFORT,
+  type ChatInputReasoningEffort,
+} from '@/screens/ChatScreen/input/utils/chatInputReasoning';
 
 type ChatInputSelectedAssetsState = {
   selectedPhotoCount: number;
@@ -27,16 +31,20 @@ type ChatInputStateContextValue = {
   draft: string;
   isActionSheetOpen: boolean;
   isInputFocused: boolean;
+  isReasoningEffortSelected: boolean;
+  reasoningEffort: ChatInputReasoningEffort;
   selectedAssets: ChatInputSelectedAssetsState;
   selectedTool?: ChatInputAction;
   selectedToolId: ChatInputActionId | null;
 };
 
 type ChatInputActionsContextValue = {
+  clearReasoningEffort: () => void;
   clearSelectedTool: () => void;
   closeActionSheet: () => void;
   openActionSheet: () => void;
   selectAction: (actionId: ChatInputActionId) => void;
+  selectReasoningEffort: (reasoningEffort: ChatInputReasoningEffort) => void;
   setDraft: (draft: string) => void;
   setInputFocused: (isFocused: boolean) => void;
 };
@@ -61,6 +69,10 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
   const [draft, setDraft] = useState('');
   const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isReasoningEffortSelected, setIsReasoningEffortSelected] = useState(false);
+  const [reasoningEffort, setReasoningEffort] = useState<ChatInputReasoningEffort>(
+    CHAT_INPUT_DEFAULT_REASONING_EFFORT,
+  );
   const [selectedToolId, setSelectedToolId] = useState<ChatInputActionId | null>(null);
   const media = useChatInputPhotoPicker(isActionSheetOpen);
   const selectedTool = useMemo(() => getChatInputAction(selectedToolId), [selectedToolId]);
@@ -105,6 +117,17 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
     shouldFocusAfterActionSheetCloseRef.current = true;
   }, []);
 
+  const selectReasoningEffort = useCallback((nextReasoningEffort: ChatInputReasoningEffort) => {
+    setReasoningEffort(nextReasoningEffort);
+    setIsReasoningEffortSelected(true);
+    shouldFocusAfterActionSheetCloseRef.current = true;
+  }, []);
+
+  const clearReasoningEffort = useCallback(() => {
+    setIsReasoningEffortSelected(false);
+    setReasoningEffort(CHAT_INPUT_DEFAULT_REASONING_EFFORT);
+  }, []);
+
   const clearSelectedTool = useCallback(() => {
     setSelectedToolId(null);
   }, []);
@@ -114,6 +137,8 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       draft,
       isActionSheetOpen,
       isInputFocused,
+      isReasoningEffortSelected,
+      reasoningEffort,
       selectedAssets: {
         selectedPhotoCount: media.state.selectedPhotoCount,
         selectedPhotoOrder: media.state.selectedPhotoOrder,
@@ -125,8 +150,10 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       draft,
       isActionSheetOpen,
       isInputFocused,
+      isReasoningEffortSelected,
       media.state.selectedPhotoCount,
       media.state.selectedPhotoOrder,
+      reasoningEffort,
       selectedTool,
       selectedToolId,
     ],
@@ -134,14 +161,23 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
 
   const actionsValue = useMemo(
     () => ({
+      clearReasoningEffort,
       clearSelectedTool,
       closeActionSheet,
       openActionSheet,
       selectAction,
+      selectReasoningEffort,
       setDraft,
       setInputFocused: setIsInputFocused,
     }),
-    [clearSelectedTool, closeActionSheet, openActionSheet, selectAction],
+    [
+      clearReasoningEffort,
+      clearSelectedTool,
+      closeActionSheet,
+      openActionSheet,
+      selectAction,
+      selectReasoningEffort,
+    ],
   );
 
   const metaValue = useMemo(
