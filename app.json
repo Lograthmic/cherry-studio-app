@@ -44,6 +44,7 @@
       ],
       "expo-localization",
       "expo-sqlite",
+      "expo-document-picker",
       "expo-font",
       "expo-image",
       [

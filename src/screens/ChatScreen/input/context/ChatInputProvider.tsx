@@ -18,31 +18,41 @@ import {
   toggleChatInputAction,
 } from '@/screens/ChatScreen/input/utils/chatInputActions';
 import {
+  appendChatInputAttachments,
+  type ChatInputAttachmentDraft,
+  removeChatInputAttachment,
+} from '@/screens/ChatScreen/input/utils/chatInputAttachments';
+import { chatInputMotionConfig } from '@/screens/ChatScreen/input/utils/chatInputMotion';
+import {
   CHAT_INPUT_DEFAULT_REASONING_EFFORT,
   type ChatInputReasoningEffort,
+  shouldShowChatInputReasoningEffortTag,
 } from '@/screens/ChatScreen/input/utils/chatInputReasoning';
 
-type ChatInputSelectedAssetsState = {
-  selectedPhotoCount: number;
-  selectedPhotoOrder: ReadonlyMap<string, number>;
-};
-
 type ChatInputStateContextValue = {
+  attachments: readonly ChatInputAttachmentDraft[];
   draft: string;
+  isAttachmentPreviewExiting: boolean;
   isActionSheetOpen: boolean;
   isInputFocused: boolean;
   isReasoningEffortSelected: boolean;
+  isToolbarExiting: boolean;
   reasoningEffort: ChatInputReasoningEffort;
-  selectedAssets: ChatInputSelectedAssetsState;
   selectedTool?: ChatInputAction;
   selectedToolId: ChatInputActionId | null;
+  visibleAttachments: readonly ChatInputAttachmentDraft[];
+  visibleSelectedTool?: ChatInputAction;
+  visibleShouldShowReasoningEffortTag: boolean;
 };
 
 type ChatInputActionsContextValue = {
+  addAttachments: (attachments: ChatInputAttachmentDraft[]) => void;
+  clearAttachments: () => void;
   clearReasoningEffort: () => void;
   clearSelectedTool: () => void;
   closeActionSheet: () => void;
   openActionSheet: () => void;
+  removeAttachment: (attachmentId: string) => void;
   selectAction: (actionId: ChatInputActionId) => void;
   selectReasoningEffort: (reasoningEffort: ChatInputReasoningEffort) => void;
   setDraft: (draft: string) => void;
@@ -55,7 +65,21 @@ type ChatInputMetaContextValue = {
   inputRef: RefObject<TextInput | null>;
 };
 
+type ChatInputAttachmentState = {
+  attachments: ChatInputAttachmentDraft[];
+  isPreviewExiting: boolean;
+  visibleAttachments: ChatInputAttachmentDraft[];
+};
+
+type ChatInputToolState = {
+  isPreviewExiting: boolean;
+  selectedToolId: ChatInputActionId | null;
+  visibleSelectedToolId: ChatInputActionId | null;
+  visibleShouldShowReasoningEffortTag: boolean;
+};
+
 const chatInputFocusAfterActionDelay = 100;
+const chatInputPreviewExitDelay = chatInputMotionConfig.duration;
 
 const ChatInputStateContext = createContext<ChatInputStateContextValue | null>(null);
 const ChatInputActionsContext = createContext<ChatInputActionsContextValue | null>(null);
@@ -73,9 +97,41 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
   const [reasoningEffort, setReasoningEffort] = useState<ChatInputReasoningEffort>(
     CHAT_INPUT_DEFAULT_REASONING_EFFORT,
   );
-  const [selectedToolId, setSelectedToolId] = useState<ChatInputActionId | null>(null);
-  const media = useChatInputPhotoPicker(isActionSheetOpen);
+  const [toolState, setToolState] = useState<ChatInputToolState>({
+    isPreviewExiting: false,
+    selectedToolId: null,
+    visibleSelectedToolId: null,
+    visibleShouldShowReasoningEffortTag: false,
+  });
+  const [attachmentState, setAttachmentState] = useState<ChatInputAttachmentState>({
+    attachments: [],
+    isPreviewExiting: false,
+    visibleAttachments: [],
+  });
+  const { attachments, isPreviewExiting, visibleAttachments } = attachmentState;
+  const {
+    isPreviewExiting: isToolPreviewExiting,
+    selectedToolId,
+    visibleSelectedToolId,
+    visibleShouldShowReasoningEffortTag,
+  } = toolState;
+  const addAttachments = useCallback((nextAttachments: ChatInputAttachmentDraft[]) => {
+    setAttachmentState((current) => {
+      const attachments = appendChatInputAttachments(current.attachments, nextAttachments);
+
+      return {
+        attachments,
+        isPreviewExiting: false,
+        visibleAttachments: attachments,
+      };
+    });
+  }, []);
+  const media = useChatInputPhotoPicker(isActionSheetOpen, addAttachments);
   const selectedTool = useMemo(() => getChatInputAction(selectedToolId), [selectedToolId]);
+  const visibleSelectedTool = useMemo(
+    () => getChatInputAction(visibleSelectedToolId),
+    [visibleSelectedToolId],
+  );
 
   useEffect(() => {
     return () => {
@@ -84,6 +140,55 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isPreviewExiting) {
+      return undefined;
+    }
+
+    const attachmentPreviewExitTimeout = setTimeout(() => {
+      setAttachmentState((current) => {
+        if (!current.isPreviewExiting || current.attachments.length > 0) {
+          return current;
+        }
+
+        return {
+          ...current,
+          isPreviewExiting: false,
+          visibleAttachments: [],
+        };
+      });
+    }, chatInputPreviewExitDelay);
+
+    return () => {
+      clearTimeout(attachmentPreviewExitTimeout);
+    };
+  }, [isPreviewExiting]);
+
+  useEffect(() => {
+    if (!isToolPreviewExiting) {
+      return undefined;
+    }
+
+    const toolPreviewExitTimeout = setTimeout(() => {
+      setToolState((current) => {
+        if (!current.isPreviewExiting || current.selectedToolId) {
+          return current;
+        }
+
+        return {
+          ...current,
+          isPreviewExiting: false,
+          visibleSelectedToolId: null,
+          visibleShouldShowReasoningEffortTag: false,
+        };
+      });
+    }, chatInputPreviewExitDelay);
+
+    return () => {
+      clearTimeout(toolPreviewExitTimeout);
+    };
+  }, [isToolPreviewExiting]);
 
   const openActionSheet = useCallback(() => {
     inputRef.current?.blur();
@@ -112,69 +217,148 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
     }, chatInputFocusAfterActionDelay);
   }, []);
 
-  const selectAction = useCallback((actionId: ChatInputActionId) => {
-    setSelectedToolId((currentActionId) => toggleChatInputAction(currentActionId, actionId));
-    shouldFocusAfterActionSheetCloseRef.current = true;
-  }, []);
+  const selectAction = useCallback(
+    (actionId: ChatInputActionId) => {
+      const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
+        isReasoningEffortSelected,
+        reasoningEffort,
+      );
+
+      setToolState((current) =>
+        getNextChatInputToolState(
+          current,
+          toggleChatInputAction(current.selectedToolId, actionId),
+          shouldShowReasoningEffortTag,
+        ),
+      );
+      shouldFocusAfterActionSheetCloseRef.current = true;
+    },
+    [isReasoningEffortSelected, reasoningEffort],
+  );
 
   const selectReasoningEffort = useCallback((nextReasoningEffort: ChatInputReasoningEffort) => {
     setReasoningEffort(nextReasoningEffort);
     setIsReasoningEffortSelected(true);
+    setToolState((current) =>
+      getNextChatInputToolState(
+        current,
+        current.selectedToolId,
+        shouldShowChatInputReasoningEffortTag(true, nextReasoningEffort),
+      ),
+    );
     shouldFocusAfterActionSheetCloseRef.current = true;
   }, []);
 
   const clearReasoningEffort = useCallback(() => {
     setIsReasoningEffortSelected(false);
     setReasoningEffort(CHAT_INPUT_DEFAULT_REASONING_EFFORT);
+    setToolState((current) => getNextChatInputToolState(current, current.selectedToolId, false));
   }, []);
 
   const clearSelectedTool = useCallback(() => {
-    setSelectedToolId(null);
+    const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
+      isReasoningEffortSelected,
+      reasoningEffort,
+    );
+
+    setToolState((current) =>
+      getNextChatInputToolState(current, null, shouldShowReasoningEffortTag),
+    );
+  }, [isReasoningEffortSelected, reasoningEffort]);
+
+  const removeAttachment = useCallback((attachmentId: string) => {
+    setAttachmentState((current) => {
+      if (current.attachments.length === 0) {
+        return current;
+      }
+
+      const attachments = removeChatInputAttachment(current.attachments, attachmentId);
+
+      if (attachments.length > 0) {
+        return {
+          attachments,
+          isPreviewExiting: false,
+          visibleAttachments: attachments,
+        };
+      }
+
+      return {
+        attachments,
+        isPreviewExiting: current.visibleAttachments.length > 0,
+        visibleAttachments: current.visibleAttachments,
+      };
+    });
+  }, []);
+
+  const clearAttachments = useCallback(() => {
+    setAttachmentState((current) => {
+      if (current.attachments.length === 0 && current.visibleAttachments.length === 0) {
+        return current;
+      }
+
+      return {
+        attachments: [],
+        isPreviewExiting: current.visibleAttachments.length > 0,
+        visibleAttachments: current.visibleAttachments,
+      };
+    });
   }, []);
 
   const stateValue = useMemo(
     () => ({
+      attachments,
       draft,
+      isAttachmentPreviewExiting: isPreviewExiting,
       isActionSheetOpen,
       isInputFocused,
       isReasoningEffortSelected,
+      isToolbarExiting: isToolPreviewExiting,
       reasoningEffort,
-      selectedAssets: {
-        selectedPhotoCount: media.state.selectedPhotoCount,
-        selectedPhotoOrder: media.state.selectedPhotoOrder,
-      },
       selectedTool,
       selectedToolId,
+      visibleAttachments,
+      visibleSelectedTool,
+      visibleShouldShowReasoningEffortTag,
     }),
     [
+      attachments,
       draft,
+      isPreviewExiting,
       isActionSheetOpen,
       isInputFocused,
       isReasoningEffortSelected,
-      media.state.selectedPhotoCount,
-      media.state.selectedPhotoOrder,
+      isToolPreviewExiting,
       reasoningEffort,
       selectedTool,
       selectedToolId,
+      visibleAttachments,
+      visibleSelectedTool,
+      visibleShouldShowReasoningEffortTag,
     ],
   );
 
   const actionsValue = useMemo(
     () => ({
+      addAttachments,
+      clearAttachments,
       clearReasoningEffort,
       clearSelectedTool,
       closeActionSheet,
       openActionSheet,
+      removeAttachment,
       selectAction,
       selectReasoningEffort,
       setDraft,
       setInputFocused: setIsInputFocused,
     }),
     [
+      addAttachments,
+      clearAttachments,
       clearReasoningEffort,
       clearSelectedTool,
       closeActionSheet,
       openActionSheet,
+      removeAttachment,
       selectAction,
       selectReasoningEffort,
     ],
@@ -196,6 +380,29 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       </ChatInputActionsContext>
     </ChatInputStateContext>
   );
+}
+
+function getNextChatInputToolState(
+  current: ChatInputToolState,
+  selectedToolId: ChatInputActionId | null,
+  shouldShowReasoningEffortTag: boolean,
+): ChatInputToolState {
+  if (selectedToolId || shouldShowReasoningEffortTag) {
+    return {
+      isPreviewExiting: false,
+      selectedToolId,
+      visibleSelectedToolId: selectedToolId,
+      visibleShouldShowReasoningEffortTag: shouldShowReasoningEffortTag,
+    };
+  }
+
+  return {
+    isPreviewExiting:
+      current.visibleSelectedToolId !== null || current.visibleShouldShowReasoningEffortTag,
+    selectedToolId,
+    visibleSelectedToolId: current.visibleSelectedToolId,
+    visibleShouldShowReasoningEffortTag: current.visibleShouldShowReasoningEffortTag,
+  };
 }
 
 export function useChatInputState() {

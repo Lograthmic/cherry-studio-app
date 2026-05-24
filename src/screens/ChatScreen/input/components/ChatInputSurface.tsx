@@ -1,14 +1,6 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  Easing,
-  LinearTransition,
-  ReduceMotion,
-  useAnimatedStyle,
-  useSharedValue,
-  type WithTimingConfig,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { withUniwind } from 'uniwind';
 import {
   chatInputControlGap,
@@ -16,26 +8,22 @@ import {
   chatInputMinTextAreaHeight,
 } from '@/screens/ChatScreen/input/chatInputLayout';
 import { ChatInputAddButton } from '@/screens/ChatScreen/input/components/ChatInputAddButton';
+import { ChatInputAttachmentPreviewStrip } from '@/screens/ChatScreen/input/components/ChatInputMediaStrip';
 import { ChatInputTextArea } from '@/screens/ChatScreen/input/components/ChatInputTextArea';
 import { ChatInputToolbar } from '@/screens/ChatScreen/input/components/ChatInputToolbar';
 import {
   useChatInputActions,
   useChatInputState,
 } from '@/screens/ChatScreen/input/context/ChatInputProvider';
-import { shouldShowChatInputReasoningEffortTag } from '@/screens/ChatScreen/input/utils/chatInputReasoning';
+import {
+  chatInputLayoutTransition,
+  chatInputMotionConfig,
+} from '@/screens/ChatScreen/input/utils/chatInputMotion';
 
 const mergedInputOffset = chatInputMinTextAreaHeight + chatInputControlGap;
 const inputSurfaceClassName =
   'border-[1.5px] border-field-border bg-field ios:shadow-field android:shadow-sm';
 const inputSurfaceBackgroundClassName = `absolute inset-0 rounded-3xl ${inputSurfaceClassName}`;
-const chatInputTimingConfig = {
-  duration: 180,
-  easing: Easing.out(Easing.cubic),
-  reduceMotion: ReduceMotion.Never,
-} as const satisfies WithTimingConfig;
-const chatInputLayoutTransition = LinearTransition.duration(chatInputTimingConfig.duration)
-  .easing(chatInputTimingConfig.easing)
-  .reduceMotion(chatInputTimingConfig.reduceMotion);
 
 const StyledAnimatedView = withUniwind(Animated.View);
 const inputControlSurfaceStyle = {
@@ -43,19 +31,24 @@ const inputControlSurfaceStyle = {
 };
 
 export function ChatInputSurface() {
-  const { clearReasoningEffort, clearSelectedTool } = useChatInputActions();
-  const { isInputFocused, isReasoningEffortSelected, reasoningEffort, selectedTool } =
-    useChatInputState();
+  const { clearReasoningEffort, clearSelectedTool, removeAttachment } = useChatInputActions();
+  const {
+    isAttachmentPreviewExiting,
+    isInputFocused,
+    isToolbarExiting,
+    visibleAttachments,
+    visibleSelectedTool,
+    visibleShouldShowReasoningEffortTag,
+  } = useChatInputState();
   const surfaceContentProgress = useSharedValue(0);
-  const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
-    isReasoningEffortSelected,
-    reasoningEffort,
-  );
   const hasSurfaceContent =
-    isInputFocused || selectedTool !== undefined || shouldShowReasoningEffortTag;
+    isInputFocused ||
+    visibleAttachments.length > 0 ||
+    visibleSelectedTool !== undefined ||
+    visibleShouldShowReasoningEffortTag;
 
   useEffect(() => {
-    surfaceContentProgress.value = withTiming(hasSurfaceContent ? 1 : 0, chatInputTimingConfig);
+    surfaceContentProgress.value = withTiming(hasSurfaceContent ? 1 : 0, chatInputMotionConfig);
   }, [hasSurfaceContent, surfaceContentProgress]);
 
   const controlGroupStyle = useAnimatedStyle(() => ({
@@ -114,10 +107,16 @@ export function ChatInputSurface() {
             layout={chatInputLayoutTransition}
           >
             <ChatInputToolbar
-              shouldShowReasoningEffortTag={shouldShowReasoningEffortTag}
-              selectedTool={selectedTool}
+              isExiting={isToolbarExiting}
+              shouldShowReasoningEffortTag={visibleShouldShowReasoningEffortTag}
+              selectedTool={visibleSelectedTool}
               onReasoningEffortClear={clearReasoningEffort}
               onToolClear={clearSelectedTool}
+            />
+            <ChatInputAttachmentPreviewStrip
+              attachments={visibleAttachments}
+              isExiting={isAttachmentPreviewExiting}
+              onAttachmentRemove={removeAttachment}
             />
             <ChatInputTextArea />
           </StyledAnimatedView>

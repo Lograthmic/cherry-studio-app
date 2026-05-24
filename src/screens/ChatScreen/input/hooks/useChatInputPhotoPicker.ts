@@ -3,11 +3,11 @@ import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
+import type { ChatInputAttachmentDraft } from '@/screens/ChatScreen/input/utils/chatInputAttachments';
 import {
-  filterChatInputSelectedPhotoIds,
-  getChatInputSelectedPhotoOrder,
-  getNextChatInputSelectedPhotoIds,
-} from '@/screens/ChatScreen/input/utils/chatInputPhotoSelection';
+  createImagePickerAttachmentDraft,
+  createPhotoAttachmentDraft,
+} from '@/screens/ChatScreen/input/utils/chatInputAttachments';
 
 export type ChatInputPhotoAccess = 'all' | 'limited' | 'none';
 
@@ -27,17 +27,14 @@ type PhotoLibrarySnapshot = {
 type ChatInputPhotoPickerState = {
   photoAccess: ChatInputPhotoAccess | null;
   photoPreviews: ChatInputPhotoPreview[];
-  selectedPhotoCount: number;
-  selectedPhotoOrder: ReadonlyMap<string, number>;
   shouldShowPhotosTile: boolean;
 };
 
 type ChatInputPhotoPickerActions = {
-  clearSelectedPhotos: () => void;
   launchCamera: () => Promise<void>;
   launchImageLibrary: () => Promise<void>;
   presentLimitedPhotoPermissionsPicker: () => Promise<void>;
-  togglePhotoSelection: (photoId: string) => void;
+  selectPhotoPreview: (photo: ChatInputPhotoPreview) => void;
 };
 
 const photoPreviewQuery = () =>
@@ -89,34 +86,22 @@ async function readPhotoLibrarySnapshot(): Promise<PhotoLibrarySnapshot> {
   };
 }
 
-export function useChatInputPhotoPicker(isOpen: boolean) {
+export function useChatInputPhotoPicker(
+  isOpen: boolean,
+  onAttachmentsAdd: (attachments: ChatInputAttachmentDraft[]) => void,
+) {
   const isOpenRef = useRef(isOpen);
   const photoPermissionsPickerRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   const [photoAccess, setPhotoAccess] = useState<ChatInputPhotoAccess | null>(null);
   const [photoPreviews, setPhotoPreviews] = useState<ChatInputPhotoPreview[]>([]);
-  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
 
-  const selectedPhotoCount = selectedPhotoIds.length;
   const shouldShowPhotosTile = photoAccess !== 'all';
-
-  const selectedPhotoOrder = useMemo(() => {
-    return getChatInputSelectedPhotoOrder(selectedPhotoIds);
-  }, [selectedPhotoIds]);
 
   const applyPhotoLibrarySnapshot = useCallback((snapshot: PhotoLibrarySnapshot) => {
     setPhotoAccess(snapshot.photoAccess);
     setPhotoPreviews(snapshot.photoPreviews);
-
-    if (snapshot.photoAccess === 'none') {
-      setSelectedPhotoIds([]);
-      return;
-    }
-
-    setSelectedPhotoIds((current) =>
-      filterChatInputSelectedPhotoIds(current, snapshot.photoAccess, snapshot.photoPreviews),
-    );
   }, []);
 
   const refreshPhotoPermissionsAndPreviews = useCallback(async () => {
@@ -145,7 +130,6 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
         if (isMounted) {
           setPhotoAccess('none');
           setPhotoPreviews([]);
-          setSelectedPhotoIds([]);
         }
       });
 
@@ -201,13 +185,17 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
       return;
     }
 
-    await ImagePicker.launchCameraAsync({
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       quality: 1,
     });
 
+    if (!result.canceled) {
+      onAttachmentsAdd(result.assets.map(createImagePickerAttachmentDraft));
+    }
+
     await refreshPhotoPermissionsAndPreviews();
-  }, [refreshPhotoPermissionsAndPreviews]);
+  }, [onAttachmentsAdd, refreshPhotoPermissionsAndPreviews]);
 
   const launchImageLibrary = useCallback(async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync(false);
@@ -215,22 +203,22 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
     if (!permission.granted) {
       setPhotoAccess('none');
       setPhotoPreviews([]);
-      setSelectedPhotoIds([]);
       return;
     }
 
     setPhotoAccess(permission.accessPrivileges ?? 'all');
 
-    await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       allowsMultipleSelection: true,
-      mediaTypes: ['images'],
       orderedSelection: true,
-      quality: 1,
-      selectionLimit: maxPhotoPreviewCount,
     });
 
+    if (!result.canceled) {
+      onAttachmentsAdd(result.assets.map(createImagePickerAttachmentDraft));
+    }
+
     await refreshPhotoPermissionsAndPreviews();
-  }, [refreshPhotoPermissionsAndPreviews]);
+  }, [onAttachmentsAdd, refreshPhotoPermissionsAndPreviews]);
 
   const presentLimitedPhotoPermissionsPicker = useCallback(async () => {
     await MediaLibrary.presentPermissionsPicker(['photo']);
@@ -245,40 +233,30 @@ export function useChatInputPhotoPicker(isOpen: boolean) {
     }, photoPermissionsPickerRefreshDelay);
   }, [refreshPhotoPermissionsAndPreviews]);
 
-  const togglePhotoSelection = useCallback((photoId: string) => {
-    setSelectedPhotoIds((current) => getNextChatInputSelectedPhotoIds(current, photoId));
-  }, []);
-
-  const clearSelectedPhotos = useCallback(() => {
-    setSelectedPhotoIds([]);
-  }, []);
+  const selectPhotoPreview = useCallback(
+    (photo: ChatInputPhotoPreview) => {
+      onAttachmentsAdd([createPhotoAttachmentDraft(photo)]);
+    },
+    [onAttachmentsAdd],
+  );
 
   const state: ChatInputPhotoPickerState = useMemo(
     () => ({
       photoAccess,
       photoPreviews,
-      selectedPhotoCount,
-      selectedPhotoOrder,
       shouldShowPhotosTile,
     }),
-    [photoAccess, photoPreviews, selectedPhotoCount, selectedPhotoOrder, shouldShowPhotosTile],
+    [photoAccess, photoPreviews, shouldShowPhotosTile],
   );
 
   const actions: ChatInputPhotoPickerActions = useMemo(
     () => ({
-      clearSelectedPhotos,
       launchCamera,
       launchImageLibrary,
       presentLimitedPhotoPermissionsPicker,
-      togglePhotoSelection,
+      selectPhotoPreview,
     }),
-    [
-      clearSelectedPhotos,
-      launchCamera,
-      launchImageLibrary,
-      presentLimitedPhotoPermissionsPicker,
-      togglePhotoSelection,
-    ],
+    [launchCamera, launchImageLibrary, presentLimitedPhotoPermissionsPicker, selectPhotoPreview],
   );
 
   return {
