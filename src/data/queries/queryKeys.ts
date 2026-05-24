@@ -1,5 +1,6 @@
 export const queryKeys = {
   assistants: {
+    all: () => ['/assistants'] as const,
     detail: (assistantId: string) => [`/assistants/${assistantId}`] as const,
     list: (
       params: {
@@ -21,7 +22,9 @@ export const queryKeys = {
       [`/topics/${topicId}/messages`, { pageSize }] as const,
   },
   models: {
-    list: (params: { enabled?: boolean; providerId?: string } = {}) => ['/models', params] as const,
+    detail: (modelId: string) => [`/models/${modelId}`] as const,
+    list: (params: { capability?: string; enabled?: boolean; providerId?: string } = {}) =>
+      ['/models', params] as const,
   },
   providers: {
     apiKeys: (providerId: string, params: { enabled?: boolean } = {}) =>
