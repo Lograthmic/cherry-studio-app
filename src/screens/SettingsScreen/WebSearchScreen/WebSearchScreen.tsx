@@ -9,7 +9,7 @@ import { BackHeader } from '@/components/headers';
 import type { WebSearchProviderId } from '@/data/preference';
 import { PRESETS_WEB_SEARCH_PROVIDERS } from '@/data/presets/webSearchProviders';
 import { SettingNumberInput } from '../components/SettingNumberInput';
-import { SettingSelect } from '../components/SettingSelect';
+import { SettingSelect, type SettingSelectOption } from '../components/SettingSelect';
 import { SettingsSection } from '../components/SettingsSection';
 import { SettingsServiceRow, type SettingsServiceRowProps } from '../components/SettingsServiceRow';
 import { useWebSearchProviderPreferences } from '../hooks/useWebSearchProviderPreferences';
@@ -20,6 +20,14 @@ export default function WebSearchSettingsScreen() {
   const { theme } = useUniwind();
   const iconTheme = theme === 'dark' ? 'dark' : 'light';
   const webSearchProviders = useWebSearchProviderPreferences();
+  const searchKeywordProviderOptions = useWebSearchProviderIconOptions(
+    webSearchProviders.searchKeywords.options,
+    iconTheme,
+  );
+  const fetchUrlProviderOptions = useWebSearchProviderIconOptions(
+    webSearchProviders.fetchUrls.options,
+    iconTheme,
+  );
   const apiWebSearchProviderItems = useMemo<SettingsServiceRowProps[]>(
     () =>
       PRESETS_WEB_SEARCH_PROVIDERS.filter((provider) => provider.type === 'api').map(
@@ -53,8 +61,9 @@ export default function WebSearchSettingsScreen() {
             {
               accessory: (
                 <SettingSelect
+                  isClearable
                   label={t('settings.websearch.defaultProvider')}
-                  options={webSearchProviders.searchKeywords.options}
+                  options={searchKeywordProviderOptions}
                   value={webSearchProviders.searchKeywords.value}
                   onValueChange={webSearchProviders.searchKeywords.onValueChange}
                 />
@@ -64,8 +73,9 @@ export default function WebSearchSettingsScreen() {
             {
               accessory: (
                 <SettingSelect
+                  isClearable
                   label={t('settings.websearch.fetchUrlsProvider')}
-                  options={webSearchProviders.fetchUrls.options}
+                  options={fetchUrlProviderOptions}
                   value={webSearchProviders.fetchUrls.value}
                   onValueChange={webSearchProviders.fetchUrls.onValueChange}
                 />
@@ -122,6 +132,20 @@ export default function WebSearchSettingsScreen() {
         </View>
       </ScrollView>
     </>
+  );
+}
+
+function useWebSearchProviderIconOptions(
+  options: SettingSelectOption<WebSearchProviderId>[],
+  iconTheme: 'dark' | 'light',
+) {
+  return useMemo(
+    () =>
+      options.map((option) => ({
+        ...option,
+        imageSource: resolveWebSearchProviderIcon(option.value)?.[iconTheme],
+      })),
+    [iconTheme, options],
   );
 }
 

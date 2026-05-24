@@ -54,14 +54,14 @@ export function useWebSearchProviderPreferences() {
   );
 
   const handleSearchKeywordsProviderChange = useCallback(
-    (providerId: WebSearchProviderId) => {
+    (providerId: WebSearchProviderId | null) => {
       void setPreferences({ defaultSearchKeywordsProvider: providerId });
     },
     [setPreferences],
   );
 
   const handleFetchUrlsProviderChange = useCallback(
-    (providerId: WebSearchProviderId) => {
+    (providerId: WebSearchProviderId | null) => {
       void setPreferences({ defaultFetchUrlsProvider: providerId });
     },
     [setPreferences],

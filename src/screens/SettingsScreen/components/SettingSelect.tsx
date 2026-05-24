@@ -1,30 +1,41 @@
+import { Image, type ImageSource } from 'expo-image';
 import { Select } from 'heroui-native';
 import { ChevronsUpDownIcon } from 'lucide-uniwind';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 const selectTriggerWidth = 128;
 const selectContentWidth = 256;
 
 export type SettingSelectOption<TValue extends string> = {
+  imageSource?: ImageSource | number;
   label: string;
   value: TValue;
 };
 
 type SettingSelectProps<TValue extends string> = {
   label: string;
-  onValueChange: (value: TValue) => void;
   options: SettingSelectOption<TValue>[];
   value?: TValue | null;
-};
+} & (
+  | {
+      isClearable: true;
+      onValueChange: (value: TValue | null) => void;
+    }
+  | {
+      isClearable?: false;
+      onValueChange: (value: TValue) => void;
+    }
+);
 
-export function SettingSelect<TValue extends string>({
-  label,
-  onValueChange,
-  options,
-  value,
-}: SettingSelectProps<TValue>) {
+export function SettingSelect<TValue extends string>(props: SettingSelectProps<TValue>) {
+  const { label, options, value } = props;
+  const clearableSelection = props.isClearable === true ? props : null;
+  const requiredSelection = props.isClearable === true ? null : props;
+  const isClearable = props.isClearable === true;
+  const onClearableValueChange = clearableSelection?.onValueChange;
+  const onRequiredValueChange = requiredSelection?.onValueChange;
   const { t } = useTranslation();
   const selectedOption = useMemo(
     () => options.find((option) => option.value === value),
@@ -40,10 +51,15 @@ export function SettingSelect<TValue extends string>({
       const matchedOption = options.find((option) => option.value === nextOption.value);
 
       if (matchedOption) {
-        onValueChange(matchedOption.value);
+        if (isClearable) {
+          onClearableValueChange?.(matchedOption.value === value ? null : matchedOption.value);
+          return;
+        }
+
+        onRequiredValueChange?.(matchedOption.value);
       }
     },
-    [onValueChange, options],
+    [isClearable, onClearableValueChange, onRequiredValueChange, options, value],
   );
 
   return (
@@ -53,9 +69,20 @@ export function SettingSelect<TValue extends string>({
         className="flex-row items-center justify-end gap-1 rounded-xl bg-transparent px-0 py-0 shadow-none"
         style={{ width: selectTriggerWidth }}
       >
-        <Text className="flex-1 text-right text-base text-default-foreground" numberOfLines={1}>
-          {selectedOption?.label ?? t('settings.select.placeholder')}
-        </Text>
+        <View className="flex-1 flex-row items-center justify-end gap-2">
+          {selectedOption?.imageSource ? (
+            <Image
+              cachePolicy="memory-disk"
+              contentFit="contain"
+              recyclingKey={selectedOption.value}
+              source={selectedOption.imageSource}
+              style={styles.icon}
+            />
+          ) : null}
+          <Text className="text-right text-base text-default-foreground" numberOfLines={1}>
+            {selectedOption?.label ?? t('settings.select.placeholder')}
+          </Text>
+        </View>
         <View className="items-center justify-center">
           <ChevronsUpDownIcon className="size-4 text-default-foreground" strokeWidth={2} />
         </View>
@@ -70,7 +97,18 @@ export function SettingSelect<TValue extends string>({
         >
           {options.map((option) => (
             <Select.Item key={option.value} label={option.label} value={option.value}>
-              <Select.ItemLabel className="flex-1" numberOfLines={1} />
+              <View className="flex-1 flex-row items-center gap-3">
+                {option.imageSource ? (
+                  <Image
+                    cachePolicy="memory-disk"
+                    contentFit="contain"
+                    recyclingKey={option.value}
+                    source={option.imageSource}
+                    style={styles.itemIcon}
+                  />
+                ) : null}
+                <Select.ItemLabel className="flex-1" numberOfLines={1} />
+              </View>
               <Select.ItemIndicator />
             </Select.Item>
           ))}
@@ -79,3 +117,14 @@ export function SettingSelect<TValue extends string>({
     </Select>
   );
 }
+
+const styles = StyleSheet.create({
+  icon: {
+    height: 18,
+    width: 18,
+  },
+  itemIcon: {
+    height: 22,
+    width: 22,
+  },
+});
