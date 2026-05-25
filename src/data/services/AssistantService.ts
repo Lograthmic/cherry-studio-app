@@ -23,6 +23,7 @@ import type { Tag } from '@/data/types/tag';
 import type { OrderRequest } from '@/data/types/topic';
 
 import type { ModelService } from './ModelService';
+import type { PinService } from './PinService';
 import type { TagService } from './TagService';
 import { applyMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';
@@ -67,6 +68,7 @@ export class AssistantService {
     private readonly modelService: ModelService,
     private readonly preferenceService: PreferenceService,
     private readonly tagService: TagService,
+    private readonly pinService: PinService,
   ) {}
 
   async getById(id: string, options: { includeDeleted?: boolean } = {}): Promise<Assistant> {
@@ -303,9 +305,7 @@ export class AssistantService {
         .set({ deletedAt: Date.now() })
         .where(and(eq(assistantTable.id, id), isNull(assistantTable.deletedAt)));
       await this.tagService.purgeForEntityTx(tx, 'assistant', id);
-      await tx
-        .delete(pinTable)
-        .where(and(eq(pinTable.entityType, 'assistant'), eq(pinTable.entityId, id)));
+      await this.pinService.purgeForEntityTx(tx, 'assistant', id);
     });
   }
 

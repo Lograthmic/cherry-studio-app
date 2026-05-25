@@ -10,7 +10,6 @@ import {
   type PreferenceDefaultScopeType,
   type PreferenceKeyType,
   type PreferenceUpdateOptions,
-  type UnifiedPreferenceMultipleResultType,
 } from '@/data/preference';
 
 type PreferenceListener = () => void;
@@ -18,6 +17,9 @@ type PreferenceValue = PreferenceDefaultScopeType[PreferenceKeyType];
 type PreferenceUpdates<K extends PreferenceKeyType = PreferenceKeyType> = Partial<
   Pick<PreferenceDefaultScopeType, K>
 >;
+type PreferenceMultipleResult<K extends PreferenceKeyType> = {
+  [P in K]: PreferenceDefaultScopeType[P];
+};
 type PreferenceUpdateMap = Partial<Record<PreferenceKeyType, PreferenceValue>>;
 
 const defaultScope = 'default';
@@ -68,14 +70,12 @@ export class PreferenceService {
 
   async getMultipleRaw<K extends PreferenceKeyType>(
     keys: readonly K[],
-  ): Promise<UnifiedPreferenceMultipleResultType<K>> {
+  ): Promise<PreferenceMultipleResult<K>> {
     return this.getMultipleCached(keys);
   }
 
-  getMultipleCached<K extends PreferenceKeyType>(
-    keys: readonly K[],
-  ): UnifiedPreferenceMultipleResultType<K> {
-    const result = {} as UnifiedPreferenceMultipleResultType<K>;
+  getMultipleCached<K extends PreferenceKeyType>(keys: readonly K[]): PreferenceMultipleResult<K> {
+    const result = {} as PreferenceMultipleResult<K>;
 
     for (const key of keys) {
       result[key] = this.getCachedValue(key) ?? getDefaultValue(key);

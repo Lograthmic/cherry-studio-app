@@ -1,7 +1,10 @@
 export { AssistantService } from './AssistantService';
+export { GroupService } from './GroupService';
 export { MessageService } from './MessageService';
 export { ModelService } from './ModelService';
+export { PinService } from './PinService';
 export { PreferenceService } from './PreferenceService';
+export { PromptService } from './PromptService';
 export { ProviderService } from './ProviderService';
 export { ProviderRegistryService } from './providerRegistryService';
 export { TagService } from './TagService';

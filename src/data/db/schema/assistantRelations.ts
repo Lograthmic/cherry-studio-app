@@ -1,8 +1,18 @@
 import { primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { assistantTable } from './assistant';
-import { createUpdateTimestamps } from './columnHelpers';
+import { createUpdateTimestamps } from './_columnHelpers';
 
+// NOTE: assistant-model relationship is 1:1 (default model) stored as assistant.modelId.
+// Multi-model (@mention) list is ephemeral UI state stored in persist-cache.
+
+/**
+ * Assistant-McpServer junction table
+ *
+ * Associates assistants with MCP servers.
+ * Both sides CASCADE on assistant deletion; MCP server FK is omitted until
+ * mobile migrates the MCP schema.
+ */
 export const assistantMcpServerTable = sqliteTable(
   'assistant_mcp_server',
   {
@@ -15,6 +25,13 @@ export const assistantMcpServerTable = sqliteTable(
   (table) => [primaryKey({ columns: [table.assistantId, table.mcpServerId] })],
 );
 
+/**
+ * Assistant-KnowledgeBase junction table
+ *
+ * Associates assistants with knowledge bases.
+ * Both sides CASCADE on assistant deletion; knowledge FK is omitted until
+ * mobile migrates the knowledge schema.
+ */
 export const assistantKnowledgeBaseTable = sqliteTable(
   'assistant_knowledge_base',
   {

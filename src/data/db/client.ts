@@ -3,9 +3,12 @@ import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import * as SQLite from 'expo-sqlite';
 import { AiService } from '@/ai/AiService';
 import { AssistantService } from '../services/AssistantService';
+import { GroupService } from '../services/GroupService';
 import { MessageService } from '../services/MessageService';
 import { ModelService } from '../services/ModelService';
+import { PinService } from '../services/PinService';
 import { PreferenceService } from '../services/PreferenceService';
+import { PromptService } from '../services/PromptService';
 import { ProviderService } from '../services/ProviderService';
 import { TagService } from '../services/TagService';
 import { TopicService } from '../services/TopicService';
@@ -24,9 +27,12 @@ export type DatabaseRuntime = {
   services: {
     ai: AiService;
     assistant: AssistantService;
+    group: GroupService;
     message: MessageService;
     model: ModelService;
+    pin: PinService;
     preference: PreferenceService;
+    prompt: PromptService;
     provider: ProviderService;
     tag: TagService;
     topic: TopicService;
@@ -42,8 +48,11 @@ export function createDatabaseRuntime(): DatabaseRuntime {
   const provider = new ProviderService(db);
   const model = new ModelService(db);
   const tag = new TagService(db);
-  const assistant = new AssistantService(db, model, preference, tag);
-  const topic = new TopicService(db);
+  const group = new GroupService(db);
+  const pin = new PinService(db);
+  const prompt = new PromptService(db);
+  const assistant = new AssistantService(db, model, preference, tag, pin);
+  const topic = new TopicService(db, pin);
   const message = new MessageService(db, topic);
   const ai = new AiService({ assistant, model, provider });
 
@@ -53,9 +62,12 @@ export function createDatabaseRuntime(): DatabaseRuntime {
     services: {
       ai,
       assistant,
+      group,
       message,
       model,
+      pin,
       preference,
+      prompt,
       provider,
       tag,
       topic,

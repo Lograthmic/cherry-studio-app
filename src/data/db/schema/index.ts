@@ -5,6 +5,7 @@ import { groupTable } from './group';
 import { messageTable } from './message';
 import { pinTable } from './pin';
 import { preferenceTable } from './preference';
+import { promptTable } from './prompt';
 import { entityTagTable, tagTable } from './tagging';
 import { topicTable } from './topic';
 import { userModelTable } from './userModel';
@@ -20,6 +21,7 @@ export { groupTable } from './group';
 export { MESSAGE_FTS_STATEMENTS, messageTable } from './message';
 export { pinTable } from './pin';
 export { preferenceTable } from './preference';
+export { promptTable } from './prompt';
 export { entityTagTable, tagTable } from './tagging';
 export { topicTable } from './topic';
 export { userModelTable } from './userModel';
@@ -34,6 +36,7 @@ export const schema = {
   messageTable,
   pinTable,
   preferenceTable,
+  promptTable,
   tagTable,
   entityTagTable,
   topicTable,

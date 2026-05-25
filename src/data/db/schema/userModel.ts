@@ -9,10 +9,35 @@ import type {
   RuntimeModelPricing,
 } from '@/data/types/model';
 
-import { createUpdateTimestamps, orderKeyColumns, scopedOrderKeyIndex } from './columnHelpers';
+import { createUpdateTimestamps, orderKeyColumns, scopedOrderKeyIndex } from './_columnHelpers';
 import { userProviderTable } from './userProvider';
 
-export const registryEnrichableFields = [
+/**
+ * User Model table schema
+ *
+ * Stores all user models with fully resolved configurations.
+ * Capabilities and settings are resolved once at add-time (from registry),
+ * so no runtime merge is needed.
+ *
+ * - presetModelId: traceability marker (which preset this came from, if any)
+ * - Single PK: id = "providerId::modelId" (deterministic UniqueModelId)
+ * - providerId FK -> user_provider (ON DELETE CASCADE)
+ *
+ * Type definitions are sourced from @/data/types/model
+ */
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Registry Enrichable Fields
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Fields that can be auto-populated by registry enrichment.
+ * Used by `userOverrides` to track which fields the user has explicitly modified,
+ * so that registry updates don't overwrite user customizations.
+ *
+ * The `isRegistryEnrichableField` guard ensures runtime safety.
+ */
+export const REGISTRY_ENRICHABLE_FIELDS = [
   'name',
   'description',
   'capabilities',
@@ -28,47 +53,105 @@ export const registryEnrichableFields = [
   'pricing',
 ] as const;
 
-export type RegistryEnrichableField = (typeof registryEnrichableFields)[number];
+export type RegistryEnrichableField = (typeof REGISTRY_ENRICHABLE_FIELDS)[number];
 
-const registryEnrichableFieldSet: ReadonlySet<string> = new Set(registryEnrichableFields);
+const REGISTRY_ENRICHABLE_SET: ReadonlySet<string> = new Set(REGISTRY_ENRICHABLE_FIELDS);
 
+/** Check if a field name is a registry-enrichable field */
 export function isRegistryEnrichableField(field: string): field is RegistryEnrichableField {
-  return registryEnrichableFieldSet.has(field);
+  return REGISTRY_ENRICHABLE_SET.has(field);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Table Definition
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export const userModelTable = sqliteTable(
   'user_model',
   {
+    /** Deterministic PK: "providerId::modelId" (UniqueModelId) */
+    id: text().primaryKey(),
+
+    /** User Provider ID — FK to user_provider */
+    providerId: text()
+      .notNull()
+      .references(() => userProviderTable.providerId, { onDelete: 'cascade' }),
+
+    /** Model ID (raw, without provider prefix) */
+    modelId: text().notNull(),
+
+    /** Associated preset model ID (for traceability) */
+    presetModelId: text(),
+
+    /** Display name (override or complete) */
+    name: text().notNull(),
+
+    /** Description */
+    description: text(),
+
+    /** UI grouping */
+    group: text(),
+
+    /** Complete capability list (resolved at add time) */
     capabilities: text({ mode: 'json' })
       .$type<ModelCapability[]>()
       .notNull()
       .$defaultFn(() => []),
-    contextWindow: integer(),
-    customEndpointUrl: text(),
-    description: text(),
-    endpointTypes: text({ mode: 'json' }).$type<EndpointType[]>(),
-    group: text(),
-    id: text().primaryKey(),
+
+    /** Supported input modalities (e.g., TEXT, VISION, AUDIO, VIDEO) */
     inputModalities: text({ mode: 'json' }).$type<Modality[]>(),
-    isDeprecated: integer({ mode: 'boolean' }).notNull().default(false),
-    isEnabled: integer({ mode: 'boolean' }).notNull().default(true),
-    isHidden: integer({ mode: 'boolean' }).notNull().default(false),
-    maxInputTokens: integer(),
-    maxOutputTokens: integer(),
-    modelId: text().notNull(),
-    name: text().notNull(),
-    notes: text(),
+
+    /** Supported output modalities (e.g., TEXT, VISION, AUDIO, VIDEO, VECTOR) */
     outputModalities: text({ mode: 'json' }).$type<Modality[]>(),
-    parameters: text({ mode: 'json' }).$type<ParameterSupport>(),
-    presetModelId: text(),
-    pricing: text({ mode: 'json' }).$type<RuntimeModelPricing>(),
-    providerId: text()
-      .notNull()
-      .references(() => userProviderTable.providerId, { onDelete: 'cascade' }),
-    reasoning: text({ mode: 'json' }).$type<ReasoningConfig>(),
-    ...orderKeyColumns,
+
+    /** Endpoint types (optional, override Provider default) */
+    endpointTypes: text({ mode: 'json' }).$type<EndpointType[]>(),
+
+    /** Custom endpoint URL (optional, complete override) */
+    customEndpointUrl: text(),
+
+    /** Context window size */
+    contextWindow: integer(),
+
+    /** Maximum input tokens */
+    maxInputTokens: integer(),
+
+    /** Maximum output tokens */
+    maxOutputTokens: integer(),
+
+    /** Streaming support */
     supportsStreaming: integer({ mode: 'boolean' }).notNull().default(true),
+
+    /** Reasoning configuration */
+    reasoning: text({ mode: 'json' }).$type<ReasoningConfig>(),
+
+    /** Parameter support */
+    parameters: text({ mode: 'json' }).$type<ParameterSupport>(),
+
+    /** Pricing configuration */
+    pricing: text({ mode: 'json' }).$type<RuntimeModelPricing>(),
+
+    /** Whether this model has been deprecated by the provider (no longer in API model list) */
+    isDeprecated: integer({ mode: 'boolean' }).notNull().default(false),
+
+    /** Whether this model is enabled */
+    isEnabled: integer({ mode: 'boolean' }).notNull().default(true),
+
+    /** Whether this model is hidden from lists */
+    isHidden: integer({ mode: 'boolean' }).notNull().default(false),
+
+    /** Fractional-indexing order key scoped within provider. */
+    ...orderKeyColumns,
+
+    /** User notes */
+    notes: text(),
+
+    /**
+     * List of field names the user has explicitly modified.
+     * Registry enrichment skips these fields to preserve user customizations.
+     */
     userOverrides: text({ mode: 'json' }).$type<RegistryEnrichableField[]>(),
+
     ...createUpdateTimestamps,
   },
   (table) => [
@@ -79,5 +162,17 @@ export const userModelTable = sqliteTable(
   ],
 );
 
+// Export table type
+export type UserModel = typeof userModelTable.$inferSelect;
+export type NewUserModel = typeof userModelTable.$inferInsert;
 export type UserModelInsert = typeof userModelTable.$inferInsert;
 export type UserModelSelect = typeof userModelTable.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Utility Functions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Check if this is a preset override or fully custom model */
+export function isPresetOverride(model: UserModel): boolean {
+  return model.presetModelId != null;
+}

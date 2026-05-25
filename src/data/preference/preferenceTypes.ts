@@ -1,15 +1,79 @@
+import * as z from 'zod';
+
 import type { PreferenceSchemas } from './preferenceSchemas';
 
-/** DB-backed preferences only (stored in SQLite). */
+export interface BootConfigSchema {
+  // redux/settings/disableHardwareAcceleration
+  'app.disable_hardware_acceleration': boolean;
+
+  /**
+   * Custom user data directory, keyed by executable path.
+   *
+   * Conceptually a single setting ("where user data lives"); stored as a
+   * Record so the same machine can host multiple installations (stable / dev /
+   * portable) with independent user data locations — matching the v1 behavior
+   * of ~/.cherrystudio/config/config.json's `appDataPath` array.
+   *
+   * Key: executable path (matches Electron's `app.getPath('exe')`).
+   * Value: absolute path to the chosen userData directory.
+   *
+   * Migrated from v1 ~/.cherrystudio/config/config.json on first v1→v2 run
+   * via the 'configfile' source in BootConfigMigrator.
+   */
+  // configfile/legacy-home/appDataPath
+  'app.user_data_path': Record<string, string>;
+
+  /**
+   * In-flight relocation of the Electron userData directory tree
+   * (the directory returned by `app.getPath('userData')`).
+   *
+   * Lives under the `temp.*` top-level namespace — reserved for ephemeral
+   * runtime state: single in-flight operations meant to be cleared once
+   * consumed. **Never** backed up or synced: restoring a stale temp.* entry
+   * on a different machine or at a different time can cause silent data
+   * corruption (e.g. re-executing a relocation that already happened).
+   *
+   * Lifecycle:
+   *   - null: no relocation in progress (default).
+   *   - { status: 'pending', from, to }: an IPC handler wrote this request
+   *     and the next preboot should execute the copy.
+   *   - { status: 'failed', from, to, error, failedAt }: a previous preboot
+   *     attempted the copy and it failed. The record stays in BootConfig
+   *     until a renderer recovery flow lets the user retry, abandon, or
+   *     investigate. The app continues running on the previous userData
+   *     location until then.
+   *
+   * Note: "userData" here means the Electron OS directory
+   * (app.getPath('userData')), not the colloquial sense of user content.
+   * The copy includes everything under that directory — user files,
+   * Chromium runtime state, logs, etc.
+   *
+   * Consumer: src/main/core/preboot/userDataLocation.ts
+   */
+  // preboot/transient/userDataRelocation
+  'temp.user_data_relocation':
+    | { status: 'pending'; from: string; to: string }
+    | { status: 'failed'; from: string; to: string; error: string; failedAt: string }
+    | null;
+}
+
+export type BootConfigKey = keyof BootConfigSchema;
+
+/** Auto-prefix boot config keys with 'BootConfig.' for PreferenceService type integration */
+export type BootConfigPreferenceKeys = {
+  [K in BootConfigKey as `BootConfig.${K & string}`]: BootConfigSchema[K];
+};
+
+/** DB-backed preferences only (stored in SQLite) */
 export type PreferenceDefaultScopeType = PreferenceSchemas['default'];
 export type PreferenceKeyType = keyof PreferenceDefaultScopeType;
 
-/** Unified type: mobile currently stores all supported preferences in SQLite. */
-export type UnifiedPreferenceType = PreferenceDefaultScopeType;
+/** Unified type: DB-backed preferences + file-backed boot config (BootConfig.* prefix) */
+export type UnifiedPreferenceType = PreferenceDefaultScopeType & BootConfigPreferenceKeys;
 export type UnifiedPreferenceKeyType = keyof UnifiedPreferenceType;
 
 /**
- * Result type for getMultipleRaw - maps requested keys to their values.
+ * Result type for getMultipleRaw - maps requested keys to their values
  */
 export type UnifiedPreferenceMultipleResultType<K extends UnifiedPreferenceKeyType> = {
   [P in K]: UnifiedPreferenceType[P];
@@ -19,13 +83,42 @@ export type PreferenceUpdateOptions = {
   optimistic: boolean;
 };
 
+export type PreferenceShortcutType = {
+  binding: string[];
+  enabled: boolean;
+};
+
+export enum SelectionTriggerMode {
+  Selected = 'selected',
+  Ctrlkey = 'ctrlkey',
+  Shortcut = 'shortcut',
+}
+
+export enum SelectionFilterMode {
+  Default = 'default',
+  Whitelist = 'whitelist',
+  Blacklist = 'blacklist',
+}
+
+export type SelectionActionItem = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  isBuiltIn: boolean;
+  icon?: string;
+  prompt?: string;
+  assistantId?: string;
+  selectedText?: string;
+  searchEngine?: string;
+};
+
 export enum ThemeMode {
   light = 'light',
   dark = 'dark',
   system = 'system',
 }
 
-/** Limited UI languages. */
+/** 有限的UI语言 */
 export type LanguageVarious =
   | 'zh-CN'
   | 'zh-TW'
@@ -39,6 +132,106 @@ export type LanguageVarious =
   | 'ro-RO'
   | 'ru-RU'
   | 'vi-VN';
+
+export type WindowStyle = 'transparent' | 'opaque';
+
+export type SendMessageShortcut =
+  | 'Enter'
+  | 'Shift+Enter'
+  | 'Ctrl+Enter'
+  | 'Command+Enter'
+  | 'Alt+Enter';
+
+export type AssistantTabSortType = 'tags' | 'list';
+
+export type SidebarIcon =
+  | 'assistants'
+  | 'agents'
+  | 'store'
+  | 'paintings'
+  | 'translate'
+  | 'mini_app'
+  | 'knowledge'
+  | 'files'
+  | 'code_tools'
+  | 'notes'
+  | 'openclaw';
+
+export type AssistantIconType = 'model' | 'emoji' | 'none';
+
+export type ProxyMode = 'system' | 'custom' | 'none';
+
+export type MultiModelFoldDisplayMode = 'expanded' | 'compact';
+
+export type MathEngine = 'KaTeX' | 'MathJax' | 'none';
+
+export enum UpgradeChannel {
+  LATEST = 'latest', // 最新稳定版本
+  RC = 'rc', // 公测版本
+  BETA = 'beta', // 预览版本
+}
+
+export type ChatMessageStyle = 'plain' | 'bubble';
+
+export type ChatMessageNavigationMode = 'none' | 'buttons' | 'anchor';
+
+export type MultiModelMessageStyle = 'horizontal' | 'vertical' | 'fold' | 'grid';
+
+export type MultiModelGridPopoverTrigger = 'hover' | 'click';
+
+// ============================================================================
+// Translate Types
+// ============================================================================
+
+export type AutoDetectionMethod = 'franc' | 'llm' | 'auto';
+
+/**
+ * Strict language code pattern — only real codes such as "en-us" / "zh-cn" / "ja".
+ *
+ * Prefer this in persistence paths (API DTOs, DB entities). {@link TranslateLangCodeSchema}
+ * below widens it with the `'unknown'` UI sentinel, which must not leak into the DB:
+ * there is no matching row in the `translate_language` table, and the history FK
+ * would silently break.
+ *
+ * Pattern: 2–3 lowercase letters, optionally followed by `-` and 2–4 lowercase letters.
+ */
+export const PersistedLangCodeSchema = z
+  .string()
+  .regex(/^[a-z]{2,3}(-[a-z]{2,4})?$/)
+  .brand<'PersistedLangCode'>();
+export type PersistedLangCode = z.infer<typeof PersistedLangCodeSchema>;
+export const parsePersistedLangCode = (value: string): PersistedLangCode =>
+  PersistedLangCodeSchema.parse(value);
+
+const TranslateLangCodePatternSchema = z.string().regex(/^[a-z]{2,3}(-[a-z]{2,4})?$/);
+
+/**
+ * Permissive language code — persisted-code shape plus the `'unknown'` UI sentinel.
+ *
+ * Use in preference/UI state and detection paths where "unknown" is meaningful.
+ * Persistence paths should parse with {@link PersistedLangCodeSchema} instead.
+ */
+export const TranslateLangCodeSchema = z.union([
+  z.literal('unknown'),
+  TranslateLangCodePatternSchema,
+]);
+export type TranslateLangCode = z.infer<typeof TranslateLangCodeSchema>;
+export const parseTranslateLangCode = (value: string): TranslateLangCode =>
+  TranslateLangCodeSchema.parse(value);
+export const isTranslateLangCode = (value: unknown): value is TranslateLangCode =>
+  TranslateLangCodeSchema.safeParse(value).success;
+export type TranslateSourceLanguage = TranslateLangCode | 'auto';
+export type TranslateBidirectionalPair = [TranslateLangCode, TranslateLangCode];
+export const parseTranslateBidirectionalPair = (
+  value: readonly [string, string],
+): TranslateBidirectionalPair => [
+  parseTranslateLangCode(value[0]),
+  parseTranslateLangCode(value[1]),
+];
+
+// ============================================================================
+// WebSearch Types
+// ============================================================================
 
 export const WEB_SEARCH_PROVIDER_TYPES = ['api', 'mcp'] as const;
 
@@ -72,28 +265,140 @@ export type WebSearchProviderCapabilityOverrides = Partial<
 
 export type WebSearchProviderOverride = {
   apiKeys?: string[];
-  basicAuthPassword?: string;
-  basicAuthUsername?: string;
   capabilities?: WebSearchProviderCapabilityOverrides;
   engines?: string[];
+  basicAuthUsername?: string;
+  basicAuthPassword?: string;
 };
 
 export type WebSearchProviderOverrides = Partial<
   Record<WebSearchProviderId, WebSearchProviderOverride>
 >;
 
+/**
+ * Full WebSearch Provider configuration
+ * Generated at runtime by merging preset with user overrides
+ */
 export interface WebSearchProvider {
-  apiKeys: string[];
-  basicAuthPassword: string;
-  basicAuthUsername: string;
-  capabilities: {
-    apiHost?: string;
-    feature: WebSearchCapability;
-  }[];
-  engines: string[];
+  /** Unique provider identifier */
   id: WebSearchProviderId;
+  /** Display name (from preset) */
   name: string;
+  /** Provider type (from preset) */
   type: WebSearchProviderType;
+  /** API keys (from user overrides) */
+  apiKeys: string[];
+  /** Capability API settings (user override merged into preset capabilities) */
+  capabilities: Array<{
+    feature: WebSearchCapability;
+    /** Can be empty for self-hosted or hostless providers; resolve and validate via resolveProviderApiHost. */
+    apiHost?: string;
+  }>;
+  /** Search engines (from user overrides) */
+  engines: string[];
+  /** Basic auth username (from user overrides) */
+  basicAuthUsername: string;
+  /** Basic auth password (from user overrides) */
+  basicAuthPassword: string;
 }
 
+// ============================================================================
+// CodeCLI Types
+// ============================================================================
+
+export enum codeCLI {
+  qwenCode = 'qwen-code',
+  claudeCode = 'claude-code',
+  geminiCli = 'gemini-cli',
+  openaiCodex = 'openai-codex',
+  iFlowCli = 'iflow-cli',
+  githubCopilotCli = 'github-copilot-cli',
+  kimiCli = 'kimi-cli',
+  openCode = 'opencode',
+}
+
+export const CODE_CLI_IDS = Object.values(codeCLI) as unknown as readonly [
+  'qwen-code',
+  'claude-code',
+  'gemini-cli',
+  'openai-codex',
+  'iflow-cli',
+  'github-copilot-cli',
+  'kimi-cli',
+  'opencode',
+];
+
+export type CodeCliId = (typeof CODE_CLI_IDS)[number];
+
+export type CodeCliOverride = {
+  enabled?: boolean;
+  modelId?: string | null;
+  envVars?: string;
+  /** Terminal app name — should match `terminalApps` enum values */
+  terminal?: string;
+  currentDirectory?: string;
+  directories?: string[];
+};
+
+export type CodeCliOverrides = Partial<Record<CodeCliId, CodeCliOverride>>;
+
+// ============================================================================
+// WebSearch Compression Types (v2 - Flattened)
+// ============================================================================
+
+/**
+ * Compression method type
+ * Stored in chat.web_search.compression.method
+ */
 export type WebSearchCompressionMethod = 'none' | 'cutoff';
+
+// ============================================================================
+// File Processor Types
+// ============================================================================
+
+export const FILE_PROCESSOR_TYPES = ['api', 'builtin'] as const;
+
+export type FileProcessorType = (typeof FILE_PROCESSOR_TYPES)[number];
+
+export const FILE_PROCESSOR_FEATURES = ['image_to_text', 'document_to_markdown'] as const;
+
+export type FileProcessorFeature = (typeof FILE_PROCESSOR_FEATURES)[number];
+
+export const FILE_PROCESSOR_IDS = [
+  'tesseract',
+  'system',
+  'paddleocr',
+  'ovocr',
+  'mineru',
+  'doc2x',
+  'mistral',
+  'open-mineru',
+] as const;
+
+export type FileProcessorId = (typeof FILE_PROCESSOR_IDS)[number];
+
+export type FileProcessorOptions = {
+  langs?: string[];
+};
+
+export type FileProcessorCapabilityOverride = {
+  apiHost?: string;
+  modelId?: string;
+};
+
+export type FileProcessorCapabilityOverrides = Partial<
+  Record<FileProcessorFeature, FileProcessorCapabilityOverride>
+>;
+
+export type FileProcessorOverride = {
+  apiKeys?: string[];
+  capabilities?: FileProcessorCapabilityOverrides;
+  options?: FileProcessorOptions;
+};
+
+export type FileProcessorOverrides = Partial<Record<FileProcessorId, FileProcessorOverride>>;
+
+/** Region types for miniApps visibility */
+export type MiniAppRegion = 'CN' | 'Global';
+
+export type MiniAppRegionFilter = 'auto' | MiniAppRegion;

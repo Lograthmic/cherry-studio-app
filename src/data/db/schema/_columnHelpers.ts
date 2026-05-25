@@ -1,9 +1,9 @@
 /**
- * Column helper utilities for Drizzle schemas.
+ * Column helper utilities for Drizzle schemas
  *
  * USAGE RULES:
- * - DO NOT manually set id, createdAt, or updatedAt - they are auto-generated.
- * - Use .returning() to get inserted/updated rows instead of re-querying.
+ * - DO NOT manually set id, createdAt, or updatedAt - they are auto-generated
+ * - Use .returning() to get inserted/updated rows instead of re-querying
  *
  * TIMESTAMP SEMANTICS:
  * - `createUpdateTimestamps.createdAt` / `.updatedAt` are DB-level NOT NULL.
@@ -69,21 +69,22 @@ export const createUpdateDeleteTimestamps = {
  * Fractional-indexing order key column (string score), keyed as `orderKey`.
  *
  * Spread into a sqliteTable definition so the field name is locked at the
- * type level: consumers cannot rename it to something custom, and every helper
- * that references `table.orderKey` can rely on the property existing.
+ * type level — consumers cannot rename it to something custom, and every
+ * helper that references `table.orderKey` (indexes, services/utils/orderKey.ts
+ * runtime helpers, migrator helpers) can rely on the property existing.
  *
  * Usage:
- *   sqliteTable('mini_app', {
+ *   sqliteTable('miniapp', {
  *     appId: text('app_id').primaryKey(),
  *     ...orderKeyColumns,
- *   }, (table) => [orderKeyIndex('mini_app')(table)])
+ *   }, (table) => [orderKeyIndex('miniapp')(table)])
  */
 export const orderKeyColumns = {
   orderKey: text('order_key').notNull(),
 };
 
 /**
- * Index on the `order_key` column. Use inside the `sqliteTable` third-argument callback.
+ * Index on the `order_key` column. Use inside the `sqliteTable` second-argument callback.
  */
 export const orderKeyIndex =
   <T extends { orderKey: AnySQLiteColumn }>(tableName: string) =>
@@ -95,7 +96,7 @@ const toSnakeCase = (value: string) => value.replace(/[A-Z]/g, (char) => `_${cha
 /**
  * Composite `(scope, order_key)` index for scoped reorderable lists.
  * The scope column is referenced by its camelCase TS property (`table[scopeColumn]`);
- * only the index name is snake_cased for consistency with DB naming.
+ * only the index NAME is snake_cased for consistency with DB naming.
  *
  * Example:
  *   scopedOrderKeyIndex('topic', 'groupId')(table)

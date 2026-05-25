@@ -25,6 +25,7 @@ import type {
 
 import type { Database } from '../db/client';
 import { messageTable, pinTable, topicTable } from '../db/schema';
+import type { PinService } from './PinService';
 import { encodeCursor, splitCursor } from './utils/cursor';
 import { applyMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';
@@ -42,7 +43,10 @@ type TopicCursor =
   | { id: string; section: 'topic'; updatedAt: number };
 
 export class TopicService {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly pinService: PinService,
+  ) {}
 
   async getById(id: string): Promise<Topic> {
     const [row] = await this.db
@@ -136,9 +140,7 @@ export class TopicService {
 
     await this.db.transaction(async (tx) => {
       await tx.delete(messageTable).where(eq(messageTable.topicId, id));
-      await tx
-        .delete(pinTable)
-        .where(and(eq(pinTable.entityType, 'topic'), eq(pinTable.entityId, id)));
+      await this.pinService.purgeForEntityTx(tx, 'topic', id);
       await tx.delete(topicTable).where(eq(topicTable.id, id));
     });
   }
