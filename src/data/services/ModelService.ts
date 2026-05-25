@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, type SQL } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import type { UserModelInsert, UserModelSelect } from '@/data/db/schema/userModel';
 import { userModelTable } from '@/data/db/schema/userModel';
 import { createUniqueModelId, type EndpointType, type Model } from '@/data/types/model';
@@ -155,7 +155,11 @@ function buildCreateValues(input: CreateModelInput): ModelInputWithoutOrderKey {
 }
 
 export class ModelService {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async list(
     query: { capability?: string; enabled?: boolean; providerId?: string } = {},
@@ -192,7 +196,7 @@ export class ModelService {
   }
 
   async create(input: CreateModelInput): Promise<Model> {
-    const row = (await this.db.transaction((tx) =>
+    const row = (await this.dbService.withWriteTx((tx) =>
       insertWithOrderKey(tx, userModelTable, buildCreateValues(input), {
         scope: eq(userModelTable.providerId, input.providerId),
       }),
@@ -207,7 +211,7 @@ export class ModelService {
     }
 
     const values = inputs.map(buildCreateValues);
-    const rows = await this.db.transaction(async (tx) => {
+    const rows = await this.dbService.withWriteTx(async (tx) => {
       const result: UserModelSelect[] = [];
       for (const providerId of new Set(values.map((value) => value.providerId))) {
         const scopedValues = values.filter((value) => value.providerId === providerId);

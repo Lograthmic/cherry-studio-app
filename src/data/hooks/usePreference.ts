@@ -5,7 +5,7 @@ import type {
   PreferenceUpdateOptions,
 } from '@/data/preference';
 import { getDefaultValue } from '@/data/preference';
-import { useDatabaseRuntime } from '@/data/runtime';
+import { useDataServices } from '@/data/runtime';
 
 type PreferenceSetter<K extends PreferenceKeyType> = (
   value: PreferenceDefaultScopeType[K],
@@ -31,7 +31,7 @@ type SnapshotState<T extends MultiplePreferenceMapping> = {
 export function usePreference<K extends PreferenceKeyType>(
   key: K,
 ): [PreferenceDefaultScopeType[K], PreferenceSetter<K>] {
-  const service = useDatabaseRuntime().services.preference;
+  const service = useDataServices().preference;
 
   const value = useSyncExternalStore(
     service.subscribeChange(key),
@@ -50,7 +50,7 @@ export function usePreference<K extends PreferenceKeyType>(
 export function useMultiplePreferences<T extends MultiplePreferenceMapping>(
   mapping: T,
 ): [MultiplePreferenceValues<T>, MultiplePreferenceSetter<T>] {
-  const service = useDatabaseRuntime().services.preference;
+  const service = useDataServices().preference;
   const entries = useMemo(() => Object.entries(mapping) as [keyof T, T[keyof T]][], [mapping]);
   const keys = useMemo(() => entries.map(([, key]) => key), [entries]);
   const snapshotRef = useRef<SnapshotState<T> | null>(null);

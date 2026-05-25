@@ -72,7 +72,7 @@ export class PresetProviderSeeder implements DatabaseSeeder {
     return providerRegistryService.getProvidersVersion();
   }
 
-  async run(db: Parameters<DatabaseSeeder['run']>[0]) {
+  async run(dbService: Parameters<DatabaseSeeder['run']>[0]) {
     const rows = providerRegistryService.loadProviders().map(toProviderInput);
     rows.push({
       authConfig: null,
@@ -87,6 +87,6 @@ export class PresetProviderSeeder implements DatabaseSeeder {
       providerId: 'cherryai',
     });
 
-    await new ProviderService(db).batchUpsert(rows);
+    await new ProviderService(dbService).batchUpsert(rows);
   }
 }

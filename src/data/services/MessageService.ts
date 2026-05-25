@@ -16,7 +16,7 @@ import type {
 } from '@/data/types/message';
 import type { UniqueModelId } from '@/data/types/model';
 
-import type { Database } from '../db/client';
+import type { DbService } from '../db/DbService';
 import { messageTable, topicTable } from '../db/schema';
 import type { TopicService } from './TopicService';
 import { getBranchMessagePageIds } from './utils/branchMessagePagination';
@@ -53,9 +53,13 @@ export interface ReserveAssistantTurnResult {
 
 export class MessageService {
   constructor(
-    private readonly db: Database,
+    private readonly dbService: DbService,
     private readonly topicService: TopicService,
   ) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async getTree(
     topicId: string,
@@ -335,11 +339,13 @@ export class MessageService {
   }
 
   async updateSiblingsGroupId(id: string, siblingsGroupId: number): Promise<void> {
-    await this.db.update(messageTable).set({ siblingsGroupId }).where(eq(messageTable.id, id));
+    await this.dbService.withWriteTx((tx) =>
+      tx.update(messageTable).set({ siblingsGroupId }).where(eq(messageTable.id, id)),
+    );
   }
 
   async createSibling(sourceId: string, data: MessageData): Promise<Message> {
-    return await this.db.transaction(async (tx) => {
+    return await this.dbService.withWriteTx(async (tx) => {
       const [source] = await tx
         .select()
         .from(messageTable)
@@ -373,7 +379,7 @@ export class MessageService {
   }
 
   async create(topicId: string, dto: CreateMessageDto): Promise<Message> {
-    return await this.db.transaction(async (tx) => {
+    return await this.dbService.withWriteTx(async (tx) => {
       const [topic] = await tx
         .select()
         .from(topicTable)
@@ -412,7 +418,7 @@ export class MessageService {
   async reserveAssistantTurn(
     input: ReserveAssistantTurnInput,
   ): Promise<ReserveAssistantTurnResult> {
-    return await this.db.transaction(async (tx) => {
+    return await this.dbService.withWriteTx(async (tx) => {
       const [topic] = await tx
         .select({ id: topicTable.id })
         .from(topicTable)
@@ -511,7 +517,7 @@ export class MessageService {
       }
     }
 
-    return await this.db.transaction(async (tx) => {
+    return await this.dbService.withWriteTx(async (tx) => {
       const [existing] = await tx
         .select()
         .from(messageTable)
@@ -585,7 +591,7 @@ export class MessageService {
 
     const descendantIds = cascade ? await this.getDescendantIds(id) : [];
 
-    return await this.db.transaction(async (tx) => {
+    return await this.dbService.withWriteTx(async (tx) => {
       let deletedIds: string[];
       let newActiveNodeId: null | string | undefined;
       let reparentedIds: string[] | undefined;

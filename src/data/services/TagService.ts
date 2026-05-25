@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import { entityTagTable, tagTable } from '@/data/db/schema';
 import type { TagSelect } from '@/data/db/schema/tagging';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
@@ -22,7 +22,11 @@ function rowToTag(row: TagSelect): Tag {
 }
 
 export class TagService {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async list(): Promise<Tag[]> {
     const rows = await this.db.select().from(tagTable).orderBy(asc(tagTable.name));
@@ -42,10 +46,12 @@ export class TagService {
   async create(dto: CreateTagDto): Promise<Tag> {
     await this.assertNameAvailable(dto.name);
 
-    const [row] = await this.db
-      .insert(tagTable)
-      .values({ color: dto.color ?? null, name: dto.name })
-      .returning();
+    const [row] = await this.dbService.withWriteTx((tx) =>
+      tx
+        .insert(tagTable)
+        .values({ color: dto.color ?? null, name: dto.name })
+        .returning(),
+    );
 
     return rowToTag(row);
   }
@@ -65,11 +71,9 @@ export class TagService {
       return this.getById(id);
     }
 
-    const [row] = await this.db
-      .update(tagTable)
-      .set(updates)
-      .where(eq(tagTable.id, id))
-      .returning();
+    const [row] = await this.dbService.withWriteTx((tx) =>
+      tx.update(tagTable).set(updates).where(eq(tagTable.id, id)).returning(),
+    );
 
     if (!row) {
       throw DataApiErrorFactory.notFound('Tag', id);
@@ -79,8 +83,10 @@ export class TagService {
   }
 
   async delete(id: string): Promise<void> {
-    const [row] = await this.db.delete(tagTable).where(eq(tagTable.id, id)).returning({
-      id: tagTable.id,
+    const [row] = await this.dbService.withWriteTx((tx) => {
+      return tx.delete(tagTable).where(eq(tagTable.id, id)).returning({
+        id: tagTable.id,
+      });
     });
 
     if (!row) {
@@ -174,7 +180,9 @@ export class TagService {
     entityId: string,
     dto: SyncEntityTagsDto,
   ): Promise<void> {
-    await this.db.transaction((tx) => this.syncEntityTagsTx(tx, entityType, entityId, dto.tagIds));
+    await this.dbService.withWriteTx((tx) =>
+      this.syncEntityTagsTx(tx, entityType, entityId, dto.tagIds),
+    );
   }
 
   async syncEntityTagsTx(

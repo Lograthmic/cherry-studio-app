@@ -7,7 +7,7 @@ import { withUniwind } from 'uniwind';
 
 import { DrawerRoot } from '@/components/drawer';
 import { NavigationThemeProvider } from '@/components/navigation';
-import { DatabaseProvider, InitialDataGate, QueryProvider } from '@/data';
+import { DataProvider, InitialDataGate, QueryProvider } from '@/data';
 import { bootstrapAppRuntime } from '@/data/bootstrap/appRuntime';
 
 const RootGestureView = withUniwind(GestureHandlerRootView);
@@ -18,13 +18,13 @@ export default function RootLayout() {
       <KeyboardProvider>
         <HeroUINativeProvider config={{ devInfo: { stylingPrinciples: false } }}>
           <QueryProvider>
-            <DatabaseProvider bootstrap={bootstrapAppRuntime}>
+            <DataProvider bootstrap={bootstrapAppRuntime}>
               <InitialDataGate>
                 <NavigationThemeProvider>
                   <DrawerRoot />
                 </NavigationThemeProvider>
               </InitialDataGate>
-            </DatabaseProvider>
+            </DataProvider>
           </QueryProvider>
         </HeroUINativeProvider>
       </KeyboardProvider>

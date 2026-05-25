@@ -3,7 +3,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useDataQuery, usePreference } from '@/data/hooks';
 import { queryKeys } from '@/data/queries';
-import { useDatabaseRuntime } from '@/data/runtime';
+import { useDataServices } from '@/data/runtime';
 import {
   type Assistant,
   type AssistantSettings,
@@ -59,7 +59,7 @@ export function useAssistantApiById(id: string | undefined) {
 }
 
 export function useAssistantMutations() {
-  const { services } = useDatabaseRuntime();
+  const services = useDataServices();
   const queryClient = useQueryClient();
 
   const invalidateAssistants = useCallback(

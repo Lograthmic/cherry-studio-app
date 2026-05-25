@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import { preferenceTable } from '@/data/db/schema';
 import {
   DefaultPreferences,
@@ -40,7 +40,11 @@ export class PreferenceService {
   private cache: PreferenceUpdateMap = { ...DefaultPreferences.default };
   private listeners = new Map<PreferenceKeyType, Set<PreferenceListener>>();
 
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async init() {
     this.cache = { ...DefaultPreferences.default };
@@ -171,11 +175,12 @@ export class PreferenceService {
   }
 
   private async persistUpdates(updates: PreferenceUpdateMap, keys: PreferenceKeyType[]) {
-    await this.db.transaction((tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       for (const key of keys) {
         const value = updates[key] as PreferenceValue;
 
-        tx.insert(preferenceTable)
+        await tx
+          .insert(preferenceTable)
           .values({
             key,
             scope: defaultScope,
@@ -186,8 +191,7 @@ export class PreferenceService {
             set: {
               value,
             },
-          })
-          .run();
+          });
       }
     });
   }

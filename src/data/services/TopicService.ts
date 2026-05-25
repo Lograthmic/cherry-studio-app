@@ -22,8 +22,7 @@ import type {
   Topic,
   UpdateTopicDto,
 } from '@/data/types/topic';
-
-import type { Database } from '../db/client';
+import type { DbService } from '../db/DbService';
 import { messageTable, pinTable, topicTable } from '../db/schema';
 import type { PinService } from './PinService';
 import { encodeCursor, splitCursor } from './utils/cursor';
@@ -34,7 +33,7 @@ const defaultLimit = 50;
 const maxLimit = 200;
 const firstPageCursor: TopicCursor = { orderKey: '', section: 'pin' };
 
-type DbOrTx = Database | Parameters<Parameters<Database['transaction']>[0]>[0];
+type DbOrTx = any;
 type TopicRow = typeof topicTable.$inferSelect;
 
 type TopicCursor =
@@ -44,9 +43,13 @@ type TopicCursor =
 
 export class TopicService {
   constructor(
-    private readonly db: Database,
+    private readonly dbService: DbService,
     private readonly pinService: PinService,
   ) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async getById(id: string): Promise<Topic> {
     const [row] = await this.db
@@ -65,7 +68,7 @@ export class TopicService {
   async create(dto: CreateTopicDto): Promise<Topic> {
     const groupId = dto.groupId ?? null;
 
-    const row = (await this.db.transaction(async (tx) => {
+    const row = (await this.dbService.withWriteTx(async (tx) => {
       if (dto.sourceNodeId) {
         const [source] = await tx
           .select({ id: messageTable.id })
@@ -97,7 +100,7 @@ export class TopicService {
   }
 
   async update(id: string, dto: UpdateTopicDto): Promise<Topic> {
-    return await this.db.transaction(async (tx) => {
+    return await this.dbService.withWriteTx(async (tx) => {
       const [existing] = await tx
         .select({ id: topicTable.id })
         .from(topicTable)
@@ -138,7 +141,7 @@ export class TopicService {
   async delete(id: string): Promise<void> {
     await this.getById(id);
 
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       await tx.delete(messageTable).where(eq(messageTable.topicId, id));
       await this.pinService.purgeForEntityTx(tx, 'topic', id);
       await tx.delete(topicTable).where(eq(topicTable.id, id));
@@ -146,7 +149,7 @@ export class TopicService {
   }
 
   async setActiveNode(topicId: string, nodeId: string): Promise<ActiveNodeResponse> {
-    await this.db.transaction((tx) => this.setActiveNodeTx(tx, topicId, nodeId));
+    await this.dbService.withWriteTx((tx) => this.setActiveNodeTx(tx, topicId, nodeId));
     return { activeNodeId: nodeId };
   }
 
@@ -275,7 +278,7 @@ export class TopicService {
   }
 
   async reorder(id: string, anchor: OrderRequest): Promise<void> {
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       const [target] = await tx
         .select({ groupId: topicTable.groupId })
         .from(topicTable)
@@ -299,7 +302,7 @@ export class TopicService {
       return;
     }
 
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       const ids = moves.map((move) => move.id);
       const targets = await tx
         .select({ groupId: topicTable.groupId, id: topicTable.id })

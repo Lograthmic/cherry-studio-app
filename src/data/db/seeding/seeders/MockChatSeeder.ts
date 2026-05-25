@@ -32,24 +32,26 @@ export class MockChatSeeder implements DatabaseSeeder {
     this.version = hashObject(mockTopicMessages);
   }
 
-  async run(db: Parameters<DatabaseSeeder['run']>[0]) {
-    await db.transaction((tx) => {
-      tx.delete(messageTable).where(like(messageTable.id, 'mock-message-%')).run();
-      tx.delete(messageTable)
+  async run(dbService: Parameters<DatabaseSeeder['run']>[0]) {
+    await dbService.withWriteTx(async (tx) => {
+      await tx.delete(messageTable).where(like(messageTable.id, 'mock-message-%'));
+      await tx
+        .delete(messageTable)
         .where(like(messageTable.id, `${mockBenchmarkMessageIdPrefix}%`))
         .run();
-      tx.delete(topicTable)
+      await tx
+        .delete(topicTable)
         .where(
           or(
             inArray(topicTable.id, previousCuratedMockTopicIds),
             like(topicTable.id, '90000000-0000-4000-8000-%'),
             like(topicTable.id, `${mockBenchmarkTopicIdPrefix}%`),
           ),
-        )
-        .run();
+        );
 
       for (const { messages, topic } of mockTopicMessages) {
-        tx.insert(topicTable)
+        await tx
+          .insert(topicTable)
           .values({
             activeNodeId: topic.activeNodeId ?? null,
             assistantId: null,
@@ -63,11 +65,11 @@ export class MockChatSeeder implements DatabaseSeeder {
           })
           .onConflictDoNothing({
             target: topicTable.id,
-          })
-          .run();
+          });
 
         for (const message of messages) {
-          tx.insert(messageTable)
+          await tx
+            .insert(messageTable)
             .values({
               createdAt: parseTimestamp(message.createdAt),
               data: message.data,
@@ -82,8 +84,7 @@ export class MockChatSeeder implements DatabaseSeeder {
             })
             .onConflictDoNothing({
               target: messageTable.id,
-            })
-            .run();
+            });
         }
       }
     });

@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import {
   assistantKnowledgeBaseTable,
   assistantMcpServerTable,
@@ -64,12 +64,16 @@ function rowToAssistant(
 
 export class AssistantService {
   constructor(
-    private readonly db: Database,
+    private readonly dbService: DbService,
     private readonly modelService: ModelService,
     private readonly preferenceService: PreferenceService,
     private readonly tagService: TagService,
     private readonly pinService: PinService,
   ) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async getById(id: string, options: { includeDeleted?: boolean } = {}): Promise<Assistant> {
     const conditions: SQL[] = [eq(assistantTable.id, id)];
@@ -172,7 +176,7 @@ export class AssistantService {
   async create(dto: CreateAssistantDto): Promise<Assistant> {
     this.validateName(dto.name);
 
-    const { row, tags } = await this.db.transaction(async (tx) => {
+    const { row, tags } = await this.dbService.withWriteTx(async (tx) => {
       const modelId = await this.resolveCreateModelId(tx, dto.modelId);
       const { knowledgeBaseIds, mcpServerIds, tagIds, ...columnDto } = dto;
       const inserted = (await insertWithOrderKey(
@@ -249,8 +253,8 @@ export class AssistantService {
     };
     const aliveFilter = and(eq(assistantTable.id, id), isNull(assistantTable.deletedAt));
 
-    const { modelName, row, tags } = await this.db.transaction(async (tx) => {
-      if (dto.modelId && !(await this.modelService.getById(dto.modelId))) {
+    const { modelName, row, tags } = await this.dbService.withWriteTx(async (tx) => {
+      if (dto.modelId && !(await this.modelExistsTx(tx, dto.modelId))) {
         throw DataApiErrorFactory.validation(
           { modelId: [`Model '${dto.modelId}' is not registered in user_model`] },
           `Assistant modelId '${dto.modelId}' is not registered - add the model first or pass null`,
@@ -299,7 +303,7 @@ export class AssistantService {
   async delete(id: string): Promise<void> {
     await this.getActiveRowById(id);
 
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       await tx
         .update(assistantTable)
         .set({ deletedAt: Date.now() })
@@ -310,7 +314,7 @@ export class AssistantService {
   }
 
   async reorder(id: string, anchor: OrderRequest): Promise<void> {
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       const [target] = await tx
         .select({ id: assistantTable.id })
         .from(assistantTable)
@@ -333,7 +337,7 @@ export class AssistantService {
       return;
     }
 
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       const ids = moves.map((move) => move.id);
       const targets = await tx
         .select({ id: assistantTable.id })
@@ -372,7 +376,7 @@ export class AssistantService {
     dtoModelId: null | string | undefined,
   ): Promise<null | string> {
     if (dtoModelId !== undefined) {
-      if (dtoModelId && !(await this.modelService.getById(dtoModelId))) {
+      if (dtoModelId && !(await this.modelExistsTx(tx, dtoModelId))) {
         throw DataApiErrorFactory.validation(
           { modelId: [`Model '${dtoModelId}' is not registered in user_model`] },
           `Assistant modelId '${dtoModelId}' is not registered - add the model first or pass null`,
@@ -402,6 +406,16 @@ export class AssistantService {
 
     const model = await this.modelService.getById(modelId);
     return model?.name ?? null;
+  }
+
+  private async modelExistsTx(tx: TxLike, modelId: string): Promise<boolean> {
+    const [row] = await tx
+      .select({ id: userModelTable.id })
+      .from(userModelTable)
+      .where(eq(userModelTable.id, modelId))
+      .limit(1);
+
+    return Boolean(row);
   }
 
   private async getRelationIdsByAssistantIds(

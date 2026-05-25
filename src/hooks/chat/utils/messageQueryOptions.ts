@@ -1,11 +1,9 @@
 import type { InfiniteData, QueryClient, QueryFunctionContext } from '@tanstack/react-query';
 
-import type { DatabaseRuntime } from '@/data/db/client';
 import { queryKeys } from '@/data/queries/queryKeys';
+import type { DataServices } from '@/data/services/createDataServices';
 import type { BranchMessagesResponse } from '@/data/types/message';
 import { messageWindowPolicy } from './messageWindowPolicy';
-
-type Services = DatabaseRuntime['services'];
 
 export const initialMessagesPageSize = messageWindowPolicy.initialFetchCount;
 export const olderMessagesPageSize = messageWindowPolicy.olderFetchCount;
@@ -24,7 +22,7 @@ export function getNextMessagesPageParam(lastPage: BranchMessagesResponse) {
 }
 
 export function fetchTopicMessagesPage(
-  services: Services,
+  services: DataServices,
   topicId: string,
   context: QueryFunctionContext<MessagesQueryKey, string | undefined>,
 ) {
@@ -36,7 +34,7 @@ export function fetchTopicMessagesPage(
 
 export function prefetchTopicMessages(
   queryClient: QueryClient,
-  services: Services,
+  services: DataServices,
   topicId: string,
 ) {
   return queryClient.prefetchInfiniteQuery<

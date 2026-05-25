@@ -2,13 +2,11 @@ import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 
-import type { DatabaseRuntime } from '@/data/db/client';
 import { queryKeys } from '@/data/queries';
-import { useDatabaseRuntime } from '@/data/runtime';
+import { useDataServices } from '@/data/runtime';
+import type { DataServices } from '@/data/services/createDataServices';
 
-type Services = DatabaseRuntime['services'];
-
-export function prefetchProviders(services: Services, queryClient: QueryClient) {
+export function prefetchProviders(services: DataServices, queryClient: QueryClient) {
   return queryClient.prefetchQuery({
     queryFn: () => services.provider.list(),
     queryKey: queryKeys.providers.list(),
@@ -19,7 +17,7 @@ export function prefetchProviders(services: Services, queryClient: QueryClient) 
 export function usePrefetchProviders() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { services } = useDatabaseRuntime();
+  const services = useDataServices();
 
   return useCallback(() => {
     router.prefetch('/settings/provider');

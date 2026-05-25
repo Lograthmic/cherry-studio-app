@@ -9,18 +9,16 @@ import {
   useInfiniteQuery,
   useQuery,
 } from '@tanstack/react-query';
-import type { DatabaseRuntime } from '@/data/db/client';
-import { useDatabaseRuntime } from '@/data/runtime';
-
-type Services = DatabaseRuntime['services'];
+import { useDataServices } from '@/data/runtime';
+import type { DataServices } from '@/data/services/createDataServices';
 
 type DataQueryFunction<TData, TQueryKey extends QueryKey> = (
-  services: Services,
+  services: DataServices,
   context: QueryFunctionContext<TQueryKey>,
 ) => Promise<TData>;
 
 type DataInfiniteQueryFunction<TData, TQueryKey extends QueryKey, TPageParam> = (
-  services: Services,
+  services: DataServices,
   context: QueryFunctionContext<TQueryKey, TPageParam>,
 ) => Promise<TData>;
 
@@ -49,7 +47,7 @@ export function useDataQuery<
 >(
   options: DataQueryOptions<TData, TError, TSelected, TQueryKey>,
 ): UseQueryResult<TSelected, TError> {
-  const { services } = useDatabaseRuntime();
+  const services = useDataServices();
   const { queryFn, ...queryOptions } = options;
 
   return useQuery({
@@ -67,7 +65,7 @@ export function useDataInfiniteQuery<
 >(
   options: DataInfiniteQueryOptions<TData, TError, TSelected, TQueryKey, TPageParam>,
 ): UseInfiniteQueryResult<TSelected, TError> {
-  const { services } = useDatabaseRuntime();
+  const services = useDataServices();
   const { queryFn, ...queryOptions } = options;
 
   return useInfiniteQuery({

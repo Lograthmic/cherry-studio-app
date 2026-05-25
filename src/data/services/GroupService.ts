@@ -14,7 +14,7 @@
 
 import { asc, eq } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import { groupTable } from '@/data/db/schema';
 import type { GroupSelect } from '@/data/db/schema/group';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
@@ -37,7 +37,11 @@ function rowToGroup(row: GroupSelect): Group {
 }
 
 export class GroupService {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   /**
    * List groups for a given entityType, ordered by orderKey ASC.
@@ -69,7 +73,7 @@ export class GroupService {
    * bucket with a fresh fractional-indexing orderKey.
    */
   async create(dto: CreateGroupDto): Promise<Group> {
-    const row = (await this.db.transaction((tx) =>
+    const row = (await this.dbService.withWriteTx((tx) =>
       insertWithOrderKey(
         tx,
         groupTable,
@@ -96,11 +100,9 @@ export class GroupService {
       return this.getById(id);
     }
 
-    const [row] = await this.db
-      .update(groupTable)
-      .set(updates)
-      .where(eq(groupTable.id, id))
-      .returning();
+    const [row] = await this.dbService.withWriteTx((tx) =>
+      tx.update(groupTable).set(updates).where(eq(groupTable.id, id)).returning(),
+    );
 
     if (!row) {
       throw DataApiErrorFactory.notFound('Group', id);
@@ -113,8 +115,10 @@ export class GroupService {
    * Delete a group.
    */
   async delete(id: string): Promise<void> {
-    const [row] = await this.db.delete(groupTable).where(eq(groupTable.id, id)).returning({
-      id: groupTable.id,
+    const [row] = await this.dbService.withWriteTx((tx) => {
+      return tx.delete(groupTable).where(eq(groupTable.id, id)).returning({
+        id: groupTable.id,
+      });
     });
 
     if (!row) {
@@ -127,7 +131,7 @@ export class GroupService {
    * from the target row — callers do not pass scope.
    */
   async reorder(id: string, anchor: OrderRequest): Promise<void> {
-    await this.db.transaction((tx) =>
+    await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, groupTable, [{ anchor, id }], {
         pkColumn: groupTable.id,
         resourceName: 'Group',
@@ -141,7 +145,7 @@ export class GroupService {
    * span multiple entityTypes with a VALIDATION_ERROR.
    */
   async reorderBatch(moves: { anchor: OrderRequest; id: string }[]): Promise<void> {
-    await this.db.transaction((tx) =>
+    await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, groupTable, moves, {
         pkColumn: groupTable.id,
         resourceName: 'Group',

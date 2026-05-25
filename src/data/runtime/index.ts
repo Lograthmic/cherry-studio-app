@@ -1,2 +1,2 @@
-export { DatabaseProvider, useDatabaseRuntime, useDatabaseState } from './DatabaseProvider';
+export { DataProvider, useDataServices, useDataState } from './DataProvider';
 export { InitialDataGate } from './InitialDataGate';

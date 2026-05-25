@@ -5,13 +5,11 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import type { DatabaseRuntime } from '@/data/db/client';
-import { useDatabaseRuntime } from '@/data/runtime';
-
-type Services = DatabaseRuntime['services'];
+import { useDataServices } from '@/data/runtime';
+import type { DataServices } from '@/data/services/createDataServices';
 
 type DataMutationFunction<TData, TVariables> = (
-  services: Services,
+  services: DataServices,
   variables: TVariables,
 ) => Promise<TData>;
 
@@ -26,7 +24,7 @@ type DataMutationOptions<TData, TError, TVariables, TContext> = Omit<
 export function useDataMutation<TData, TError = Error, TVariables = void, TContext = unknown>(
   options: DataMutationOptions<TData, TError, TVariables, TContext>,
 ): UseMutationResult<TData, TError, TVariables, TContext> {
-  const { services } = useDatabaseRuntime();
+  const services = useDataServices();
   const queryClient = useQueryClient();
   const { invalidateQueries, mutationFn, onSuccess, ...mutationOptions } = options;
 

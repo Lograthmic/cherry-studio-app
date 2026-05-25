@@ -1,13 +1,13 @@
 import { Uniwind } from 'uniwind';
 
-import type { DatabaseRuntime } from '@/data/db/client';
 import { ThemeMode } from '@/data/preference';
+import type { DataServices } from '@/data/services/createDataServices';
 import { initI18n } from '@/i18n';
 
 const bootPreferenceKeys = ['app.language', 'ui.theme_mode'] as const;
 
-export async function bootstrapAppRuntime(runtime: DatabaseRuntime) {
-  const preferences = runtime.services.preference.getMultipleCached(bootPreferenceKeys);
+export async function bootstrapAppRuntime(services: DataServices) {
+  const preferences = services.preference.getMultipleCached(bootPreferenceKeys);
 
   applyThemeModePreference(preferences['ui.theme_mode']);
   await initI18n(preferences['app.language']);

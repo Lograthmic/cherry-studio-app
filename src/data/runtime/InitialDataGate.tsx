@@ -1,9 +1,9 @@
 import type { PropsWithChildren } from 'react';
 
-import { useDatabaseState } from './DatabaseProvider';
+import { useDataState } from './DataProvider';
 
 export function InitialDataGate({ children }: PropsWithChildren) {
-  const state = useDatabaseState();
+  const state = useDataState();
 
   if (state.status === 'loading') {
     return null;

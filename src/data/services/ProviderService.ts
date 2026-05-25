@@ -1,7 +1,7 @@
 import { asc, eq, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import type { UserProviderInsert, UserProviderSelect } from '@/data/db/schema/userProvider';
 import { userProviderTable } from '@/data/db/schema/userProvider';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
@@ -137,7 +137,11 @@ function toInsert(input: CreateProviderInput): ProviderInputWithoutOrderKey {
 export class ProviderService {
   private readonly lastUsedApiKeyIds = new Map<string, string>();
 
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async list(query: { enabled?: boolean } = {}): Promise<Provider[]> {
     const rows =
@@ -224,7 +228,7 @@ export class ProviderService {
     }
 
     // Round-robin using in-memory runtime state. Mobile keeps this scoped to
-    // the active DatabaseRuntime instead of the desktop CacheService.
+    // the active data service graph instead of the desktop CacheService.
     const lastUsedKeyId = this.lastUsedApiKeyIds.get(providerId);
 
     if (!lastUsedKeyId) {
@@ -241,7 +245,7 @@ export class ProviderService {
   }
 
   async create(input: CreateProviderInput): Promise<Provider> {
-    const row = (await this.db.transaction((tx) =>
+    const row = (await this.dbService.withWriteTx((tx) =>
       insertWithOrderKey(tx, userProviderTable, toInsert(input), {
         scope: undefined,
       }),
@@ -277,11 +281,13 @@ export class ProviderService {
       updates.providerSettings = input.providerSettings;
     }
 
-    const [row] = await this.db
-      .update(userProviderTable)
-      .set(updates)
-      .where(eq(userProviderTable.providerId, providerId))
-      .returning();
+    const [row] = await this.dbService.withWriteTx((tx) =>
+      tx
+        .update(userProviderTable)
+        .set(updates)
+        .where(eq(userProviderTable.providerId, providerId))
+        .returning(),
+    );
 
     if (!row) {
       throw DataApiErrorFactory.notFound('Provider', providerId);
@@ -292,11 +298,13 @@ export class ProviderService {
 
   async replaceApiKeys(providerId: string, apiKeys: ApiKeyEntry[]): Promise<Provider> {
     const normalizedApiKeys = normalizeApiKeys(apiKeys);
-    const [row] = await this.db
-      .update(userProviderTable)
-      .set({ apiKeys: normalizedApiKeys })
-      .where(eq(userProviderTable.providerId, providerId))
-      .returning();
+    const [row] = await this.dbService.withWriteTx((tx) =>
+      tx
+        .update(userProviderTable)
+        .set({ apiKeys: normalizedApiKeys })
+        .where(eq(userProviderTable.providerId, providerId))
+        .returning(),
+    );
 
     if (!row) {
       throw DataApiErrorFactory.notFound('Provider', providerId);
@@ -342,7 +350,7 @@ export class ProviderService {
       return;
     }
 
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       const providerIds = inputs.map((input) => input.providerId);
       const existingRows = await tx
         .select({ providerId: userProviderTable.providerId })

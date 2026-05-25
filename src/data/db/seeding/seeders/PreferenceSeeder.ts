@@ -13,7 +13,8 @@ export class PreferenceSeeder implements DatabaseSeeder {
     this.version = hashObject(DefaultPreferences);
   }
 
-  async run(db: Parameters<DatabaseSeeder['run']>[0]) {
+  async run(dbService: Parameters<DatabaseSeeder['run']>[0]) {
+    const db = dbService.getDb();
     const preferences = await db
       .select({
         scope: preferenceTable.scope,
@@ -57,14 +58,14 @@ export class PreferenceSeeder implements DatabaseSeeder {
     }
 
     // Insert new preferences without overwriting existing user values.
-    await db.transaction((tx) => {
+    await dbService.withWriteTx(async (tx) => {
       for (const preference of newPreferences) {
-        tx.insert(preferenceTable)
+        await tx
+          .insert(preferenceTable)
           .values(preference)
           .onConflictDoNothing({
             target: [preferenceTable.scope, preferenceTable.key],
-          })
-          .run();
+          });
       }
     });
   }

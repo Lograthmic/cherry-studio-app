@@ -1,3 +1,4 @@
+import type { DbService } from '../../DbService';
 import type { DatabaseSeeder } from '../types';
 
 jest.mock('@/core/logger/loggerService', () => ({
@@ -9,6 +10,15 @@ jest.mock('@/core/logger/loggerService', () => ({
   },
 }));
 
+jest.mock('@/data/db/schema/appState', () => ({
+  appStateTable: {
+    description: 'description',
+    key: 'key',
+    updatedAt: 'updatedAt',
+    value: 'value',
+  },
+}));
+
 const { SeedRunner } = jest.requireActual('../SeedRunner') as typeof import('../SeedRunner');
 
 type JournalRow = {
@@ -16,19 +26,22 @@ type JournalRow = {
   key: string;
   value: unknown;
 };
+type FakeDbService = DbService & {
+  journals: Map<string, JournalRow>;
+};
 
 describe('SeedRunner', () => {
   test('runs a new seeder and writes its journal', async () => {
-    const db = createFakeDatabase();
+    const dbService = createFakeDbService();
     let runCount = 0;
     const seeder = createSeeder('test-seed', 'v1', async () => {
       runCount += 1;
     });
 
-    await new SeedRunner(db).runAll([seeder]);
+    await new SeedRunner(dbService).runAll([seeder]);
 
     expect(runCount).toBe(1);
-    expect(db.journals.get('seed:test-seed')).toMatchObject({
+    expect(dbService.journals.get('seed:test-seed')).toMatchObject({
       description: 'Test seed description',
       key: 'seed:test-seed',
       value: { version: 'v1' },
@@ -36,12 +49,12 @@ describe('SeedRunner', () => {
   });
 
   test('skips a seeder when the recorded version matches', async () => {
-    const db = createFakeDatabase();
+    const dbService = createFakeDbService();
     let runCount = 0;
     const seeder = createSeeder('test-seed', 'v1', async () => {
       runCount += 1;
     });
-    const runner = new SeedRunner(db);
+    const runner = new SeedRunner(dbService);
 
     await runner.runAll([seeder]);
     await runner.runAll([seeder]);
@@ -50,9 +63,9 @@ describe('SeedRunner', () => {
   });
 
   test('reruns a seeder when the version changes', async () => {
-    const db = createFakeDatabase();
+    const dbService = createFakeDbService();
     let runCount = 0;
-    const runner = new SeedRunner(db);
+    const runner = new SeedRunner(dbService);
 
     await runner.runAll([
       createSeeder('test-seed', 'v1', async () => {
@@ -66,24 +79,24 @@ describe('SeedRunner', () => {
     ]);
 
     expect(runCount).toBe(2);
-    expect(db.journals.get('seed:test-seed')?.value).toEqual({ version: 'v2' });
+    expect(dbService.journals.get('seed:test-seed')?.value).toEqual({ version: 'v2' });
   });
 });
 
 function createSeeder(
   name: string,
   version: string,
-  run: (db: ReturnType<typeof createFakeDatabase>) => Promise<void>,
+  run: (dbService: FakeDbService) => Promise<void>,
 ): DatabaseSeeder {
   return {
     description: 'Test seed description',
     name,
-    run: async (db) => run(db as ReturnType<typeof createFakeDatabase>),
+    run: async (dbService) => run(dbService as FakeDbService),
     version,
   };
 }
 
-function createFakeDatabase() {
+function createFakeDbService() {
   const journals = new Map<string, JournalRow>();
 
   const db = {
@@ -95,18 +108,22 @@ function createFakeDatabase() {
     }),
     insert: () => ({
       values: (row: JournalRow) => ({
-        onConflictDoUpdate: ({ set }: { set: Partial<JournalRow> }) => ({
-          run: () => {
-            journals.set(row.key, {
-              ...row,
-              ...set,
-              key: row.key,
-            });
-          },
-        }),
+        onConflictDoUpdate: ({ set }: { set: Partial<JournalRow> }) => {
+          journals.set(row.key, {
+            ...row,
+            ...set,
+            key: row.key,
+          });
+
+          return Promise.resolve();
+        },
       }),
     }),
   };
 
-  return db as typeof db & ConstructorParameters<typeof SeedRunner>[0];
+  return {
+    journals,
+    getDb: () => db,
+    withWriteTx: (callback: (tx: typeof db) => Promise<unknown>) => callback(db),
+  } as unknown as FakeDbService;
 }

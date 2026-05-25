@@ -22,7 +22,7 @@
 
 import { and, asc, eq, inArray } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import { pinTable } from '@/data/db/schema';
 import type { PinSelect } from '@/data/db/schema/pin';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
@@ -63,7 +63,11 @@ function isUniqueConstraintError(error: unknown): boolean {
 }
 
 export class PinService {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   /**
    * List pins for a given entityType, ordered by orderKey ASC.
@@ -102,7 +106,7 @@ export class PinService {
    * error is re-thrown unchanged.
    */
   async pin(dto: CreatePinDto): Promise<Pin> {
-    return this.db.transaction(async (tx) => {
+    return this.dbService.withWriteTx(async (tx) => {
       const [existing] = await tx
         .select()
         .from(pinTable)
@@ -144,8 +148,10 @@ export class PinService {
    * Unpin by pin id. Hard delete.
    */
   async unpin(id: string): Promise<void> {
-    const [row] = await this.db.delete(pinTable).where(eq(pinTable.id, id)).returning({
-      id: pinTable.id,
+    const [row] = await this.dbService.withWriteTx((tx) => {
+      return tx.delete(pinTable).where(eq(pinTable.id, id)).returning({
+        id: pinTable.id,
+      });
     });
 
     if (!row) {
@@ -158,7 +164,7 @@ export class PinService {
    * from the target row — callers do not pass scope.
    */
   async reorder(id: string, anchor: OrderRequest): Promise<void> {
-    await this.db.transaction((tx) =>
+    await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, pinTable, [{ anchor, id }], {
         pkColumn: pinTable.id,
         resourceName: 'Pin',
@@ -172,7 +178,7 @@ export class PinService {
    * span multiple entityTypes with a VALIDATION_ERROR.
    */
   async reorderBatch(moves: { anchor: OrderRequest; id: string }[]): Promise<void> {
-    await this.db.transaction((tx) =>
+    await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, pinTable, moves, {
         pkColumn: pinTable.id,
         resourceName: 'Pin',

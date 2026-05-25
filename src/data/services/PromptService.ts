@@ -8,7 +8,7 @@
 
 import { and, asc, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
 
-import type { Database } from '@/data/db/client';
+import type { DbService } from '@/data/db/DbService';
 import { promptTable } from '@/data/db/schema';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
 import type {
@@ -55,7 +55,11 @@ function collectAnchorIds(anchors: OrderRequest[]): string[] {
 }
 
 export class PromptService {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
+
+  private get db() {
+    return this.dbService.getDb();
+  }
 
   async list(query: ListPromptsQuery = {}): Promise<Prompt[]> {
     // Canonical API order is old → new; settings UI reverses this for display.
@@ -88,7 +92,7 @@ export class PromptService {
   }
 
   async create(dto: CreatePromptDto): Promise<Prompt> {
-    const row = (await this.db.transaction((tx) =>
+    const row = (await this.dbService.withWriteTx((tx) =>
       insertWithOrderKey(
         tx,
         promptTable,
@@ -104,7 +108,7 @@ export class PromptService {
   }
 
   async update(id: string, dto: UpdatePromptDto): Promise<Prompt> {
-    return this.db.transaction(async (tx) => {
+    return this.dbService.withWriteTx(async (tx) => {
       const updates: Partial<typeof promptTable.$inferInsert> = {};
       if (dto.title !== undefined) {
         updates.title = dto.title;
@@ -128,7 +132,7 @@ export class PromptService {
 
   /** Move a single prompt relative to an anchor. */
   async reorder(id: string, anchor: OrderRequest): Promise<void> {
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       await this.assertPromptsExistTx(tx, [id, ...collectAnchorIds([anchor])]);
       await applyMoves(tx, promptTable, [{ anchor, id }], {
         pkColumn: promptTable.id,
@@ -142,7 +146,7 @@ export class PromptService {
     if (moves.length === 0) {
       return;
     }
-    await this.db.transaction(async (tx) => {
+    await this.dbService.withWriteTx(async (tx) => {
       await this.assertPromptsExistTx(tx, [
         ...moves.map((move) => move.id),
         ...collectAnchorIds(moves.map((move) => move.anchor)),
@@ -170,8 +174,10 @@ export class PromptService {
   }
 
   async delete(id: string): Promise<void> {
-    const [row] = await this.db.delete(promptTable).where(eq(promptTable.id, id)).returning({
-      id: promptTable.id,
+    const [row] = await this.dbService.withWriteTx((tx) => {
+      return tx.delete(promptTable).where(eq(promptTable.id, id)).returning({
+        id: promptTable.id,
+      });
     });
     if (!row) {
       throw DataApiErrorFactory.notFound('Prompt', id);

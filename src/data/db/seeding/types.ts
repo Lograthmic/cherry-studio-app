@@ -1,4 +1,4 @@
-import type { Database } from '../client';
+import type { DbService } from '../DbService';
 
 export type DatabaseSeeder = {
   /** Unique identifier for seed journal tracking (stored as `seed:<name>` in app_state). */
@@ -8,5 +8,5 @@ export type DatabaseSeeder = {
   /** Human-readable description for logging. */
   readonly description: string;
   /** Execute the seed operation. */
-  run: (db: Database) => Promise<void>;
+  run: (dbService: DbService) => Promise<void>;
 };

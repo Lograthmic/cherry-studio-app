@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { Keyboard } from 'react-native';
 
-import { useDatabaseRuntime } from '@/data/runtime';
+import { useDataServices } from '@/data/runtime';
 import type { Topic } from '@/data/types/topic';
 import { useTopics } from '@/hooks/chat';
 import { prefetchTopicMessages } from '@/hooks/chat/utils/messageQueryOptions';
@@ -68,7 +68,7 @@ export function DrawerProvider({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { services } = useDatabaseRuntime();
+  const services = useDataServices();
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchText, setSearchText] = useState('');

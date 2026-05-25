@@ -1,9 +1,9 @@
 import { inArray } from 'drizzle-orm';
 
 import { loggerService } from '@/core/logger/loggerService';
+import type { DbService } from '@/data/db/DbService';
 import { appStateTable } from '@/data/db/schema/appState';
 
-import type { Database } from '../client';
 import type { DatabaseSeeder } from './types';
 
 const logger = loggerService.withContext('SeedRunner');
@@ -14,7 +14,7 @@ type SeedJournal = {
 };
 
 export class SeedRunner {
-  constructor(private readonly db: Database) {}
+  constructor(private readonly dbService: DbService) {}
 
   async runAll(seeders: DatabaseSeeder[]) {
     if (seeders.length === 0) {
@@ -33,31 +33,33 @@ export class SeedRunner {
         continue;
       }
 
-      await seeder.run(this.db);
+      await seeder.run(this.dbService);
 
-      await this.db
-        .insert(appStateTable)
-        .values({
-          description: seeder.description,
-          key,
-          value: { version: seeder.version },
-        })
-        .onConflictDoUpdate({
-          target: appStateTable.key,
-          set: {
+      await this.dbService.withWriteTx(async (tx) => {
+        await tx
+          .insert(appStateTable)
+          .values({
             description: seeder.description,
-            updatedAt: Date.now(),
+            key,
             value: { version: seeder.version },
-          },
-        })
-        .run();
+          })
+          .onConflictDoUpdate({
+            target: appStateTable.key,
+            set: {
+              description: seeder.description,
+              updatedAt: Date.now(),
+              value: { version: seeder.version },
+            },
+          });
+      });
 
       logger.info(`Seed "${seeder.name}" applied (v${seeder.version}) - ${seeder.description}`);
     }
   }
 
   private async loadJournals(keys: string[]) {
-    const rows = await this.db
+    const rows = await this.dbService
+      .getDb()
       .select({
         key: appStateTable.key,
         value: appStateTable.value,
