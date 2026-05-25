@@ -1,6 +1,6 @@
 import type { InfiniteData, QueryClient, QueryFunctionContext } from '@tanstack/react-query';
 
-import { queryKeys } from '@/data/queries/queryKeys';
+import { queryKeys } from '@/data/api';
 import type { DataServices } from '@/data/services/createDataServices';
 import type { BranchMessagesResponse } from '@/data/types/message';
 import { messageWindowPolicy } from './messageWindowPolicy';

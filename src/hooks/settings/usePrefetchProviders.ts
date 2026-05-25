@@ -2,7 +2,7 @@ import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 
-import { queryKeys } from '@/data/queries';
+import { queryKeys } from '@/data/api';
 import { useDataServices } from '@/data/runtime';
 import type { DataServices } from '@/data/services/createDataServices';
 

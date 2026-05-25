@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
 import { useDataQuery, usePreference } from '@/data/hooks';
-import { queryKeys } from '@/data/queries';
+import { queryKeys } from '@/data/api';
 import { useDataServices } from '@/data/runtime';
 import {
   type Assistant,

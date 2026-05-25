@@ -1,5 +1,5 @@
 import { useDataMutation, useDataQuery } from '@/data/hooks';
-import { queryKeys } from '@/data/queries';
+import { queryKeys } from '@/data/api';
 import type { EndpointType } from '@/data/types/model';
 import type { ApiKeyEntry, AuthConfig, EndpointConfigs } from '@/data/types/provider';
 

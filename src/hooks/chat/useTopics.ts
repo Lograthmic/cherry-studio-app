@@ -2,7 +2,7 @@ import { type InfiniteData } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
 import { useDataInfiniteQuery, useDataQuery } from '@/data/hooks/useDataQuery';
-import { queryKeys } from '@/data/queries/queryKeys';
+import { queryKeys } from '@/data/api';
 import type { CursorPaginationResponse } from '@/data/types/apiTypes';
 import type { Topic } from '@/data/types/topic';
 import { useHydrateTopicDetails } from './useHydrateTopicDetails';

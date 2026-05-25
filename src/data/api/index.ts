@@ -1,0 +1,25 @@
+/**
+ * Data API Query Keys Index
+ *
+ * Combines all domain-specific query key factories into a unified queryKeys object.
+ */
+
+import { assistantQueryKeys } from './assistants';
+import { messageQueryKeys } from './messages';
+import { modelQueryKeys } from './models';
+import { preferenceQueryKeys } from './preferences';
+import { providerQueryKeys } from './providers';
+import { tagQueryKeys } from './tags';
+import { topicQueryKeys } from './topics';
+
+export { createMobileQueryClient, QueryProvider } from './queryClient';
+
+export const queryKeys = {
+  assistants: assistantQueryKeys,
+  topics: topicQueryKeys,
+  messages: messageQueryKeys,
+  models: modelQueryKeys,
+  providers: providerQueryKeys,
+  preferences: preferenceQueryKeys,
+  tags: tagQueryKeys,
+};

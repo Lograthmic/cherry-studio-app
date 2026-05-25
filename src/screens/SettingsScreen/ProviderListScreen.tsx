@@ -11,7 +11,7 @@ import { useUniwind, withUniwind } from 'uniwind';
 import { BackHeader } from '@/components/headers';
 import { isLiquidGlassAvailable } from '@/config/constants';
 import { useDataQuery } from '@/data/hooks';
-import { queryKeys } from '@/data/queries';
+import { queryKeys } from '@/data/api';
 import { SettingsSection } from './components/SettingsSection';
 import { SettingsServiceRow, type SettingsServiceRowProps } from './components/SettingsServiceRow';
 

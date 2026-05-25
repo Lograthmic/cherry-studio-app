@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import { queryKeys } from '@/data/queries/queryKeys';
+import { queryKeys } from '@/data/api';
 import type { Topic } from '@/data/types/topic';
 
 export function useHydrateTopicDetails(topics: readonly Topic[]) {
