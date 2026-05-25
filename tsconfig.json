@@ -9,6 +9,14 @@
         "./packages/provider-registry/src/mobileLoader.ts"
       ],
       "@cherrystudio/provider-registry/*": ["./packages/provider-registry/src/*"],
+      "@cherrystudio/ai-core": ["./packages/ai-core/src/index.ts"],
+      "@cherrystudio/ai-core/core": ["./packages/ai-core/src/core/index.ts"],
+      "@cherrystudio/ai-core/core/*": ["./packages/ai-core/src/core/*"],
+      "@cherrystudio/ai-core/provider": ["./packages/ai-core/src/core/providers/index.ts"],
+      "@cherrystudio/ai-core/built-in/plugins": [
+        "./packages/ai-core/src/core/plugins/built-in/index.ts"
+      ],
+      "@cherrystudio/ai-sdk-provider": ["./packages/ai-sdk-provider/src/index.ts"],
       "@cherrystudio/ui": ["./packages/ui/src/index.ts"],
       "@cherrystudio/ui/*": ["./packages/ui/src/*"],
       "lucide-uniwind": ["./packages/lucide-uniwind/src/index.ts"],

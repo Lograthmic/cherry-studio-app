@@ -135,6 +135,8 @@ function toInsert(input: CreateProviderInput): ProviderInputWithoutOrderKey {
 }
 
 export class ProviderService {
+  private readonly lastUsedApiKeyIds = new Map<string, string>();
+
   constructor(private readonly db: Database) {}
 
   async list(query: { enabled?: boolean } = {}): Promise<Provider[]> {
@@ -198,6 +200,44 @@ export class ProviderService {
     }
 
     return row.authConfig ?? null;
+  }
+
+  /**
+   * Get a rotated API key for a provider (round-robin across enabled keys).
+   * Returns empty string for providers that don't have keys.
+   */
+  async getRotatedApiKey(providerId: string): Promise<string> {
+    const row = await this.getRowByProviderId(providerId);
+
+    if (!row) {
+      throw DataApiErrorFactory.notFound('Provider', providerId);
+    }
+
+    const enabledKeys = (row.apiKeys ?? []).filter((key) => key.isEnabled);
+
+    if (enabledKeys.length === 0) {
+      return '';
+    }
+
+    if (enabledKeys.length === 1) {
+      return enabledKeys[0].key;
+    }
+
+    // Round-robin using in-memory runtime state. Mobile keeps this scoped to
+    // the active DatabaseRuntime instead of the desktop CacheService.
+    const lastUsedKeyId = this.lastUsedApiKeyIds.get(providerId);
+
+    if (!lastUsedKeyId) {
+      this.lastUsedApiKeyIds.set(providerId, enabledKeys[0].id);
+      return enabledKeys[0].key;
+    }
+
+    const currentIndex = enabledKeys.findIndex((key) => key.id === lastUsedKeyId);
+    const nextIndex = (currentIndex + 1) % enabledKeys.length;
+    const nextKey = enabledKeys[nextIndex];
+    this.lastUsedApiKeyIds.set(providerId, nextKey.id);
+
+    return nextKey.key;
   }
 
   async create(input: CreateProviderInput): Promise<Provider> {

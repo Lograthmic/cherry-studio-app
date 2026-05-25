@@ -1,6 +1,7 @@
 import { drizzle, type ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import * as SQLite from 'expo-sqlite';
+import { AiService } from '@/ai/AiService';
 import { AssistantService } from '../services/AssistantService';
 import { MessageService } from '../services/MessageService';
 import { ModelService } from '../services/ModelService';
@@ -21,6 +22,7 @@ export type DatabaseRuntime = {
   db: Database;
   sqlite: SQLite.SQLiteDatabase;
   services: {
+    ai: AiService;
     assistant: AssistantService;
     message: MessageService;
     model: ModelService;
@@ -43,11 +45,13 @@ export function createDatabaseRuntime(): DatabaseRuntime {
   const assistant = new AssistantService(db, model, preference, tag);
   const topic = new TopicService(db);
   const message = new MessageService(db, topic);
+  const ai = new AiService({ assistant, model, provider });
 
   return {
     db,
     sqlite,
     services: {
+      ai,
       assistant,
       message,
       model,
