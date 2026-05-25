@@ -57,17 +57,14 @@ export function useMultiplePreferences<T extends MultiplePreferenceMapping>(
 
   const readSnapshot = useCallback(() => {
     const previousState = snapshotRef.current;
-    const nextSnapshot = {} as MultiplePreferenceValues<T>;
+    const nextSnapshot = service.getMultipleCached(mapping);
     let changed =
       previousState === null ||
       previousState.names.length !== entries.length ||
       previousState.names.some((name, index) => name !== entries[index]?.[0]);
 
-    for (const [name, key] of entries) {
-      const value = service.getCachedValue(key) ?? getDefaultValue(key);
-      nextSnapshot[name] = value;
-
-      if (!changed && previousState && previousState.values[name] !== value) {
+    for (const [name] of entries) {
+      if (!changed && previousState && previousState.values[name] !== nextSnapshot[name]) {
         changed = true;
       }
     }
@@ -81,7 +78,7 @@ export function useMultiplePreferences<T extends MultiplePreferenceMapping>(
       values: nextSnapshot,
     };
     return nextSnapshot;
-  }, [entries, service]);
+  }, [entries, mapping, service]);
 
   const values = useSyncExternalStore(
     useCallback(

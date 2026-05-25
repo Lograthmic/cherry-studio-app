@@ -2,82 +2,9 @@ import * as z from 'zod';
 
 import type { PreferenceSchemas } from './preferenceSchemas';
 
-export interface BootConfigSchema {
-  // redux/settings/disableHardwareAcceleration
-  'app.disable_hardware_acceleration': boolean;
-
-  /**
-   * Custom user data directory, keyed by executable path.
-   *
-   * Conceptually a single setting ("where user data lives"); stored as a
-   * Record so the same machine can host multiple installations (stable / dev /
-   * portable) with independent user data locations — matching the v1 behavior
-   * of ~/.cherrystudio/config/config.json's `appDataPath` array.
-   *
-   * Key: executable path (matches Electron's `app.getPath('exe')`).
-   * Value: absolute path to the chosen userData directory.
-   *
-   * Migrated from v1 ~/.cherrystudio/config/config.json on first v1→v2 run
-   * via the 'configfile' source in BootConfigMigrator.
-   */
-  // configfile/legacy-home/appDataPath
-  'app.user_data_path': Record<string, string>;
-
-  /**
-   * In-flight relocation of the Electron userData directory tree
-   * (the directory returned by `app.getPath('userData')`).
-   *
-   * Lives under the `temp.*` top-level namespace — reserved for ephemeral
-   * runtime state: single in-flight operations meant to be cleared once
-   * consumed. **Never** backed up or synced: restoring a stale temp.* entry
-   * on a different machine or at a different time can cause silent data
-   * corruption (e.g. re-executing a relocation that already happened).
-   *
-   * Lifecycle:
-   *   - null: no relocation in progress (default).
-   *   - { status: 'pending', from, to }: an IPC handler wrote this request
-   *     and the next preboot should execute the copy.
-   *   - { status: 'failed', from, to, error, failedAt }: a previous preboot
-   *     attempted the copy and it failed. The record stays in BootConfig
-   *     until a renderer recovery flow lets the user retry, abandon, or
-   *     investigate. The app continues running on the previous userData
-   *     location until then.
-   *
-   * Note: "userData" here means the Electron OS directory
-   * (app.getPath('userData')), not the colloquial sense of user content.
-   * The copy includes everything under that directory — user files,
-   * Chromium runtime state, logs, etc.
-   *
-   * Consumer: src/main/core/preboot/userDataLocation.ts
-   */
-  // preboot/transient/userDataRelocation
-  'temp.user_data_relocation':
-    | { status: 'pending'; from: string; to: string }
-    | { status: 'failed'; from: string; to: string; error: string; failedAt: string }
-    | null;
-}
-
-export type BootConfigKey = keyof BootConfigSchema;
-
-/** Auto-prefix boot config keys with 'BootConfig.' for PreferenceService type integration */
-export type BootConfigPreferenceKeys = {
-  [K in BootConfigKey as `BootConfig.${K & string}`]: BootConfigSchema[K];
-};
-
 /** DB-backed preferences only (stored in SQLite) */
 export type PreferenceDefaultScopeType = PreferenceSchemas['default'];
 export type PreferenceKeyType = keyof PreferenceDefaultScopeType;
-
-/** Unified type: DB-backed preferences + file-backed boot config (BootConfig.* prefix) */
-export type UnifiedPreferenceType = PreferenceDefaultScopeType & BootConfigPreferenceKeys;
-export type UnifiedPreferenceKeyType = keyof UnifiedPreferenceType;
-
-/**
- * Result type for getMultipleRaw - maps requested keys to their values
- */
-export type UnifiedPreferenceMultipleResultType<K extends UnifiedPreferenceKeyType> = {
-  [P in K]: UnifiedPreferenceType[P];
-};
 
 export type PreferenceUpdateOptions = {
   optimistic: boolean;

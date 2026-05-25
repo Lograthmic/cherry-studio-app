@@ -17,8 +17,12 @@ type PreferenceValue = PreferenceDefaultScopeType[PreferenceKeyType];
 type PreferenceUpdates<K extends PreferenceKeyType = PreferenceKeyType> = Partial<
   Pick<PreferenceDefaultScopeType, K>
 >;
-type PreferenceMultipleResult<K extends PreferenceKeyType> = {
+type PreferenceRawResult<K extends PreferenceKeyType> = {
   [P in K]: PreferenceDefaultScopeType[P];
+};
+type PreferenceMapping = Record<string, PreferenceKeyType>;
+type PreferenceMappedResult<T extends PreferenceMapping> = {
+  [P in keyof T]: PreferenceDefaultScopeType[T[P]];
 };
 type PreferenceUpdateMap = Partial<Record<PreferenceKeyType, PreferenceValue>>;
 
@@ -39,6 +43,7 @@ const defaultUpdateOptions: PreferenceUpdateOptions = {
 export class PreferenceService {
   private cache: PreferenceUpdateMap = { ...DefaultPreferences.default };
   private listeners = new Map<PreferenceKeyType, Set<PreferenceListener>>();
+  private updateTail: Promise<void> = Promise.resolve();
 
   constructor(private readonly dbService: DbService) {}
 
@@ -74,18 +79,40 @@ export class PreferenceService {
 
   async getMultipleRaw<K extends PreferenceKeyType>(
     keys: readonly K[],
-  ): Promise<PreferenceMultipleResult<K>> {
-    return this.getMultipleCached(keys);
+  ): Promise<PreferenceRawResult<K>> {
+    return this.getMultipleRawCached(keys);
   }
 
-  getMultipleCached<K extends PreferenceKeyType>(keys: readonly K[]): PreferenceMultipleResult<K> {
-    const result = {} as PreferenceMultipleResult<K>;
+  getMultipleRawCached<K extends PreferenceKeyType>(keys: readonly K[]): PreferenceRawResult<K> {
+    const result = {} as PreferenceRawResult<K>;
 
     for (const key of keys) {
       result[key] = this.getCachedValue(key) ?? getDefaultValue(key);
     }
 
     return result;
+  }
+
+  getMultiple<T extends PreferenceMapping>(mapping: T): PreferenceMappedResult<T> {
+    return this.getMultipleCached(mapping);
+  }
+
+  getMultipleCached<T extends PreferenceMapping>(mapping: T): PreferenceMappedResult<T> {
+    const result = {} as PreferenceMappedResult<T>;
+
+    for (const name of Object.keys(mapping) as (keyof T)[]) {
+      const key = mapping[name];
+      result[name] = this.getCachedValue(key) ?? getDefaultValue(key);
+    }
+
+    return result;
+  }
+
+  getAll(): PreferenceDefaultScopeType {
+    return {
+      ...DefaultPreferences.default,
+      ...this.cache,
+    } as PreferenceDefaultScopeType;
   }
 
   async set<K extends PreferenceKeyType>(
@@ -100,32 +127,7 @@ export class PreferenceService {
     updates: PreferenceUpdates<K>,
     options: PreferenceUpdateOptions = defaultUpdateOptions,
   ) {
-    const updateMap = updates as PreferenceUpdateMap;
-    const keys = this.getUpdateKeys(updateMap);
-
-    if (keys.length === 0) {
-      return;
-    }
-
-    const previousValues = this.pickCachedValues(keys);
-
-    if (options.optimistic) {
-      this.applyUpdates(updateMap, keys);
-    }
-
-    try {
-      await this.persistUpdates(updateMap, keys);
-
-      if (!options.optimistic) {
-        this.applyUpdates(updateMap, keys);
-      }
-    } catch (error) {
-      if (options.optimistic) {
-        this.restoreValues(previousValues, keys);
-      }
-
-      throw error;
-    }
+    await this.enqueueUpdate(updates as PreferenceUpdateMap, options);
   }
 
   subscribeChange<K extends PreferenceKeyType>(key: K) {
@@ -144,8 +146,52 @@ export class PreferenceService {
     };
   }
 
+  private enqueueUpdate(updates: PreferenceUpdateMap, options: PreferenceUpdateOptions) {
+    const run = this.updateTail.then(() => this.runUpdate(updates, options));
+    this.updateTail = run.catch(() => {});
+
+    return run;
+  }
+
+  private async runUpdate(updates: PreferenceUpdateMap, options: PreferenceUpdateOptions) {
+    const keys = this.getChangedKeys(updates);
+
+    if (keys.length === 0) {
+      return;
+    }
+
+    const previousValues = this.pickCachedValues(keys);
+
+    if (options.optimistic) {
+      this.applyUpdates(updates, keys);
+    }
+
+    try {
+      await this.persistUpdates(updates, keys);
+
+      if (!options.optimistic) {
+        this.applyUpdates(updates, keys);
+      }
+    } catch (error) {
+      if (options.optimistic) {
+        this.restoreValues(previousValues, keys);
+      }
+
+      throw error;
+    }
+  }
+
   private getUpdateKeys(updates: PreferenceUpdateMap) {
     return getPreferenceKeys().filter((key) => key in updates && updates[key] !== undefined);
+  }
+
+  private getChangedKeys(updates: PreferenceUpdateMap) {
+    return this.getUpdateKeys(updates).filter((key) => {
+      const value = updates[key] as PreferenceValue;
+      const currentValue = this.getCachedValue(key) ?? getDefaultValue(key);
+
+      return !isPreferenceValueEqual(currentValue, value);
+    });
   }
 
   private pickCachedValues(keys: PreferenceKeyType[]) {
@@ -209,4 +255,42 @@ export class PreferenceService {
       }
     }
   }
+}
+
+function isPreferenceValueEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+
+  if (!isComparableObject(left) || !isComparableObject(right)) {
+    return false;
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+      return false;
+    }
+
+    return left.every((item, index) => isPreferenceValueEqual(item, right[index]));
+  }
+
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  return leftKeys.every(
+    (key, index) =>
+      key === rightKeys[index] &&
+      isPreferenceValueEqual(
+        (left as Record<string, unknown>)[key],
+        (right as Record<string, unknown>)[key],
+      ),
+  );
+}
+
+function isComparableObject(value: unknown): value is Record<string, unknown> | unknown[] {
+  return typeof value === 'object' && value !== null;
 }

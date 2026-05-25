@@ -1,12 +1,9 @@
 import {
-  BOOT_CONFIG_PREFIX,
   DefaultPreferences,
   getDefaultValue,
   getPreferenceKeys,
-  isBootConfigKey,
   isPreferenceKey,
   ThemeMode,
-  toBootConfigKey,
 } from '..';
 
 describe('preference defaults', () => {
@@ -66,22 +63,5 @@ describe('preference defaults', () => {
     expect(isPreferenceKey('feature.translate.model_prompt')).toBe(true);
     expect(isPreferenceKey('BootConfig.example')).toBe(false);
     expect(Object.keys(DefaultPreferences.default)).toHaveLength(229);
-  });
-
-  test('supports desktop BootConfig-prefixed unified keys', () => {
-    expect(BOOT_CONFIG_PREFIX).toBe('BootConfig.');
-    expect(isBootConfigKey('BootConfig.app.disable_hardware_acceleration')).toBe(true);
-    expect(
-      getPreferenceKeys().length +
-        [
-          'BootConfig.app.disable_hardware_acceleration',
-          'BootConfig.app.user_data_path',
-          'BootConfig.temp.user_data_relocation',
-        ].length,
-    ).toBe(232);
-    expect(toBootConfigKey('BootConfig.app.disable_hardware_acceleration')).toBe(
-      'app.disable_hardware_acceleration',
-    );
-    expect(getDefaultValue('BootConfig.app.disable_hardware_acceleration')).toBe(false);
   });
 });
