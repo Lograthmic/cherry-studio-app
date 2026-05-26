@@ -1,12 +1,23 @@
+import { useDrawerProgress } from 'expo-router/build/react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
 import { useThemeColor } from 'heroui-native/hooks';
 import { useEffect } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { type ColorValue, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  makeMutable,
+  useAnimatedReaction,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 
 import { DrawerContent } from './components/DrawerContent';
 import { useDrawerNavigationBridge } from './context/DrawerProvider';
 
 const drawerActivationOffset = 8;
+const drawerProgress = makeMutable(0);
+const drawerScreenOpenBorderRadius = 28;
+const drawerScreenOpenScale = 0.94;
 const drawerSwipeMinDistance = 60;
 
 type DrawerNavigationDispatcher = {
@@ -19,9 +30,15 @@ type DrawerStateLike = {
 };
 
 type DrawerControllerBridgeProps = {
+  backgroundColor: ColorValue;
   children: React.ReactNode;
   navigation: DrawerNavigationDispatcher;
   state: DrawerStateLike;
+};
+
+type DrawerScreenMotionProps = {
+  backgroundColor: ColorValue;
+  children: React.ReactNode;
 };
 
 function getDrawerOpenState(state: DrawerStateLike) {
@@ -32,7 +49,65 @@ function getDrawerOpenState(state: DrawerStateLike) {
   return (drawerEntry?.status ?? state.default ?? 'closed') === 'open';
 }
 
-function DrawerControllerBridge({ children, navigation, state }: DrawerControllerBridgeProps) {
+function DrawerScreenMotion({ backgroundColor, children }: DrawerScreenMotionProps) {
+  const screenStyle = useAnimatedStyle(() => {
+    return {
+      borderRadius: interpolate(
+        drawerProgress.value,
+        [0, 1],
+        [0, drawerScreenOpenBorderRadius],
+        Extrapolation.CLAMP,
+      ),
+      transform: [
+        {
+          scale: interpolate(
+            drawerProgress.value,
+            [0, 1],
+            [drawerScreenOpenScale, 1],
+            Extrapolation.CLAMP,
+          ),
+        },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.screenMotion, { backgroundColor }, screenStyle]}>
+      <View style={styles.screenContent}>{children}</View>
+    </Animated.View>
+  );
+}
+
+function DrawerContentWithProgressBridge() {
+  const nativeDrawerProgress = useDrawerProgress();
+
+  const drawerContentStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(nativeDrawerProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+    };
+  }, [nativeDrawerProgress]);
+
+  useAnimatedReaction(
+    () => nativeDrawerProgress.value,
+    (value) => {
+      drawerProgress.value = value;
+    },
+    [nativeDrawerProgress],
+  );
+
+  return (
+    <Animated.View style={[styles.drawerContentMotion, drawerContentStyle]}>
+      <DrawerContent />
+    </Animated.View>
+  );
+}
+
+function DrawerControllerBridge({
+  backgroundColor,
+  children,
+  navigation,
+  state,
+}: DrawerControllerBridgeProps) {
   const { registerDrawerController, setDrawerOpen } = useDrawerNavigationBridge();
 
   useEffect(() => {
@@ -50,7 +125,9 @@ function DrawerControllerBridge({ children, navigation, state }: DrawerControlle
     setDrawerOpen(getDrawerOpenState(state));
   }, [setDrawerOpen, state]);
 
-  return children;
+  return (
+    <DrawerScreenMotion backgroundColor={backgroundColor}>{children}</DrawerScreenMotion>
+  );
 }
 
 export function DrawerLayout() {
@@ -61,9 +138,13 @@ export function DrawerLayout() {
     <View style={[styles.container, { backgroundColor }]}>
       <Drawer
         backBehavior="none"
-        drawerContent={() => <DrawerContent />}
+        drawerContent={() => <DrawerContentWithProgressBridge />}
         layout={({ children, navigation, state }) => (
-          <DrawerControllerBridge navigation={navigation} state={state}>
+          <DrawerControllerBridge
+            backgroundColor={backgroundColor}
+            navigation={navigation}
+            state={state}
+          >
             {children}
           </DrawerControllerBridge>
         )}
@@ -76,7 +157,7 @@ export function DrawerLayout() {
             backgroundColor,
             width,
           },
-          drawerType: 'slide',
+          drawerType: 'back',
           headerShown: false,
           keyboardDismissMode: 'on-drag',
           overlayColor: 'transparent',
@@ -94,5 +175,16 @@ export function DrawerLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  drawerContentMotion: {
+    flex: 1,
+  },
+  screenContent: {
+    flex: 1,
+  },
+  screenMotion: {
+    borderCurve: 'continuous',
+    flex: 1,
+    overflow: 'hidden',
   },
 });
