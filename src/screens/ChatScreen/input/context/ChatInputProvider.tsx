@@ -22,7 +22,6 @@ import {
   type ChatInputAttachmentDraft,
   removeChatInputAttachment,
 } from '@/screens/ChatScreen/input/utils/chatInputAttachments';
-import { chatInputMotionConfig } from '@/screens/ChatScreen/input/utils/chatInputMotion';
 import {
   CHAT_INPUT_DEFAULT_REASONING_EFFORT,
   type ChatInputReasoningEffort,
@@ -32,17 +31,13 @@ import {
 type ChatInputStateContextValue = {
   attachments: readonly ChatInputAttachmentDraft[];
   draft: string;
-  isAttachmentPreviewExiting: boolean;
   isActionSheetOpen: boolean;
   isInputFocused: boolean;
   isReasoningEffortSelected: boolean;
-  isToolbarExiting: boolean;
   reasoningEffort: ChatInputReasoningEffort;
   selectedTool?: ChatInputAction;
   selectedToolId: ChatInputActionId | null;
-  visibleAttachments: readonly ChatInputAttachmentDraft[];
-  visibleSelectedTool?: ChatInputAction;
-  visibleShouldShowReasoningEffortTag: boolean;
+  shouldShowReasoningEffortTag: boolean;
 };
 
 type ChatInputActionsContextValue = {
@@ -65,21 +60,7 @@ type ChatInputMetaContextValue = {
   inputRef: RefObject<TextInput | null>;
 };
 
-type ChatInputAttachmentState = {
-  attachments: ChatInputAttachmentDraft[];
-  isPreviewExiting: boolean;
-  visibleAttachments: ChatInputAttachmentDraft[];
-};
-
-type ChatInputToolState = {
-  isPreviewExiting: boolean;
-  selectedToolId: ChatInputActionId | null;
-  visibleSelectedToolId: ChatInputActionId | null;
-  visibleShouldShowReasoningEffortTag: boolean;
-};
-
 const chatInputFocusAfterActionDelay = 100;
-const chatInputPreviewExitDelay = chatInputMotionConfig.duration;
 
 const ChatInputStateContext = createContext<ChatInputStateContextValue | null>(null);
 const ChatInputActionsContext = createContext<ChatInputActionsContextValue | null>(null);
@@ -97,40 +78,16 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
   const [reasoningEffort, setReasoningEffort] = useState<ChatInputReasoningEffort>(
     CHAT_INPUT_DEFAULT_REASONING_EFFORT,
   );
-  const [toolState, setToolState] = useState<ChatInputToolState>({
-    isPreviewExiting: false,
-    selectedToolId: null,
-    visibleSelectedToolId: null,
-    visibleShouldShowReasoningEffortTag: false,
-  });
-  const [attachmentState, setAttachmentState] = useState<ChatInputAttachmentState>({
-    attachments: [],
-    isPreviewExiting: false,
-    visibleAttachments: [],
-  });
-  const { attachments, isPreviewExiting, visibleAttachments } = attachmentState;
-  const {
-    isPreviewExiting: isToolPreviewExiting,
-    selectedToolId,
-    visibleSelectedToolId,
-    visibleShouldShowReasoningEffortTag,
-  } = toolState;
+  const [attachments, setAttachments] = useState<ChatInputAttachmentDraft[]>([]);
+  const [selectedToolId, setSelectedToolId] = useState<ChatInputActionId | null>(null);
   const addAttachments = useCallback((nextAttachments: ChatInputAttachmentDraft[]) => {
-    setAttachmentState((current) => {
-      const attachments = appendChatInputAttachments(current.attachments, nextAttachments);
-
-      return {
-        attachments,
-        isPreviewExiting: false,
-        visibleAttachments: attachments,
-      };
-    });
+    setAttachments((current) => appendChatInputAttachments(current, nextAttachments));
   }, []);
   const media = useChatInputPhotoPicker(isActionSheetOpen, addAttachments);
   const selectedTool = useMemo(() => getChatInputAction(selectedToolId), [selectedToolId]);
-  const visibleSelectedTool = useMemo(
-    () => getChatInputAction(visibleSelectedToolId),
-    [visibleSelectedToolId],
+  const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
+    isReasoningEffortSelected,
+    reasoningEffort,
   );
 
   useEffect(() => {
@@ -140,55 +97,6 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (!isPreviewExiting) {
-      return undefined;
-    }
-
-    const attachmentPreviewExitTimeout = setTimeout(() => {
-      setAttachmentState((current) => {
-        if (!current.isPreviewExiting || current.attachments.length > 0) {
-          return current;
-        }
-
-        return {
-          ...current,
-          isPreviewExiting: false,
-          visibleAttachments: [],
-        };
-      });
-    }, chatInputPreviewExitDelay);
-
-    return () => {
-      clearTimeout(attachmentPreviewExitTimeout);
-    };
-  }, [isPreviewExiting]);
-
-  useEffect(() => {
-    if (!isToolPreviewExiting) {
-      return undefined;
-    }
-
-    const toolPreviewExitTimeout = setTimeout(() => {
-      setToolState((current) => {
-        if (!current.isPreviewExiting || current.selectedToolId) {
-          return current;
-        }
-
-        return {
-          ...current,
-          isPreviewExiting: false,
-          visibleSelectedToolId: null,
-          visibleShouldShowReasoningEffortTag: false,
-        };
-      });
-    }, chatInputPreviewExitDelay);
-
-    return () => {
-      clearTimeout(toolPreviewExitTimeout);
-    };
-  }, [isToolPreviewExiting]);
 
   const openActionSheet = useCallback(() => {
     inputRef.current?.blur();
@@ -217,123 +125,56 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
     }, chatInputFocusAfterActionDelay);
   }, []);
 
-  const selectAction = useCallback(
-    (actionId: ChatInputActionId) => {
-      const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
-        isReasoningEffortSelected,
-        reasoningEffort,
-      );
-
-      setToolState((current) =>
-        getNextChatInputToolState(
-          current,
-          toggleChatInputAction(current.selectedToolId, actionId),
-          shouldShowReasoningEffortTag,
-        ),
-      );
-      shouldFocusAfterActionSheetCloseRef.current = true;
-    },
-    [isReasoningEffortSelected, reasoningEffort],
-  );
+  const selectAction = useCallback((actionId: ChatInputActionId) => {
+    setSelectedToolId((current) => toggleChatInputAction(current, actionId));
+    shouldFocusAfterActionSheetCloseRef.current = true;
+  }, []);
 
   const selectReasoningEffort = useCallback((nextReasoningEffort: ChatInputReasoningEffort) => {
     setReasoningEffort(nextReasoningEffort);
     setIsReasoningEffortSelected(true);
-    setToolState((current) =>
-      getNextChatInputToolState(
-        current,
-        current.selectedToolId,
-        shouldShowChatInputReasoningEffortTag(true, nextReasoningEffort),
-      ),
-    );
     shouldFocusAfterActionSheetCloseRef.current = true;
   }, []);
 
   const clearReasoningEffort = useCallback(() => {
     setIsReasoningEffortSelected(false);
     setReasoningEffort(CHAT_INPUT_DEFAULT_REASONING_EFFORT);
-    setToolState((current) => getNextChatInputToolState(current, current.selectedToolId, false));
   }, []);
 
   const clearSelectedTool = useCallback(() => {
-    const shouldShowReasoningEffortTag = shouldShowChatInputReasoningEffortTag(
-      isReasoningEffortSelected,
-      reasoningEffort,
-    );
-
-    setToolState((current) =>
-      getNextChatInputToolState(current, null, shouldShowReasoningEffortTag),
-    );
-  }, [isReasoningEffortSelected, reasoningEffort]);
+    setSelectedToolId(null);
+  }, []);
 
   const removeAttachment = useCallback((attachmentId: string) => {
-    setAttachmentState((current) => {
-      if (current.attachments.length === 0) {
-        return current;
-      }
-
-      const attachments = removeChatInputAttachment(current.attachments, attachmentId);
-
-      if (attachments.length > 0) {
-        return {
-          attachments,
-          isPreviewExiting: false,
-          visibleAttachments: attachments,
-        };
-      }
-
-      return {
-        attachments,
-        isPreviewExiting: current.visibleAttachments.length > 0,
-        visibleAttachments: current.visibleAttachments,
-      };
-    });
+    setAttachments((current) => removeChatInputAttachment(current, attachmentId));
   }, []);
 
   const clearAttachments = useCallback(() => {
-    setAttachmentState((current) => {
-      if (current.attachments.length === 0 && current.visibleAttachments.length === 0) {
-        return current;
-      }
-
-      return {
-        attachments: [],
-        isPreviewExiting: current.visibleAttachments.length > 0,
-        visibleAttachments: current.visibleAttachments,
-      };
-    });
+    setAttachments([]);
   }, []);
 
   const stateValue = useMemo(
     () => ({
       attachments,
       draft,
-      isAttachmentPreviewExiting: isPreviewExiting,
       isActionSheetOpen,
       isInputFocused,
       isReasoningEffortSelected,
-      isToolbarExiting: isToolPreviewExiting,
       reasoningEffort,
       selectedTool,
       selectedToolId,
-      visibleAttachments,
-      visibleSelectedTool,
-      visibleShouldShowReasoningEffortTag,
+      shouldShowReasoningEffortTag,
     }),
     [
       attachments,
       draft,
-      isPreviewExiting,
       isActionSheetOpen,
       isInputFocused,
       isReasoningEffortSelected,
-      isToolPreviewExiting,
       reasoningEffort,
       selectedTool,
       selectedToolId,
-      visibleAttachments,
-      visibleSelectedTool,
-      visibleShouldShowReasoningEffortTag,
+      shouldShowReasoningEffortTag,
     ],
   );
 
@@ -380,29 +221,6 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       </ChatInputActionsContext>
     </ChatInputStateContext>
   );
-}
-
-function getNextChatInputToolState(
-  current: ChatInputToolState,
-  selectedToolId: ChatInputActionId | null,
-  shouldShowReasoningEffortTag: boolean,
-): ChatInputToolState {
-  if (selectedToolId || shouldShowReasoningEffortTag) {
-    return {
-      isPreviewExiting: false,
-      selectedToolId,
-      visibleSelectedToolId: selectedToolId,
-      visibleShouldShowReasoningEffortTag: shouldShowReasoningEffortTag,
-    };
-  }
-
-  return {
-    isPreviewExiting:
-      current.visibleSelectedToolId !== null || current.visibleShouldShowReasoningEffortTag,
-    selectedToolId,
-    visibleSelectedToolId: current.visibleSelectedToolId,
-    visibleShouldShowReasoningEffortTag: current.visibleShouldShowReasoningEffortTag,
-  };
 }
 
 export function useChatInputState() {

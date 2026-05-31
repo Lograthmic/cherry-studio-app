@@ -35,22 +35,14 @@ const logger = loggerService.withContext('ChatInputSurface');
 
 export function ChatInputSurface() {
   const { clearReasoningEffort, clearSelectedTool, removeAttachment } = useChatInputActions();
-  const {
-    attachments,
-    isAttachmentPreviewExiting,
-    isInputFocused,
-    selectedTool,
-    isToolbarExiting,
-    visibleAttachments,
-    visibleSelectedTool,
-    visibleShouldShowReasoningEffortTag,
-  } = useChatInputState();
+  const { attachments, isInputFocused, selectedTool, shouldShowReasoningEffortTag } =
+    useChatInputState();
   const surfaceContentProgress = useSharedValue(0);
   const hasSurfaceContent =
     isInputFocused ||
     attachments.length > 0 ||
     selectedTool !== undefined ||
-    visibleShouldShowReasoningEffortTag;
+    shouldShowReasoningEffortTag;
   const handleAttachmentPreview = useCallback((attachment: ChatInputAttachmentDraft) => {
     void ExpoQuickLook.previewFile({
       editingMode: 'disabled',
@@ -101,7 +93,7 @@ export function ChatInputSurface() {
           pointerEvents="none"
           style={mergedSurfaceStyle}
         />
-        <Animated.View layout={chatInputLayoutTransition} style={addButtonSlotStyle}>
+        <Animated.View style={addButtonSlotStyle}>
           <ChatInputAddButton separatedSurfaceStyle={separatedSurfaceStyle} />
         </Animated.View>
         <Animated.View style={controlGapStyle} />
@@ -120,15 +112,13 @@ export function ChatInputSurface() {
             layout={chatInputLayoutTransition}
           >
             <ChatInputToolbar
-              isExiting={isToolbarExiting}
-              shouldShowReasoningEffortTag={visibleShouldShowReasoningEffortTag}
-              selectedTool={visibleSelectedTool}
+              shouldShowReasoningEffortTag={shouldShowReasoningEffortTag}
+              selectedTool={selectedTool}
               onReasoningEffortClear={clearReasoningEffort}
               onToolClear={clearSelectedTool}
             />
             <ChatInputAttachmentPreviewStrip
-              attachments={visibleAttachments}
-              isExiting={isAttachmentPreviewExiting}
+              attachments={attachments}
               onAttachmentPreview={handleAttachmentPreview}
               onAttachmentRemove={removeAttachment}
             />

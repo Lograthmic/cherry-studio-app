@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { CameraIcon, FileIcon, ImagesIcon, XIcon } from 'lucide-uniwind';
-import { type ComponentType, type ReactNode, useEffect } from 'react';
+import { type ComponentType, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type GestureResponderEvent,
@@ -10,17 +10,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { SvgProps } from 'react-native-svg';
 import { withUniwind } from 'uniwind';
+import {
+  ChatInputAccessoryItem,
+  ChatInputAccessorySection,
+} from '@/screens/ChatScreen/input/components/ChatInputAccessory';
 import type { ChatInputAttachmentDraft } from '@/screens/ChatScreen/input/utils/chatInputAttachments';
 import { getChatInputFileExtension } from '@/screens/ChatScreen/input/utils/chatInputAttachments';
-import {
-  chatInputFadeIn,
-  chatInputFadeOut,
-  chatInputLayoutTransition,
-  chatInputMotionConfig,
-} from '@/screens/ChatScreen/input/utils/chatInputMotion';
 
 type ChatInputMediaStripProps = {
   children: ReactNode;
@@ -45,7 +42,6 @@ type ChatInputPhotoPreviewTileProps = Omit<PhotoPreviewTileProps, 'accessibility
 
 type ChatInputAttachmentPreviewStripProps = {
   attachments: readonly ChatInputAttachmentDraft[];
-  isExiting: boolean;
   onAttachmentPreview: (attachment: ChatInputAttachmentDraft) => void;
   onAttachmentRemove: (attachmentId: string) => void;
 };
@@ -60,7 +56,6 @@ type ImagePreviewTileProps = {
 };
 
 const mediaTileSize = 112;
-const StyledAnimatedView = withUniwind(Animated.View);
 const StyledPressable = withUniwind(Pressable);
 
 export function ChatInputMediaStrip({ children }: ChatInputMediaStripProps) {
@@ -123,26 +118,16 @@ export function ChatInputPhotoPreviewTile({
 
 export function ChatInputAttachmentPreviewStrip({
   attachments,
-  isExiting,
   onAttachmentPreview,
   onAttachmentRemove,
 }: ChatInputAttachmentPreviewStripProps) {
-  const containerOpacity = useSharedValue(isExiting ? 0 : 1);
-
-  useEffect(() => {
-    containerOpacity.value = withTiming(isExiting ? 0 : 1, chatInputMotionConfig);
-  }, [containerOpacity, isExiting]);
-
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
-  }));
-
-  if (attachments.length === 0) {
-    return null;
-  }
+  const hasAttachments = attachments.length > 0;
 
   return (
-    <StyledAnimatedView className="p-2" style={containerStyle}>
+    <ChatInputAccessorySection
+      className={hasAttachments ? 'p-2' : 'p-0'}
+      pointerEvents={hasAttachments ? 'auto' : 'none'}
+    >
       <ChatInputMediaStrip>
         {attachments.map((attachment) =>
           attachment.kind === 'image' ? (
@@ -161,7 +146,7 @@ export function ChatInputAttachmentPreviewStrip({
           ),
         )}
       </ChatInputMediaStrip>
-    </StyledAnimatedView>
+    </ChatInputAccessorySection>
   );
 }
 
@@ -249,12 +234,9 @@ function AttachmentImagePreviewTile({
   const { t } = useTranslation();
 
   return (
-    <StyledAnimatedView
-      accessibilityLabel={attachment.name || t('chat.attachments.image')}
+    <ChatInputAccessoryItem
       className="items-center justify-center overflow-hidden rounded-2xl bg-surface-secondary"
-      entering={chatInputFadeIn}
-      exiting={chatInputFadeOut}
-      layout={chatInputLayoutTransition}
+      accessibilityLabel={attachment.name || t('chat.attachments.image')}
       style={styles.mediaTile}
     >
       <ImagePreviewTile
@@ -264,7 +246,7 @@ function AttachmentImagePreviewTile({
         uri={attachment.uri}
       />
       <XBadge onPress={onRemove} />
-    </StyledAnimatedView>
+    </ChatInputAccessoryItem>
   );
 }
 
@@ -278,12 +260,9 @@ function AttachmentFilePreviewTile({
   const extension = getChatInputFileExtension(attachment.name);
 
   return (
-    <StyledAnimatedView
-      accessibilityLabel={attachment.name}
+    <ChatInputAccessoryItem
       className="items-center justify-center gap-2 overflow-hidden rounded-2xl bg-surface-secondary px-3"
-      entering={chatInputFadeIn}
-      exiting={chatInputFadeOut}
-      layout={chatInputLayoutTransition}
+      accessibilityLabel={attachment.name}
       style={styles.mediaTile}
     >
       <FileIcon className="size-8 text-default-foreground" strokeWidth={2} />
@@ -296,7 +275,7 @@ function AttachmentFilePreviewTile({
         {attachment.name}
       </Text>
       <XBadge onPress={onRemove} />
-    </StyledAnimatedView>
+    </ChatInputAccessoryItem>
   );
 }
 
