@@ -4,14 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { withUniwind } from 'uniwind';
+import type { Topic } from '@/data/types/topic';
 
 import { useDrawerActions, useDrawerPanelState, useDrawerTopics } from '../context/DrawerProvider';
-import {
-  drawerContentLayoutTransition,
-  drawerFeatureAreaEntering,
-  drawerFeatureAreaExiting,
-} from '../utils/drawerAnimation';
-import type { Topic } from '@/data/types/topic';
+import { drawerContentLayoutTransition, drawerFeatureAreaEntering } from '../utils/drawerAnimation';
 
 import { DrawerFeatureArea } from './DrawerFeatureArea';
 
@@ -84,7 +80,6 @@ export const DrawerTopicList = memo(function DrawerTopicList() {
         isSearchActive ? null : (
           <StyledAnimatedView
             entering={drawerFeatureAreaEntering}
-            exiting={drawerFeatureAreaExiting}
             layout={drawerContentLayoutTransition}
           >
             <DrawerFeatureArea />
