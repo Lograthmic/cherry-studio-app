@@ -22,7 +22,7 @@ export const SettingsServiceRow = memo(function SettingsServiceRow({
   onPress,
 }: SettingsServiceRowProps) {
   return (
-    <View className="bg-surface-secondary">
+    <View>
       <StyledPressable
         accessibilityLabel={name}
         accessibilityRole="button"
