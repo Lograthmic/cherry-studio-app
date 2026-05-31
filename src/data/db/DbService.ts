@@ -79,15 +79,26 @@ export class DbService {
     }
   }
 
-  private async runExclusiveWriteTx<TValue>(fn: (tx: Database) => Promise<TValue>) {
-    let result: TValue | undefined;
+  private async runExclusiveWriteTx<TValue>(
+    fn: (tx: Database) => Promise<TValue>,
+  ): Promise<TValue> {
+    // Keep write transactions on the long-lived connection. Expo's
+    // withExclusiveTransactionAsync opens and closes a temporary connection,
+    // which can crash on physical iOS devices when FTS5 tables are present.
+    await this.sqlite.execAsync('BEGIN IMMEDIATE');
 
-    await this.sqlite.withExclusiveTransactionAsync(async (sqliteTx) => {
-      const tx = createDrizzleDatabase(sqliteTx);
-      result = await fn(tx);
-    });
-
-    return result as TValue;
+    try {
+      const result = await fn(this.db);
+      await this.sqlite.execAsync('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await this.sqlite.execAsync('ROLLBACK');
+      } catch (rollbackError) {
+        logger.warn('Failed to roll back database transaction', rollbackError as Error);
+      }
+      throw error;
+    }
   }
 
   private async configurePragmas(): Promise<void> {
