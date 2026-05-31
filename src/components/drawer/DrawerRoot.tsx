@@ -32,7 +32,7 @@ export function DrawerRoot() {
             presentation: 'formSheet',
             sheetAllowedDetents: [1],
             sheetCornerRadius: 24,
-            sheetGrabberVisible: true,
+            sheetGrabberVisible: false,
             sheetInitialDetentIndex: 0,
           }}
         />

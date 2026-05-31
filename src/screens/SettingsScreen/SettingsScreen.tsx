@@ -14,6 +14,7 @@ import { ScrollView, View } from 'react-native';
 import { CloseHeader } from '@/components/headers';
 import { usePrefetchProviders } from '@/hooks/settings/usePrefetchProviders';
 import { SettingSelect } from './components/SettingSelect';
+import { SettingsProfileHeader } from './components/SettingsProfileHeader';
 import { SettingsSection } from './components/SettingsSection';
 import { useSettingPreferences } from './hooks/useSettingPreferences';
 
@@ -25,7 +26,7 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <CloseHeader title={t('settings.title')} />
+      <CloseHeader />
       <ScrollView
         alwaysBounceVertical={false}
         className="flex-1 bg-background"
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="gap-6 px-4 py-5">
+          <SettingsProfileHeader />
           <SettingsSection
             items={[
               {
