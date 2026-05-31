@@ -9,9 +9,6 @@ export default function ChatStackLayout() {
   return (
     <Stack
       screenOptions={{
-        contentStyle: {
-          backgroundColor,
-        },
         headerShadowVisible: isIOS ? undefined : false,
         headerStyle: isIOS
           ? undefined

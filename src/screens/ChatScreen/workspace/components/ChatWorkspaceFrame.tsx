@@ -7,5 +7,5 @@ type ChatWorkspaceFrameProps = PropsWithChildren;
 const StyledView = withUniwind(View);
 
 export function ChatWorkspaceFrame({ children }: ChatWorkspaceFrameProps) {
-  return <StyledView className="flex-1 bg-background">{children}</StyledView>;
+  return <StyledView className="flex-1">{children}</StyledView>;
 }

@@ -18,7 +18,7 @@ export function ChatScreen() {
     return (
       <>
         <MainHeader />
-        <View className="flex-1 bg-background">
+        <View className="flex-1">
           <ChatWorkspace messageWindow={messageWindow} renderGateKey={topicId} />
         </View>
       </>

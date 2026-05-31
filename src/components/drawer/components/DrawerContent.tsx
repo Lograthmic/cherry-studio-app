@@ -1,7 +1,5 @@
-import { useThemeColor } from 'heroui-native/hooks';
-import { XIcon } from 'lucide-uniwind';
 import { useCallback, useEffect, useRef } from 'react';
-import { TextInput, useWindowDimensions, View } from 'react-native';
+import { TextInput, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { withUniwind } from 'uniwind';
@@ -18,7 +16,6 @@ const StyledAnimatedView = withUniwind(Animated.View);
 export function DrawerContent() {
   const inputRef = useRef<TextInput>(null);
   const { width } = useWindowDimensions();
-  const [backgroundColor] = useThemeColor(['background']);
   const { isOpen, isSearchActive, searchText } = useDrawerPanelState();
   const { closeSearch, openSearch, setSearchText } = useDrawerActions();
   const isSearchVisible = isOpen && isSearchActive;
@@ -55,7 +52,6 @@ export function DrawerContent() {
       className="flex-1"
       edges={['top', 'bottom']}
       importantForAccessibility={isOpen ? 'auto' : 'no-hide-descendants'}
-      style={[{ backgroundColor }]}
     >
       <StyledAnimatedView className="flex-1 gap-2" layout={drawerContentLayoutTransition}>
         <DrawerHeader

@@ -1,8 +1,7 @@
 import { useDrawerProgress } from 'expo-router/build/react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
-import { useThemeColor } from 'heroui-native/hooks';
 import { useEffect } from 'react';
-import { type ColorValue, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -15,9 +14,9 @@ import { DrawerContent } from './components/DrawerContent';
 import { useDrawerNavigationBridge } from './context/DrawerProvider';
 
 const drawerActivationOffset = 8;
+const drawerContentClosedOffsetY = 10;
 const drawerProgress = makeMutable(0);
 const drawerScreenOpenBorderRadius = 28;
-const drawerScreenOpenScale = 0.94;
 const drawerSwipeMinDistance = 60;
 
 type DrawerNavigationDispatcher = {
@@ -30,14 +29,12 @@ type DrawerStateLike = {
 };
 
 type DrawerControllerBridgeProps = {
-  backgroundColor: ColorValue;
   children: React.ReactNode;
   navigation: DrawerNavigationDispatcher;
   state: DrawerStateLike;
 };
 
 type DrawerScreenMotionProps = {
-  backgroundColor: ColorValue;
   children: React.ReactNode;
 };
 
@@ -49,7 +46,7 @@ function getDrawerOpenState(state: DrawerStateLike) {
   return (drawerEntry?.status ?? state.default ?? 'closed') === 'open';
 }
 
-function DrawerScreenMotion({ backgroundColor, children }: DrawerScreenMotionProps) {
+function DrawerScreenMotion({ children }: DrawerScreenMotionProps) {
   const screenStyle = useAnimatedStyle(() => {
     return {
       borderRadius: interpolate(
@@ -58,21 +55,11 @@ function DrawerScreenMotion({ backgroundColor, children }: DrawerScreenMotionPro
         [0, drawerScreenOpenBorderRadius],
         Extrapolation.CLAMP,
       ),
-      transform: [
-        {
-          scale: interpolate(
-            drawerProgress.value,
-            [0, 1],
-            [drawerScreenOpenScale, 1],
-            Extrapolation.CLAMP,
-          ),
-        },
-      ],
     };
   });
 
   return (
-    <Animated.View style={[styles.screenMotion, { backgroundColor }, screenStyle]}>
+    <Animated.View style={[styles.screenMotion, screenStyle]}>
       <View style={styles.screenContent}>{children}</View>
     </Animated.View>
   );
@@ -84,6 +71,16 @@ function DrawerContentWithProgressBridge() {
   const drawerContentStyle = useAnimatedStyle(() => {
     return {
       opacity: interpolate(nativeDrawerProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
+      transform: [
+        {
+          translateY: interpolate(
+            nativeDrawerProgress.value,
+            [0, 1],
+            [drawerContentClosedOffsetY, 0],
+            Extrapolation.CLAMP,
+          ),
+        },
+      ],
     };
   }, [nativeDrawerProgress]);
 
@@ -102,12 +99,7 @@ function DrawerContentWithProgressBridge() {
   );
 }
 
-function DrawerControllerBridge({
-  backgroundColor,
-  children,
-  navigation,
-  state,
-}: DrawerControllerBridgeProps) {
+function DrawerControllerBridge({ children, navigation, state }: DrawerControllerBridgeProps) {
   const { registerDrawerController, setDrawerOpen } = useDrawerNavigationBridge();
 
   useEffect(() => {
@@ -125,24 +117,19 @@ function DrawerControllerBridge({
     setDrawerOpen(getDrawerOpenState(state));
   }, [setDrawerOpen, state]);
 
-  return <DrawerScreenMotion backgroundColor={backgroundColor}>{children}</DrawerScreenMotion>;
+  return <DrawerScreenMotion>{children}</DrawerScreenMotion>;
 }
 
 export function DrawerLayout() {
   const { width } = useWindowDimensions();
-  const [backgroundColor] = useThemeColor(['background']);
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <View style={styles.container}>
       <Drawer
         backBehavior="none"
         drawerContent={() => <DrawerContentWithProgressBridge />}
         layout={({ children, navigation, state }) => (
-          <DrawerControllerBridge
-            backgroundColor={backgroundColor}
-            navigation={navigation}
-            state={state}
-          >
+          <DrawerControllerBridge navigation={navigation} state={state}>
             {children}
           </DrawerControllerBridge>
         )}
@@ -152,16 +139,12 @@ export function DrawerLayout() {
               .activeOffsetX([-drawerActivationOffset, drawerActivationOffset])
               .failOffsetY([-drawerActivationOffset, drawerActivationOffset]),
           drawerStyle: {
-            backgroundColor,
             width,
           },
           drawerType: 'back',
           headerShown: false,
           keyboardDismissMode: 'on-drag',
           overlayColor: 'transparent',
-          sceneStyle: {
-            backgroundColor,
-          },
           swipeEdgeWidth: width,
           swipeMinDistance: drawerSwipeMinDistance,
         }}

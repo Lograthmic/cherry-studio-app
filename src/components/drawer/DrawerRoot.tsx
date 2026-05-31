@@ -11,9 +11,6 @@ export function DrawerRoot() {
     <DrawerProvider>
       <Stack
         screenOptions={{
-          contentStyle: {
-            backgroundColor,
-          },
           headerShadowVisible: isIOS ? undefined : false,
           headerStyle: isIOS
             ? undefined
