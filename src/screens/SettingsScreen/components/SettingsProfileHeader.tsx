@@ -1,18 +1,17 @@
 import {
   BottomSheet,
   type BottomSheetMethods,
-  BottomSheetTextInput,
   BottomSheetView,
 } from '@expo/ui/community/bottom-sheet';
 import { type MenuAction, MenuView, type NativeActionEvent } from '@expo/ui/community/menu';
 import { Image, type ImageSource } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeColor } from 'heroui-native/hooks';
+import { Input } from 'heroui-native/input';
 import { CameraIcon, PencilIcon } from 'lucide-uniwind';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
-import { withUniwind } from 'uniwind';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { usePreference } from '@/data/hooks';
 
@@ -20,8 +19,6 @@ const avatarSource = require('@/assets/icon.png');
 const avatarSize = 72;
 const sheetAvatarSize = 104;
 const profileSheetSnapPoints = ['60%'];
-
-const StyledBottomSheetTextInput = withUniwind(BottomSheetTextInput);
 
 export function SettingsProfileHeader() {
   const { t } = useTranslation();
@@ -112,6 +109,7 @@ function SettingsProfileEditor({
 }: SettingsProfileEditorProps) {
   const { t } = useTranslation();
   const borderColor = useThemeColor('border');
+  const inputRef = useRef<TextInput>(null);
   const avatarActions = useMemo<MenuAction[]>(
     () => [
       {
@@ -184,6 +182,10 @@ function SettingsProfileEditor({
     },
     [selectAvatarFromCamera, selectAvatarFromPhotoLibrary],
   );
+  const blurInput = useCallback(() => {
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+  }, []);
 
   return (
     <View style={styles.sheetContent}>
@@ -193,25 +195,24 @@ function SettingsProfileEditor({
             actions={avatarActions}
             accessibilityLabel={t('settings.profile.changeAvatar')}
             imageSource={draftAvatarUri ? { uri: draftAvatarUri } : undefined}
+            onPress={blurInput}
             onPressAction={handleAvatarSourceChange}
             size={sheetAvatarSize}
           />
-          {draftName ? (
-            <Text className="font-semibold text-xl text-foreground" numberOfLines={1}>
-              {draftName}
-            </Text>
-          ) : null}
         </View>
         <View className="gap-2">
           <Text className="font-medium text-foreground text-sm">
             {t('settings.profile.userName')}
           </Text>
-          <StyledBottomSheetTextInput
+          <Input
             accessibilityLabel={t('settings.profile.name')}
             autoCorrect={false}
-            className="rounded-2xl px-4 text-base text-foreground leading-5 "
+            className="rounded-2xl px-4 text-base text-foreground leading-5"
             onChangeText={onDraftNameChange}
             onSubmitEditing={onSave}
+            placeholderColorClassName="accent-muted"
+            ref={inputRef}
+            returnKeyLabel="done"
             returnKeyType="done"
             style={[styles.input, { borderColor }]}
             value={draftName}
@@ -225,7 +226,7 @@ function SettingsProfileEditor({
           className="items-center justify-center rounded-full bg-foreground px-6 py-1 active:opacity-80"
           onPress={onSave}
         >
-          <Text className="font-semibold text-lg">{t('common.save')}</Text>
+          <Text className="font-semibold text-background text-lg">{t('common.save')}</Text>
         </Pressable>
         <Pressable
           accessibilityLabel={t('common.cancel')}
@@ -259,6 +260,7 @@ type MenuAvatarTriggerProps = {
   accessibilityLabel: string;
   actions: MenuAction[];
   imageSource?: ImageSource | number;
+  onPress: () => void;
   onPressAction: (event: NativeActionEvent) => void;
   size: number;
 };
@@ -267,17 +269,23 @@ function MenuAvatarTrigger({
   accessibilityLabel,
   actions,
   imageSource,
+  onPress,
   onPressAction,
   size,
 }: MenuAvatarTriggerProps) {
   return (
-    <View style={{ height: size, width: size }}>
+    <View
+      onStartShouldSetResponderCapture={() => {
+        onPress();
+        return false;
+      }}
+      style={{ height: size, width: size }}
+    >
       <AvatarImage imageSource={imageSource} size={size} />
       <MenuView actions={actions} onPressAction={onPressAction} style={styles.avatarMenuTrigger}>
         <View
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="button"
-          onTouchStart={() => Keyboard.dismiss()}
           style={{ height: size, width: size }}
         >
           <AvatarEditBadge icon="camera" size={size} />
