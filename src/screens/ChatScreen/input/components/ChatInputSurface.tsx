@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import ExpoQuickLook from '@magrinj/expo-quick-look';
+import { useCallback, useEffect } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { withUniwind } from 'uniwind';
+import { loggerService } from '@/core/logger/loggerService';
 import {
   chatInputControlGap,
   chatInputMergedAddButtonSlotWidth,
@@ -15,26 +17,29 @@ import {
   useChatInputActions,
   useChatInputState,
 } from '@/screens/ChatScreen/input/context/ChatInputProvider';
+import type { ChatInputAttachmentDraft } from '@/screens/ChatScreen/input/utils/chatInputAttachments';
 import {
   chatInputLayoutTransition,
   chatInputMotionConfig,
 } from '@/screens/ChatScreen/input/utils/chatInputMotion';
 
 const mergedInputOffset = chatInputMinTextAreaHeight + chatInputControlGap;
-const inputSurfaceClassName =
-  'border-[1.5px] border-field-border bg-field ios:shadow-field android:shadow-sm';
+const inputSurfaceClassName = 'bg-field ios:shadow-field android:shadow-sm';
 const inputSurfaceBackgroundClassName = `absolute inset-0 rounded-3xl ${inputSurfaceClassName}`;
 
 const StyledAnimatedView = withUniwind(Animated.View);
 const inputControlSurfaceStyle = {
   minHeight: chatInputMinTextAreaHeight,
 };
+const logger = loggerService.withContext('ChatInputSurface');
 
 export function ChatInputSurface() {
   const { clearReasoningEffort, clearSelectedTool, removeAttachment } = useChatInputActions();
   const {
+    attachments,
     isAttachmentPreviewExiting,
     isInputFocused,
+    selectedTool,
     isToolbarExiting,
     visibleAttachments,
     visibleSelectedTool,
@@ -43,9 +48,17 @@ export function ChatInputSurface() {
   const surfaceContentProgress = useSharedValue(0);
   const hasSurfaceContent =
     isInputFocused ||
-    visibleAttachments.length > 0 ||
-    visibleSelectedTool !== undefined ||
+    attachments.length > 0 ||
+    selectedTool !== undefined ||
     visibleShouldShowReasoningEffortTag;
+  const handleAttachmentPreview = useCallback((attachment: ChatInputAttachmentDraft) => {
+    void ExpoQuickLook.previewFile({
+      editingMode: 'disabled',
+      uri: attachment.uri,
+    }).catch((error) => {
+      logger.warn('Failed to preview attachment', error instanceof Error ? error : null);
+    });
+  }, []);
 
   useEffect(() => {
     surfaceContentProgress.value = withTiming(hasSurfaceContent ? 1 : 0, chatInputMotionConfig);
@@ -116,6 +129,7 @@ export function ChatInputSurface() {
             <ChatInputAttachmentPreviewStrip
               attachments={visibleAttachments}
               isExiting={isAttachmentPreviewExiting}
+              onAttachmentPreview={handleAttachmentPreview}
               onAttachmentRemove={removeAttachment}
             />
             <ChatInputTextArea />

@@ -8,6 +8,11 @@ import {
   createImagePickerAttachmentDraft,
   createPhotoAttachmentDraft,
 } from '@/screens/ChatScreen/input/utils/chatInputAttachments';
+import {
+  filterChatInputSelectedPhotoIds,
+  getChatInputSelectedPhotoOrder,
+  getNextChatInputSelectedPhotoIds,
+} from '@/screens/ChatScreen/input/utils/chatInputPhotoSelection';
 
 export type ChatInputPhotoAccess = 'all' | 'limited' | 'none';
 
@@ -27,14 +32,18 @@ type PhotoLibrarySnapshot = {
 type ChatInputPhotoPickerState = {
   photoAccess: ChatInputPhotoAccess | null;
   photoPreviews: ChatInputPhotoPreview[];
+  selectedPhotoCount: number;
+  selectedPhotoOrder: ReadonlyMap<string, number>;
   shouldShowPhotosTile: boolean;
 };
 
 type ChatInputPhotoPickerActions = {
+  addSelectedPhotoPreviews: () => void;
+  clearSelectedPhotos: () => void;
   launchCamera: () => Promise<void>;
   launchImageLibrary: () => Promise<void>;
   presentLimitedPhotoPermissionsPicker: () => Promise<void>;
-  selectPhotoPreview: (photo: ChatInputPhotoPreview) => void;
+  togglePhotoSelection: (photoId: string) => void;
 };
 
 const photoPreviewQuery = () =>
@@ -96,12 +105,27 @@ export function useChatInputPhotoPicker(
   );
   const [photoAccess, setPhotoAccess] = useState<ChatInputPhotoAccess | null>(null);
   const [photoPreviews, setPhotoPreviews] = useState<ChatInputPhotoPreview[]>([]);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
 
+  const selectedPhotoCount = selectedPhotoIds.length;
   const shouldShowPhotosTile = photoAccess !== 'all';
+
+  const selectedPhotoOrder = useMemo(() => {
+    return getChatInputSelectedPhotoOrder(selectedPhotoIds);
+  }, [selectedPhotoIds]);
 
   const applyPhotoLibrarySnapshot = useCallback((snapshot: PhotoLibrarySnapshot) => {
     setPhotoAccess(snapshot.photoAccess);
     setPhotoPreviews(snapshot.photoPreviews);
+
+    if (snapshot.photoAccess === 'none') {
+      setSelectedPhotoIds([]);
+      return;
+    }
+
+    setSelectedPhotoIds((current) =>
+      filterChatInputSelectedPhotoIds(current, snapshot.photoAccess, snapshot.photoPreviews),
+    );
   }, []);
 
   const refreshPhotoPermissionsAndPreviews = useCallback(async () => {
@@ -130,6 +154,7 @@ export function useChatInputPhotoPicker(
         if (isMounted) {
           setPhotoAccess('none');
           setPhotoPreviews([]);
+          setSelectedPhotoIds([]);
         }
       });
 
@@ -203,6 +228,7 @@ export function useChatInputPhotoPicker(
     if (!permission.granted) {
       setPhotoAccess('none');
       setPhotoPreviews([]);
+      setSelectedPhotoIds([]);
       return;
     }
 
@@ -233,30 +259,62 @@ export function useChatInputPhotoPicker(
     }, photoPermissionsPickerRefreshDelay);
   }, [refreshPhotoPermissionsAndPreviews]);
 
-  const selectPhotoPreview = useCallback(
-    (photo: ChatInputPhotoPreview) => {
-      onAttachmentsAdd([createPhotoAttachmentDraft(photo)]);
-    },
-    [onAttachmentsAdd],
-  );
+  const togglePhotoSelection = useCallback((photoId: string) => {
+    setSelectedPhotoIds((current) => getNextChatInputSelectedPhotoIds(current, photoId));
+  }, []);
+
+  const clearSelectedPhotos = useCallback(() => {
+    setSelectedPhotoIds([]);
+  }, []);
+
+  const addSelectedPhotoPreviews = useCallback(() => {
+    if (selectedPhotoIds.length === 0) {
+      return;
+    }
+
+    const photoPreviewById = new Map(photoPreviews.map((photo) => [photo.id, photo]));
+    const attachments = selectedPhotoIds
+      .map((photoId) => photoPreviewById.get(photoId))
+      .filter((photo): photo is ChatInputPhotoPreview => photo !== undefined)
+      .map(createPhotoAttachmentDraft);
+
+    if (attachments.length === 0) {
+      clearSelectedPhotos();
+      return;
+    }
+
+    onAttachmentsAdd(attachments);
+    clearSelectedPhotos();
+  }, [clearSelectedPhotos, onAttachmentsAdd, photoPreviews, selectedPhotoIds]);
 
   const state: ChatInputPhotoPickerState = useMemo(
     () => ({
       photoAccess,
       photoPreviews,
+      selectedPhotoCount,
+      selectedPhotoOrder,
       shouldShowPhotosTile,
     }),
-    [photoAccess, photoPreviews, shouldShowPhotosTile],
+    [photoAccess, photoPreviews, selectedPhotoCount, selectedPhotoOrder, shouldShowPhotosTile],
   );
 
   const actions: ChatInputPhotoPickerActions = useMemo(
     () => ({
+      addSelectedPhotoPreviews,
+      clearSelectedPhotos,
       launchCamera,
       launchImageLibrary,
       presentLimitedPhotoPermissionsPicker,
-      selectPhotoPreview,
+      togglePhotoSelection,
     }),
-    [launchCamera, launchImageLibrary, presentLimitedPhotoPermissionsPicker, selectPhotoPreview],
+    [
+      addSelectedPhotoPreviews,
+      clearSelectedPhotos,
+      launchCamera,
+      launchImageLibrary,
+      presentLimitedPhotoPermissionsPicker,
+      togglePhotoSelection,
+    ],
   );
 
   return {

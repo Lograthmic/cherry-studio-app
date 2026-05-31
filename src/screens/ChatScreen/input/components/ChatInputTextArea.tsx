@@ -18,17 +18,13 @@ export function ChatInputTextArea() {
   const { t } = useTranslation();
   const { setDraft, setInputFocused } = useChatInputActions();
   const { inputRef } = useChatInputMeta();
-  const { draft, isInputFocused } = useChatInputState();
+  const { draft } = useChatInputState();
 
   return (
     <TextArea
       ref={inputRef}
       multiline
-      className={[
-        'h-auto flex-1 rounded-3xl py-3 pr-4 text-base leading-5',
-        transparentInputSurfaceClassName,
-        isInputFocused ? '' : 'pl-1',
-      ].join(' ')}
+      className={`h-auto min-h-11 flex-1 rounded-3xl px-2! py-3! text-base leading-5 ${transparentInputSurfaceClassName}`}
       numberOfLines={6}
       placeholder={t('chat.inputPlaceholder')}
       style={[
@@ -36,9 +32,9 @@ export function ChatInputTextArea() {
         {
           maxHeight: chatInputMaxTextAreaHeight,
           minHeight: chatInputMinTextAreaHeight,
-          textAlignVertical: 'center',
         },
       ]}
+      textAlignVertical="center"
       value={draft}
       onBlur={() => setInputFocused(false)}
       onChangeText={setDraft}

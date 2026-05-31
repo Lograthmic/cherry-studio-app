@@ -9,8 +9,7 @@ type ChatInputAddButtonProps = {
   separatedSurfaceStyle: AnimatedStyle<ViewStyle>;
 };
 
-const inputSurfaceClassName =
-  'border-[1.5px] border-field-border bg-field ios:shadow-field android:shadow-sm';
+const inputSurfaceClassName = 'bg-field ios:shadow-field android:shadow-sm';
 
 const StyledAnimatedView = withUniwind(Animated.View);
 const StyledPressable = withUniwind(Pressable);
