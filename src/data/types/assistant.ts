@@ -1,8 +1,6 @@
 import * as z from 'zod';
-import type { OffsetPaginationParams } from './apiTypes';
 import { UniqueModelIdSchema } from './model';
-import { TagIdSchema, TagSchema } from './tag';
-import { OrderRequestSchema } from './topic';
+import { TagSchema } from './tag';
 
 export const McpModeSchema = z.enum(['disabled', 'auto', 'manual']);
 export type McpMode = z.infer<typeof McpModeSchema>;
@@ -69,65 +67,3 @@ export const AssistantSchema = z.strictObject({
   updatedAt: z.iso.datetime(),
 });
 export type Assistant = z.infer<typeof AssistantSchema>;
-
-const ASSISTANT_MUTABLE_FIELDS = {
-  description: true,
-  emoji: true,
-  knowledgeBaseIds: true,
-  mcpServerIds: true,
-  modelId: true,
-  name: true,
-  prompt: true,
-  settings: true,
-} as const;
-
-const TagIdsField = z.array(TagIdSchema).optional();
-
-export const CreateAssistantSchema = AssistantSchema.pick(ASSISTANT_MUTABLE_FIELDS)
-  .partial()
-  .required({ name: true })
-  .extend({ tagIds: TagIdsField });
-export type CreateAssistantDto = z.infer<typeof CreateAssistantSchema>;
-
-export const UpdateAssistantSchema = AssistantSchema.pick(ASSISTANT_MUTABLE_FIELDS)
-  .partial()
-  .extend({
-    settings: AssistantSettingsSchema.partial().optional(),
-    tagIds: TagIdsField,
-  });
-export type UpdateAssistantDto = z.infer<typeof UpdateAssistantSchema>;
-
-export const ASSISTANTS_DEFAULT_PAGE = 1;
-export const ASSISTANTS_DEFAULT_LIMIT = 100;
-export const ASSISTANTS_MAX_LIMIT = 500;
-
-export const ListAssistantsQuerySchema = z.strictObject({
-  id: z.string().optional(),
-  limit: z.coerce
-    .number()
-    .int()
-    .positive()
-    .max(ASSISTANTS_MAX_LIMIT)
-    .default(ASSISTANTS_DEFAULT_LIMIT),
-  page: z.coerce.number().int().positive().default(ASSISTANTS_DEFAULT_PAGE),
-  search: z.string().trim().min(1).optional(),
-  tagIds: z.array(TagIdSchema).min(1).optional(),
-});
-export type ListAssistantsQueryParams = z.input<typeof ListAssistantsQuerySchema> &
-  OffsetPaginationParams;
-export type ListAssistantsQuery = z.output<typeof ListAssistantsQuerySchema>;
-
-export const ReorderAssistantSchema = OrderRequestSchema;
-export type ReorderAssistantDto = z.infer<typeof ReorderAssistantSchema>;
-
-export const ReorderAssistantsBatchSchema = z.strictObject({
-  moves: z
-    .array(
-      z.strictObject({
-        anchor: OrderRequestSchema,
-        id: z.string().min(1),
-      }),
-    )
-    .min(1),
-});
-export type ReorderAssistantsBatchDto = z.infer<typeof ReorderAssistantsBatchSchema>;

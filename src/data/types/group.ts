@@ -8,8 +8,9 @@
 
 import * as z from 'zod';
 
+import { OrderBatchRequestSchema, OrderRequestSchema } from '@/data/api/schemas/_endpointHelpers';
+
 import { EntityTypeSchema } from './entityType';
-import { OrderRequestSchema } from './topic';
 
 // ============================================================================
 // Group Entity
@@ -71,14 +72,5 @@ export type ListGroupsQuery = z.infer<typeof ListGroupsQuerySchema>;
 export const ReorderGroupSchema = OrderRequestSchema;
 export type ReorderGroupDto = z.infer<typeof ReorderGroupSchema>;
 
-export const ReorderGroupsBatchSchema = z.strictObject({
-  moves: z
-    .array(
-      z.strictObject({
-        anchor: OrderRequestSchema,
-        id: z.string().min(1),
-      }),
-    )
-    .min(1),
-});
+export const ReorderGroupsBatchSchema = OrderBatchRequestSchema;
 export type ReorderGroupsBatchDto = z.infer<typeof ReorderGroupsBatchSchema>;

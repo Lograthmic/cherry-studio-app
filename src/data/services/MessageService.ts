@@ -1,18 +1,20 @@
 import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 
-import { DataApiErrorFactory } from '@/data/types/apiTypes';
 import type {
   ActiveNodeStrategy,
-  BranchMessage,
-  BranchMessagesResponse,
   CreateMessageDto,
   DeleteMessageResponse,
+  UpdateMessageDto,
+} from '@/data/api/schemas/messages';
+import { DataApiErrorFactory } from '@/data/types/apiTypes';
+import type {
+  BranchMessage,
+  BranchMessagesResponse,
   Message,
   MessageData,
   SiblingsGroup,
   TreeNode,
   TreeResponse,
-  UpdateMessageDto,
 } from '@/data/types/message';
 import type { UniqueModelId } from '@/data/types/model';
 
@@ -34,22 +36,26 @@ export type BranchMessagesParams = {
   nodeId?: string;
 };
 
-export interface ReserveAssistantTurnPlaceholder
+export interface AssistantPlaceholder
   extends Omit<CreateMessageDto, 'parentId' | 'setAsActive' | 'siblingsGroupId'> {
   id?: string;
 }
 
-export interface ReserveAssistantTurnInput {
-  placeholders: ReserveAssistantTurnPlaceholder[];
+export interface CreateUserMessageWithPlaceholdersInput {
+  placeholders: AssistantPlaceholder[];
   siblingsGroupId?: number;
   topicId: string;
   userMessage: { dto: CreateMessageDto; mode: 'create' } | { id: string; mode: 'existing' };
 }
 
-export interface ReserveAssistantTurnResult {
+export interface CreateUserMessageWithPlaceholdersResult {
   placeholders: Message[];
   userMessage: Message;
 }
+
+export type ReserveAssistantTurnPlaceholder = AssistantPlaceholder;
+export type ReserveAssistantTurnInput = CreateUserMessageWithPlaceholdersInput;
+export type ReserveAssistantTurnResult = CreateUserMessageWithPlaceholdersResult;
 
 export class MessageService {
   constructor(
@@ -415,9 +421,9 @@ export class MessageService {
     });
   }
 
-  async reserveAssistantTurn(
-    input: ReserveAssistantTurnInput,
-  ): Promise<ReserveAssistantTurnResult> {
+  async createUserMessageWithPlaceholders(
+    input: CreateUserMessageWithPlaceholdersInput,
+  ): Promise<CreateUserMessageWithPlaceholdersResult> {
     return await this.dbService.withWriteTx(async (tx) => {
       const [topic] = await tx
         .select({ id: topicTable.id })
@@ -507,6 +513,12 @@ export class MessageService {
 
       return { placeholders, userMessage };
     });
+  }
+
+  async reserveAssistantTurn(
+    input: ReserveAssistantTurnInput,
+  ): Promise<ReserveAssistantTurnResult> {
+    return this.createUserMessageWithPlaceholders(input);
   }
 
   async update(id: string, dto: UpdateMessageDto): Promise<Message> {
@@ -827,16 +839,6 @@ function extractPreview(message: Message): string {
   for (const part of parts) {
     if (part.type === 'text' && typeof part.text === 'string') {
       const text = part.text.trim();
-      if (text.length > 0) {
-        return text.length > previewLength ? `${text.slice(0, previewLength)}...` : text;
-      }
-    }
-  }
-
-  const blocks = message.data.blocks ?? [];
-  for (const block of blocks) {
-    if ('content' in block && typeof block.content === 'string') {
-      const text = block.content.trim();
       if (text.length > 0) {
         return text.length > previewLength ? `${text.slice(0, previewLength)}...` : text;
       }

@@ -7,7 +7,7 @@
  */
 
 import { and, asc, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
-
+import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
 import type { DbService } from '@/data/db/DbService';
 import { promptTable } from '@/data/db/schema';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
@@ -17,7 +17,6 @@ import type {
   Prompt,
   UpdatePromptDto,
 } from '@/data/types/prompt';
-import type { OrderRequest } from '@/data/types/topic';
 
 import { applyMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';

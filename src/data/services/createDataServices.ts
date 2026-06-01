@@ -23,7 +23,7 @@ export function createDataServices(dbService: DbService) {
   const pin = new PinService(dbService);
   const prompt = new PromptService(dbService);
   const assistant = new AssistantService(dbService, model, preference, tag, pin);
-  const topic = new TopicService(dbService, pin);
+  const topic = new TopicService(dbService, pin, tag);
   const message = new MessageService(dbService, topic);
   const ai = new AiService({ assistant, model, provider });
 

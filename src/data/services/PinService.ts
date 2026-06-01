@@ -21,14 +21,13 @@
  */
 
 import { and, asc, eq, inArray } from 'drizzle-orm';
-
+import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
 import type { DbService } from '@/data/db/DbService';
 import { pinTable } from '@/data/db/schema';
 import type { PinSelect } from '@/data/db/schema/pin';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
 import type { EntityType } from '@/data/types/entityType';
 import type { CreatePinDto, Pin } from '@/data/types/pin';
-import type { OrderRequest } from '@/data/types/topic';
 
 import { applyScopedMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';

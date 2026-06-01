@@ -13,14 +13,13 @@
  */
 
 import { asc, eq } from 'drizzle-orm';
-
+import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
 import type { DbService } from '@/data/db/DbService';
 import { groupTable } from '@/data/db/schema';
 import type { GroupSelect } from '@/data/db/schema/group';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
 import type { EntityType } from '@/data/types/entityType';
 import type { CreateGroupDto, Group, UpdateGroupDto } from '@/data/types/group';
-import type { OrderRequest } from '@/data/types/topic';
 
 import { applyScopedMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';

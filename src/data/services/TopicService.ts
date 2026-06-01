@@ -13,18 +13,19 @@ import {
   sql,
 } from 'drizzle-orm';
 
-import { type CursorPaginationResponse, DataApiErrorFactory } from '@/data/types/apiTypes';
+import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
 import type {
   ActiveNodeResponse,
   CreateTopicDto,
   ListTopicsQuery,
-  OrderRequest,
-  Topic,
   UpdateTopicDto,
-} from '@/data/types/topic';
+} from '@/data/api/schemas/topics';
+import { type CursorPaginationResponse, DataApiErrorFactory } from '@/data/types/apiTypes';
+import type { Topic } from '@/data/types/topic';
 import type { DbService } from '../db/DbService';
 import { messageTable, pinTable, topicTable } from '../db/schema';
 import type { PinService } from './PinService';
+import type { TagService } from './TagService';
 import { encodeCursor, splitCursor } from './utils/cursor';
 import { applyMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';
@@ -45,6 +46,7 @@ export class TopicService {
   constructor(
     private readonly dbService: DbService,
     private readonly pinService: PinService,
+    private readonly tagService: TagService,
   ) {}
 
   private get db() {
@@ -143,6 +145,7 @@ export class TopicService {
 
     await this.dbService.withWriteTx(async (tx) => {
       await tx.delete(messageTable).where(eq(messageTable.topicId, id));
+      await this.tagService.purgeForEntityTx(tx, 'topic', id);
       await this.pinService.purgeForEntityTx(tx, 'topic', id);
       await tx.delete(topicTable).where(eq(topicTable.id, id));
     });

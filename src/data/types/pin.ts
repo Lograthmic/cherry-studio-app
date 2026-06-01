@@ -8,8 +8,9 @@
 
 import * as z from 'zod';
 
+import { OrderBatchRequestSchema, OrderRequestSchema } from '@/data/api/schemas/_endpointHelpers';
+
 import { EntityIdSchema, EntityTypeSchema } from './entityType';
-import { OrderRequestSchema } from './topic';
 
 // ============================================================================
 // Pin Entity
@@ -62,14 +63,5 @@ export type ListPinsQuery = z.infer<typeof ListPinsQuerySchema>;
 export const ReorderPinSchema = OrderRequestSchema;
 export type ReorderPinDto = z.infer<typeof ReorderPinSchema>;
 
-export const ReorderPinsBatchSchema = z.strictObject({
-  moves: z
-    .array(
-      z.strictObject({
-        anchor: OrderRequestSchema,
-        id: z.string().min(1),
-      }),
-    )
-    .min(1),
-});
+export const ReorderPinsBatchSchema = OrderBatchRequestSchema;
 export type ReorderPinsBatchDto = z.infer<typeof ReorderPinsBatchSchema>;

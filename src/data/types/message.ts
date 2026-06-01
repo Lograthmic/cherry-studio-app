@@ -15,6 +15,9 @@ import * as z from 'zod';
 import type { CursorPaginationResponse } from './apiTypes';
 import type { CherryDataPartTypes } from './uiParts';
 
+export const MessageIdSchema = z.uuid();
+export type MessageId = z.infer<typeof MessageIdSchema>;
+
 export const MessageStatsSchema = z.strictObject({
   completionTokens: z.number().optional(),
   cost: z.number().optional(),
@@ -30,8 +33,6 @@ export type MessageStats = z.infer<typeof MessageStatsSchema>;
 export type CherryMessagePart = UIMessagePart<CherryDataPartTypes, UITools>;
 
 export interface MessageData {
-  /** @deprecated Mobile writes and renders `parts` only. Kept to match Cherry's shared type. */
-  blocks?: MessageDataBlock[];
   parts?: CherryMessagePart[];
 }
 
@@ -152,29 +153,6 @@ export function isMemoryCitation(ref: ContentReference): ref is MemoryCitationRe
   return isCitation(ref) && ref.citationType === CitationType.MEMORY;
 }
 
-export enum BlockType {
-  CITATION = 'citation',
-  CODE = 'code',
-  COMPACT = 'compact',
-  ERROR = 'error',
-  FILE = 'file',
-  IMAGE = 'image',
-  MAIN_TEXT = 'main_text',
-  THINKING = 'thinking',
-  TOOL = 'tool',
-  TRANSLATION = 'translation',
-  UNKNOWN = 'unknown',
-  VIDEO = 'video',
-}
-
-export interface BaseBlock {
-  createdAt: number;
-  error?: SerializedErrorData;
-  metadata?: Record<string, unknown>;
-  type: BlockType;
-  updatedAt?: number;
-}
-
 export interface SerializedErrorData {
   cause?: unknown;
   code?: string;
@@ -183,108 +161,8 @@ export interface SerializedErrorData {
   stack?: string;
 }
 
-export interface UnknownBlock extends BaseBlock {
-  content?: string;
-  type: BlockType.UNKNOWN;
-}
-
-export interface MainTextBlock extends BaseBlock {
-  content: string;
-  references?: ContentReference[];
-  type: BlockType.MAIN_TEXT;
-}
-
-export interface ThinkingBlock extends BaseBlock {
-  content: string;
-  thinkingMs: number;
-  type: BlockType.THINKING;
-}
-
-export interface TranslationBlock extends BaseBlock {
-  content: string;
-  sourceBlockId?: string;
-  sourceLanguage?: string;
-  targetLanguage: string;
-  type: BlockType.TRANSLATION;
-}
-
-export interface CodeBlock extends BaseBlock {
-  content: string;
-  language: string;
-  type: BlockType.CODE;
-}
-
-export interface ImageBlock extends BaseBlock {
-  fileId?: string;
-  type: BlockType.IMAGE;
-  url?: string;
-}
-
-export interface ToolBlock extends BaseBlock {
-  arguments?: Record<string, unknown>;
-  content?: object | string;
-  toolId: string;
-  toolName?: string;
-  type: BlockType.TOOL;
-}
-
-/** @deprecated Citation data is represented by parts/provider metadata in new mobile data. */
-export interface CitationBlock extends BaseBlock {
-  knowledgeData?: unknown;
-  memoriesData?: unknown;
-  responseData?: unknown;
-  type: BlockType.CITATION;
-}
-
-export interface FileBlock extends BaseBlock {
-  fileId: string;
-  type: BlockType.FILE;
-}
-
-export interface VideoBlock extends BaseBlock {
-  filePath?: string;
-  type: BlockType.VIDEO;
-  url?: string;
-}
-
-export interface ErrorBlock extends BaseBlock {
-  type: BlockType.ERROR;
-}
-
-export interface CompactBlock extends BaseBlock {
-  compactedContent: string;
-  content: string;
-  type: BlockType.COMPACT;
-}
-
-export type MessageDataBlock =
-  | CitationBlock
-  | CodeBlock
-  | CompactBlock
-  | ErrorBlock
-  | FileBlock
-  | ImageBlock
-  | MainTextBlock
-  | ThinkingBlock
-  | ToolBlock
-  | TranslationBlock
-  | UnknownBlock
-  | VideoBlock;
-
-export const MessageDataSchema = z.custom<MessageData>((value) => {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const data = value as MessageData;
-  if (data.blocks !== undefined && !Array.isArray(data.blocks)) {
-    return false;
-  }
-  if (data.parts !== undefined && !Array.isArray(data.parts)) {
-    return false;
-  }
-
-  return true;
+export const MessageDataSchema: z.ZodType<MessageData> = z.strictObject({
+  parts: z.array(z.custom<CherryMessagePart>()).optional(),
 });
 
 export const ModelSnapshotSchema = z.strictObject({
@@ -304,7 +182,7 @@ export type MessageStatus = z.infer<typeof MessageStatusSchema>;
 export const MessageSchema = z.strictObject({
   createdAt: z.iso.datetime(),
   data: MessageDataSchema,
-  id: z.string(),
+  id: MessageIdSchema,
   modelId: z.string().nullable().optional(),
   modelSnapshot: ModelSnapshotSchema.nullable().optional(),
   parentId: z.string().nullable(),
@@ -318,39 +196,6 @@ export const MessageSchema = z.strictObject({
   updatedAt: z.iso.datetime(),
 });
 export type Message = z.infer<typeof MessageSchema>;
-
-export const CreateMessageSchema = z.strictObject({
-  data: MessageDataSchema,
-  modelId: z.string().optional(),
-  modelSnapshot: ModelSnapshotSchema.optional(),
-  parentId: z.string().nullable().optional(),
-  role: MessageRoleSchema,
-  setAsActive: z.boolean().optional(),
-  siblingsGroupId: z.number().optional(),
-  stats: MessageStatsSchema.optional(),
-  status: MessageStatusSchema.optional(),
-  traceId: z.string().optional(),
-});
-export type CreateMessageDto = z.infer<typeof CreateMessageSchema>;
-
-export const UpdateMessageSchema = z.strictObject({
-  data: MessageDataSchema.optional(),
-  parentId: z.string().nullable().optional(),
-  siblingsGroupId: z.number().optional(),
-  stats: MessageStatsSchema.nullable().optional(),
-  status: MessageStatusSchema.optional(),
-  traceId: z.string().nullable().optional(),
-});
-export type UpdateMessageDto = z.infer<typeof UpdateMessageSchema>;
-
-export const ActiveNodeStrategySchema = z.enum(['parent', 'clear']);
-export type ActiveNodeStrategy = z.infer<typeof ActiveNodeStrategySchema>;
-
-export interface DeleteMessageResponse {
-  deletedIds: string[];
-  newActiveNodeId?: string | null;
-  reparentedIds?: string[];
-}
 
 export interface TreeNode {
   createdAt: string;

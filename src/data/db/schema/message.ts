@@ -126,18 +126,6 @@ export const MESSAGE_FTS_STATEMENTS: string[] = [
   END`,
 ];
 
-/** Examples */
-
-/**
- * SQL expression to extract searchable text from data.blocks
- * Concatenates content from all main_text type blocks
- */
-// export const SEARCHABLE_TEXT_EXPRESSION = `
-//   (SELECT group_concat(json_extract(value, '$.content'), ' ')
-//    FROM json_each(json_extract(NEW.data, '$.blocks'))
-//    WHERE json_extract(value, '$.type') = 'main_text')
-// `;
-
 /**
  * Rebuild FTS index (run manually if needed)
  */

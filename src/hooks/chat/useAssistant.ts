@@ -1,15 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-
-import { useDataQuery, usePreference } from '@/data/hooks';
 import { queryKeys } from '@/data/api';
+import type { CreateAssistantDto, UpdateAssistantDto } from '@/data/api/schemas/assistants';
+import { useDataQuery, usePreference } from '@/data/hooks';
 import { useDataServices } from '@/data/runtime';
-import {
-  type Assistant,
-  type AssistantSettings,
-  type CreateAssistantDto,
-  type UpdateAssistantDto,
-} from '@/data/types/assistant';
+import { type Assistant, type AssistantSettings } from '@/data/types/assistant';
 import type { Model, UniqueModelId } from '@/data/types/model';
 
 import { useDefaultModel, useModelById } from './useModel';

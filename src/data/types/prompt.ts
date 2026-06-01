@@ -7,8 +7,9 @@
 
 import * as z from 'zod';
 
+import { OrderBatchRequestSchema, OrderRequestSchema } from '@/data/api/schemas/_endpointHelpers';
+
 import type { SearchParams } from './apiTypes';
-import { OrderRequestSchema } from './topic';
 
 // ============================================================================
 // Prompt Schemas
@@ -63,14 +64,5 @@ export type ListPromptsQuery = SearchParams;
 export const ReorderPromptSchema = OrderRequestSchema;
 export type ReorderPromptDto = z.infer<typeof ReorderPromptSchema>;
 
-export const ReorderPromptsBatchSchema = z.strictObject({
-  moves: z
-    .array(
-      z.strictObject({
-        anchor: OrderRequestSchema,
-        id: z.string().min(1),
-      }),
-    )
-    .min(1),
-});
+export const ReorderPromptsBatchSchema = OrderBatchRequestSchema;
 export type ReorderPromptsBatchDto = z.infer<typeof ReorderPromptsBatchSchema>;

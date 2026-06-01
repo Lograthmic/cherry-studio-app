@@ -1,5 +1,11 @@
 import { and, asc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
-
+import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
+import {
+  type CreateAssistantDto,
+  type ListAssistantsQueryParams,
+  ListAssistantsQuerySchema,
+  type UpdateAssistantDto,
+} from '@/data/api/schemas/assistants';
 import type { DbService } from '@/data/db/DbService';
 import {
   assistantKnowledgeBaseTable,
@@ -10,17 +16,9 @@ import {
 } from '@/data/db/schema';
 import type { PreferenceService } from '@/data/services/PreferenceService';
 import { DataApiErrorFactory, type OffsetPaginationResponse } from '@/data/types/apiTypes';
-import {
-  type Assistant,
-  type CreateAssistantDto,
-  DEFAULT_ASSISTANT_SETTINGS,
-  type ListAssistantsQueryParams,
-  ListAssistantsQuerySchema,
-  type UpdateAssistantDto,
-} from '@/data/types/assistant';
+import { type Assistant, DEFAULT_ASSISTANT_SETTINGS } from '@/data/types/assistant';
 import type { UniqueModelId } from '@/data/types/model';
 import type { Tag } from '@/data/types/tag';
-import type { OrderRequest } from '@/data/types/topic';
 
 import type { ModelService } from './ModelService';
 import type { PinService } from './PinService';

@@ -1,9 +1,8 @@
 import { and, asc, desc, eq, getTableName, gt, inArray, lt, ne, type SQL } from 'drizzle-orm';
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { generateKeyBetween, generateNKeysBetween } from 'fractional-indexing';
-
+import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
-import type { OrderRequest } from '@/data/types/topic';
 
 type TxLike = any;
 
