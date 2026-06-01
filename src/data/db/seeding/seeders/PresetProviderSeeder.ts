@@ -69,7 +69,7 @@ export class PresetProviderSeeder implements DatabaseSeeder {
   readonly description = 'Insert preset provider configurations';
 
   get version() {
-    return providerRegistryService.getProvidersVersion();
+    return `${providerRegistryService.getProvidersVersion()}+adapter-family.1`;
   }
 
   async run(dbService: Parameters<DatabaseSeeder['run']>[0]) {

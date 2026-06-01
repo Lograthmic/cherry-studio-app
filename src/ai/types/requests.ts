@@ -1,5 +1,5 @@
-import type { UniqueModelId } from '@/data/types/model';
 import type { ChatTransport, UIMessage } from 'ai';
+import type { UniqueModelId } from '@/data/types/model';
 
 /**
  * Per-request transport config. Mirrors desktop's IPC-safe shape, but
@@ -31,6 +31,7 @@ export interface ListModelsRequest {
   providerId?: string;
   assistantId?: string;
   throwOnError?: boolean;
+  requestOptions?: Pick<AiTransportOptions, 'signal'>;
 }
 
 export type ChatTrigger = Parameters<ChatTransport<UIMessage>['sendMessages']>[0]['trigger'];

@@ -3,6 +3,7 @@
  * Safe to import from browser/renderer contexts.
  */
 
+import { ENDPOINT_TYPE, type EndpointType } from './schemas/enums';
 import type { ModelConfig } from './schemas/model';
 import type { ProviderConfig, RegistryEndpointConfig } from './schemas/provider';
 import type { ProviderModelOverride } from './schemas/providerModels';
@@ -54,6 +55,7 @@ export function lookupRegistryProvider(
 }
 
 export interface RuntimeEndpointConfig {
+  adapterFamily?: string;
   baseUrl?: string;
   modelsApiUrls?: { default?: string; embedding?: string; reranker?: string };
   reasoningFormatType?: string;
@@ -77,9 +79,38 @@ export function buildRuntimeEndpointConfigs(
     if (regConfig.modelsApiUrls) config.modelsApiUrls = regConfig.modelsApiUrls;
     if (regConfig.reasoningFormat?.type)
       config.reasoningFormatType = regConfig.reasoningFormat.type;
+    if (regConfig.adapterFamily) config.adapterFamily = regConfig.adapterFamily;
 
     if (Object.keys(config).length > 0) configs[k] = config;
   }
 
   return Object.keys(configs).length > 0 ? configs : null;
+}
+
+/**
+ * Default AI SDK adapter family per endpoint type. Used when the catalog
+ * doesn't specify one and no more-specific signal is available.
+ */
+const ENDPOINT_TYPE_TO_DEFAULT_ADAPTER_FAMILY: Partial<Record<EndpointType, string>> = {
+  [ENDPOINT_TYPE.ANTHROPIC_MESSAGES]: 'anthropic',
+  [ENDPOINT_TYPE.GOOGLE_GENERATE_CONTENT]: 'google',
+  [ENDPOINT_TYPE.OLLAMA_CHAT]: 'ollama',
+  [ENDPOINT_TYPE.OLLAMA_GENERATE]: 'ollama',
+  [ENDPOINT_TYPE.JINA_RERANK]: 'jina-rerank',
+  [ENDPOINT_TYPE.OPENAI_RESPONSES]: 'openai',
+};
+
+/**
+ * Compute the AI SDK adapter family for an endpoint. Catalog values win
+ * because they encode relay-specific routing such as AiHubMix or CherryIN.
+ */
+export function inferAdapterFamily(
+  endpointType: EndpointType,
+  catalogConfig?:
+    | Pick<RegistryEndpointConfig, 'adapterFamily'>
+    | Pick<RuntimeEndpointConfig, 'adapterFamily'>
+    | null,
+): string {
+  if (catalogConfig?.adapterFamily) return catalogConfig.adapterFamily;
+  return ENDPOINT_TYPE_TO_DEFAULT_ADAPTER_FAMILY[endpointType] ?? 'openai-compatible';
 }

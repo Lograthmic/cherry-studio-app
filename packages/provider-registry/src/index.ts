@@ -9,6 +9,7 @@ export { VENDOR_PATTERNS } from './patterns/vendorPatterns';
 export type { ModelLookupResult, RuntimeEndpointConfig } from './registryUtils';
 export {
   buildRuntimeEndpointConfigs,
+  inferAdapterFamily,
   lookupRegistryModel,
   lookupRegistryProvider,
 } from './registryUtils';

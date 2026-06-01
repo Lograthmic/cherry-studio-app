@@ -13,7 +13,13 @@ export const PROVIDER_TYPES = [
   'aws-bedrock',
   'vertex-anthropic',
   'new-api',
+  'aihubmix',
+  'cerebras',
   'gateway',
+  'groq',
+  'huggingface',
+  'perplexity',
+  'together',
   'ollama',
 ] as const;
 
@@ -186,12 +192,36 @@ export function resolveProviderType(provider: ProviderTypeSource): ProviderType 
     return 'new-api';
   }
 
+  if (matchesPreset(provider, 'aihubmix')) {
+    return 'aihubmix';
+  }
+
+  if (matchesPreset(provider, 'cerebras')) {
+    return 'cerebras';
+  }
+
   if (provider.id === 'gateway') {
     return 'gateway';
   }
 
+  if (matchesPreset(provider, 'groq')) {
+    return 'groq';
+  }
+
+  if (matchesPreset(provider, 'huggingface')) {
+    return 'huggingface';
+  }
+
   if (matchesPreset(provider, 'mistral')) {
     return 'mistral';
+  }
+
+  if (matchesPreset(provider, 'perplexity')) {
+    return 'perplexity';
+  }
+
+  if (matchesPreset(provider, 'together')) {
+    return 'together';
   }
 
   switch (provider.defaultChatEndpoint ?? PROVIDER_TYPE_ENDPOINTS.OPENAI_CHAT_COMPLETIONS) {
@@ -204,8 +234,6 @@ export function resolveProviderType(provider: ProviderTypeSource): ProviderType 
     case PROVIDER_TYPE_ENDPOINTS.OLLAMA_CHAT:
     case PROVIDER_TYPE_ENDPOINTS.OLLAMA_GENERATE:
       return 'ollama';
-    case PROVIDER_TYPE_ENDPOINTS.OPENAI_CHAT_COMPLETIONS:
-    case PROVIDER_TYPE_ENDPOINTS.OPENAI_TEXT_COMPLETIONS:
     default:
       return 'openai';
   }

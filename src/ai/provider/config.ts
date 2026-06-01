@@ -4,12 +4,13 @@
  */
 
 import { hasProviderConfig, type StringKeys } from '@cherrystudio/ai-core/provider';
+import type { CherryInProviderSettings } from '@cherrystudio/ai-sdk-provider';
 import { ENDPOINT_TYPE } from '@cherrystudio/provider-registry';
 import type { EndpointType, Model } from '@/data/types/model';
 import type { AuthConfig, Provider } from '@/data/types/provider';
 
 import type { ProviderConfig } from '../types';
-import { type AppProviderId, appProviderIds, type AppProviderSettingsMap } from '../types';
+import { type AppProviderId, type AppProviderSettingsMap, appProviderIds } from '../types';
 import {
   defaultAppHeaders,
   formatApiHost,
@@ -117,6 +118,9 @@ export async function providerToAiSdkConfig(
 
   const builders: ConfigBuilderEntry[] = [
     { match: (p) => isAzureOpenAIProvider(p), build: buildAzureConfig },
+    { match: (_, id) => id === 'cherryin', build: buildRoutedGatewayConfig },
+    { match: (_, id) => id === 'newapi', build: buildRoutedGatewayConfig },
+    { match: (_, id) => id === 'aihubmix', build: buildGenericProviderConfig },
     { match: (_, id) => id === 'gateway', build: buildGenericProviderConfig },
   ];
 
@@ -144,6 +148,42 @@ function buildCommonOptions(ctx: BuilderContext) {
     options.headers['X-Api-Key'] = ctx.baseConfig.apiKey;
   }
   return options;
+}
+
+function mapGatewayEndpointType(
+  endpointType: EndpointType | undefined,
+): CherryInProviderSettings['endpointType'] {
+  if (!endpointType) return undefined;
+
+  switch (endpointType) {
+    case ENDPOINT_TYPE.ANTHROPIC_MESSAGES:
+      return 'anthropic';
+    case ENDPOINT_TYPE.GOOGLE_GENERATE_CONTENT:
+      return 'gemini';
+    case ENDPOINT_TYPE.OPENAI_CHAT_COMPLETIONS:
+    case ENDPOINT_TYPE.OLLAMA_CHAT:
+      return 'openai';
+    case ENDPOINT_TYPE.OPENAI_RESPONSES:
+      return 'openai-response';
+    case ENDPOINT_TYPE.OPENAI_IMAGE_GENERATION:
+      return 'image-generation';
+    case ENDPOINT_TYPE.JINA_RERANK:
+      return 'jina-rerank';
+    default:
+      return 'openai';
+  }
+}
+
+function buildRoutedGatewayConfig(ctx: BuilderContext): ProviderConfig {
+  return {
+    providerId: ctx.aiSdkProviderId,
+    endpoint: ctx.endpoint,
+    providerSettings: {
+      ...ctx.baseConfig,
+      endpointType: mapGatewayEndpointType(ctx.endpointType ?? ctx.model.endpointTypes?.[0]),
+      headers: { ...defaultAppHeaders(), ...getExtraHeaders(ctx.actualProvider) },
+    },
+  };
 }
 
 function formatAzureBaseURL(baseURL: string, forAnthropic: boolean): string {
@@ -216,7 +256,12 @@ function buildOpenAICompatibleConfig(ctx: BuilderContext): ProviderConfig<'opena
   return {
     providerId: 'openai-compatible',
     endpoint: ctx.endpoint,
-    providerSettings: { ...ctx.baseConfig, ...commonOptions, name: ctx.actualProvider.id },
+    providerSettings: {
+      ...ctx.baseConfig,
+      ...commonOptions,
+      name: ctx.actualProvider.id,
+      includeUsage: ctx.actualProvider.apiFeatures.streamOptions,
+    },
   };
 }
 
@@ -226,7 +271,11 @@ function buildGenericProviderConfig(ctx: BuilderContext): ProviderConfig {
   return {
     providerId: ctx.aiSdkProviderId,
     endpoint: ctx.endpoint,
-    providerSettings: { ...ctx.baseConfig, ...commonOptions },
+    providerSettings: {
+      ...ctx.baseConfig,
+      ...commonOptions,
+      includeUsage: ctx.actualProvider.apiFeatures.streamOptions,
+    },
   };
 }
 

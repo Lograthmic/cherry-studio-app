@@ -1,3 +1,5 @@
 export function buildGeminiGenerateImageParams(): Record<string, unknown> {
-  return {};
+  return {
+    responseModalities: ['TEXT', 'IMAGE'],
+  };
 }

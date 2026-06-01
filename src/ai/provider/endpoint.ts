@@ -7,7 +7,7 @@ import { ENDPOINT_TYPE } from '@cherrystudio/provider-registry';
 import type { EndpointType, Model } from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 
-import { type AppProviderId, appProviderIds } from '../types';
+import { type AppProviderId, appProviderIds, isRegisteredProviderId } from '../types';
 import { getBaseUrl } from '../utils/provider';
 
 const appProviderIdMap = appProviderIds as Record<string, AppProviderId>;
@@ -53,6 +53,15 @@ export function resolveProviderVariant(
   return baseProviderId;
 }
 
+function resolveKnownProviderId(id: string | undefined): AppProviderId | undefined {
+  if (!id || !(id in appProviderIdMap)) {
+    return undefined;
+  }
+
+  const providerId = appProviderIdMap[id];
+  return isRegisteredProviderId(providerId) ? providerId : undefined;
+}
+
 export function resolveAiSdkProviderId(
   provider: Provider,
   endpointType: EndpointType | undefined,
@@ -60,12 +69,13 @@ export function resolveAiSdkProviderId(
   const adapterFamily = endpointType
     ? provider.endpointConfigs?.[endpointType]?.adapterFamily
     : undefined;
-  if (adapterFamily && adapterFamily in appProviderIdMap) {
-    return resolveProviderVariant(appProviderIdMap[adapterFamily], endpointType);
+  const adapterProviderId = resolveKnownProviderId(adapterFamily);
+  if (adapterProviderId) {
+    return resolveProviderVariant(adapterProviderId, endpointType);
   }
 
   const presetId = provider.presetProviderId ?? provider.id;
-  const providerId = presetId in appProviderIdMap ? appProviderIdMap[presetId] : undefined;
+  const providerId = resolveKnownProviderId(presetId);
   if (providerId) {
     return resolveProviderVariant(providerId, endpointType);
   }

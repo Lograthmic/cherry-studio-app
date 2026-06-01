@@ -1,15 +1,18 @@
+import { generateImage as aiCoreGenerateImage } from '@cherrystudio/ai-core';
+import { type LanguageModelUsage, type ModelMessage, type UIMessageChunk } from 'ai';
 import type { AssistantService } from '@/data/services/AssistantService';
 import type { ModelService } from '@/data/services/ModelService';
 import type { ProviderService } from '@/data/services/ProviderService';
 import type { Assistant } from '@/data/types/assistant';
 import type { Model } from '@/data/types/model';
 import { parseUniqueModelId } from '@/data/types/model';
-import type { AuthConfig, Provider } from '@/data/types/provider';
-import { type LanguageModelUsage, type ModelMessage, type UIMessageChunk } from 'ai';
+import type { Provider } from '@/data/types/provider';
 
 import { resolveUIMessageFileUrls } from './messages/messageConverter';
 import { providerToAiSdkConfig } from './provider/config';
+import { listModels as listProviderModels } from './provider/listModels';
 import { Agent } from './runtime/aiSdk/Agent';
+import type { AppProviderSettingsMap } from './types';
 import type { AiBaseRequest, AiStreamRequest, ListModelsRequest } from './types/requests';
 import { getMaxTokens, getTemperature, getTimeout, getTopP } from './utils/modelParameters';
 import {
@@ -33,6 +36,22 @@ export interface AiGenerateRequest extends AiBaseRequest {
 export interface AiGenerateResult {
   text: string;
   usage?: LanguageModelUsage;
+}
+
+export interface AiImageRequest extends AiBaseRequest {
+  prompt: string;
+  n?: number;
+  size?: `${number}x${number}`;
+  aspectRatio?: `${number}:${number}`;
+  seed?: number;
+}
+
+export interface AiImageResult {
+  images: Array<{
+    base64: string;
+    mediaType: string;
+  }>;
+  usage?: unknown;
 }
 
 export interface AiServiceDependencies {
@@ -107,10 +126,53 @@ export class AiService {
 
   // ── Model listing ──
 
-  async listModels(_request: ListModelsRequest): Promise<Partial<Model>[]> {
-    throw new Error(
-      'AiService.listModels is not implemented in the first mobile AI migration slice',
+  async listModels(request: ListModelsRequest): Promise<Partial<Model>[]> {
+    const provider = await this.getProviderForListModels(request);
+    return listProviderModels(
+      provider,
+      {
+        getRotatedApiKey: (providerId) => this.services.provider.getRotatedApiKey(providerId),
+      },
+      request.requestOptions?.signal,
+      { throwOnError: request.throwOnError },
     );
+  }
+
+  // ── Image generation ──
+
+  async generateImage(request: AiImageRequest): Promise<AiImageResult> {
+    const signal = request.requestOptions?.signal;
+    const { sdkConfig, model, assistant, options } = await this.buildAgentParamsFor(request);
+    const customParams = assistant ? getCustomParameters(assistant) : {};
+    const split = extractAiSdkStandardParams(customParams);
+
+    const result = await aiCoreGenerateImage<AppProviderSettingsMap>(
+      sdkConfig.providerId,
+      sdkConfig.providerSettings as never,
+      {
+        model: model.modelId,
+        prompt: request.prompt,
+        n: request.n,
+        size: request.size,
+        aspectRatio: request.aspectRatio,
+        seed: request.seed,
+        maxRetries: request.requestOptions?.maxRetries ?? 0,
+        abortSignal: signal,
+        ...(options.providerOptions && { providerOptions: options.providerOptions }),
+        ...(request.requestOptions?.headers && {
+          headers: stripUndefinedHeaders(request.requestOptions.headers),
+        }),
+        ...split.standardParams,
+      },
+    );
+
+    return {
+      images: result.images.map((image) => ({
+        base64: image.base64,
+        mediaType: image.mediaType,
+      })),
+      usage: result.usage,
+    };
   }
 
   // ── API validation ──
@@ -234,6 +296,24 @@ export class AiService {
 
     return { provider, model, assistant };
   }
+
+  private async getProviderForListModels(request: ListModelsRequest): Promise<Provider> {
+    if (request.providerId) {
+      return this.services.provider.getByProviderId(request.providerId);
+    }
+
+    if (!request.assistantId) {
+      throw new Error('listModels requires providerId or assistantId');
+    }
+
+    const assistant = await this.services.assistant.getById(request.assistantId);
+    if (!assistant.modelId) {
+      throw new Error('Cannot resolve providerId: assistant has no model');
+    }
+
+    const { providerId } = parseUniqueModelId(assistant.modelId);
+    return this.services.provider.getByProviderId(providerId);
+  }
 }
 
 function resolveCapabilities(model: Model, assistant: Assistant) {
@@ -259,4 +339,12 @@ function getCustomParameters(assistant: Assistant): Record<string, unknown> {
     params[item.name] = item.value;
   }
   return params;
+}
+
+function stripUndefinedHeaders(
+  headers: Record<string, string | undefined>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(headers).filter((entry): entry is [string, string] => entry[1] !== undefined),
+  );
 }

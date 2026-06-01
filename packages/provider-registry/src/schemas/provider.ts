@@ -204,6 +204,12 @@ export const RegistryEndpointConfigSchema = z.object({
     .optional(),
   /** How this endpoint type expects reasoning parameters to be formatted */
   reasoningFormat: ProviderReasoningFormatSchema.optional(),
+  /**
+   * AI SDK adapter family that handles this endpoint. Aligns with the IDs
+   * registered in `appProviderIds`. Resolvers should prefer this over
+   * heuristic id/baseUrl inference when present.
+   */
+  adapterFamily: z.string().optional(),
 });
 
 export const ProviderConfigSchema = z

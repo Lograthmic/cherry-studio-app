@@ -1,3 +1,4 @@
+import { inferAdapterFamily } from '@cherrystudio/provider-registry';
 import { asc, eq, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -5,6 +6,7 @@ import type { DbService } from '@/data/db/DbService';
 import type { UserProviderInsert, UserProviderSelect } from '@/data/db/schema/userProvider';
 import { userProviderTable } from '@/data/db/schema/userProvider';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
+import type { EndpointType } from '@/data/types/model';
 import type {
   ApiKeyEntry,
   AuthConfig,
@@ -46,6 +48,77 @@ export type UpdateProviderInput = {
   name?: string;
   providerSettings?: ProviderSettings | null;
 };
+
+function mergeCatalogEndpointConfigs(
+  existing: EndpointConfigs | null | undefined,
+  catalog: EndpointConfigs | null | undefined,
+): EndpointConfigs | null {
+  if (!existing && !catalog) {
+    return null;
+  }
+
+  const merged: EndpointConfigs = {};
+  const keys = new Set([
+    ...Object.keys(catalog ?? {}),
+    ...Object.keys(existing ?? {}),
+  ]) as Set<EndpointType>;
+
+  for (const key of keys) {
+    const catalogConfig = catalog?.[key];
+    const existingConfig = existing?.[key];
+    const nextConfig: EndpointConfig = {
+      ...catalogConfig,
+      ...existingConfig,
+    };
+
+    if (catalogConfig?.adapterFamily) {
+      nextConfig.adapterFamily = catalogConfig.adapterFamily;
+    }
+    if (catalogConfig?.reasoningFormatType && !existingConfig?.reasoningFormatType) {
+      nextConfig.reasoningFormatType = catalogConfig.reasoningFormatType;
+    }
+    if (catalogConfig?.modelsApiUrls && !existingConfig?.modelsApiUrls) {
+      nextConfig.modelsApiUrls = catalogConfig.modelsApiUrls;
+    }
+
+    merged[key] = nextConfig;
+  }
+
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+
+function mergeCatalogApiFeatures(
+  existing: UserProviderInsert['apiFeatures'],
+  catalog: UserProviderInsert['apiFeatures'],
+): UserProviderInsert['apiFeatures'] {
+  if (!existing && !catalog) {
+    return null;
+  }
+
+  return {
+    ...(catalog ?? {}),
+    ...(existing ?? {}),
+  } as UserProviderInsert['apiFeatures'];
+}
+
+function withInferredAdapterFamilies(
+  endpointConfigs: EndpointConfigs | null | undefined,
+): EndpointConfigs | null {
+  if (!endpointConfigs) {
+    return null;
+  }
+
+  const configs: EndpointConfigs = {};
+  for (const [key, config] of Object.entries(endpointConfigs)) {
+    const endpointType = key as EndpointType;
+    configs[endpointType] = {
+      ...config,
+      adapterFamily: config?.adapterFamily ?? inferAdapterFamily(endpointType, config),
+    };
+  }
+
+  return Object.keys(configs).length > 0 ? configs : null;
+}
 
 export type ListProviderApiKeysQuery = {
   enabled?: boolean;
@@ -125,7 +198,7 @@ function toInsert(input: CreateProviderInput): ProviderInputWithoutOrderKey {
     apiKeys: normalizeApiKeys(input.apiKeys),
     authConfig: input.authConfig ?? null,
     defaultChatEndpoint: input.defaultChatEndpoint ?? null,
-    endpointConfigs: input.endpointConfigs ?? null,
+    endpointConfigs: withInferredAdapterFamilies(input.endpointConfigs),
     isEnabled: input.isEnabled ?? true,
     name: input.name,
     presetProviderId: input.presetProviderId ?? null,
@@ -267,7 +340,7 @@ export class ProviderService {
       updates.defaultChatEndpoint = input.defaultChatEndpoint;
     }
     if (input.endpointConfigs !== undefined) {
-      updates.endpointConfigs = input.endpointConfigs as Partial<
+      updates.endpointConfigs = withInferredAdapterFamilies(input.endpointConfigs) as Partial<
         Record<string, EndpointConfig>
       > | null;
     }
@@ -353,7 +426,13 @@ export class ProviderService {
     await this.dbService.withWriteTx(async (tx) => {
       const providerIds = inputs.map((input) => input.providerId);
       const existingRows = await tx
-        .select({ providerId: userProviderTable.providerId })
+        .select({
+          apiFeatures: userProviderTable.apiFeatures,
+          defaultChatEndpoint: userProviderTable.defaultChatEndpoint,
+          endpointConfigs: userProviderTable.endpointConfigs,
+          providerId: userProviderTable.providerId,
+          presetProviderId: userProviderTable.presetProviderId,
+        })
         .from(userProviderTable)
         .where(inArray(userProviderTable.providerId, providerIds));
       const existing = new Set(existingRows.map((row) => row.providerId));
@@ -361,6 +440,26 @@ export class ProviderService {
 
       if (newRows.length > 0) {
         await insertManyWithOrderKey(tx, userProviderTable, newRows, {});
+      }
+
+      const inputByProviderId = new Map(inputs.map((input) => [input.providerId, input]));
+      for (const row of existingRows) {
+        const input = inputByProviderId.get(row.providerId);
+        if (!input || row.presetProviderId === null) {
+          continue;
+        }
+
+        await tx
+          .update(userProviderTable)
+          .set({
+            apiFeatures: mergeCatalogApiFeatures(row.apiFeatures, input.apiFeatures ?? null),
+            defaultChatEndpoint: row.defaultChatEndpoint ?? input.defaultChatEndpoint ?? null,
+            endpointConfigs: mergeCatalogEndpointConfigs(
+              row.endpointConfigs as EndpointConfigs | null,
+              input.endpointConfigs,
+            ) as Partial<Record<string, EndpointConfig>> | null,
+          })
+          .where(eq(userProviderTable.providerId, row.providerId));
       }
     });
   }
