@@ -12,7 +12,6 @@ export function PartMarkdown({ markdown }: PartMarkdownProps) {
   return (
     <EnrichedMarkdownText
       allowTrailingMargin={false}
-      containerStyle={{ width: '100%' }}
       flavor="github"
       markdown={markdown}
       markdownStyle={markdownStyle}
