@@ -118,6 +118,15 @@ export function useMarkdownRenderConfig() {
         rowEvenBackgroundColor: 'transparent',
         rowOddBackgroundColor: codeBackground,
       },
+      taskList: {
+        borderColor: muted,
+        checkboxBorderRadius: 4,
+        checkboxSize: 16,
+        checkedColor: link,
+        checkedStrikethrough: true,
+        checkedTextColor: muted,
+        checkmarkColor: codeBackground,
+      },
       thematicBreak: {
         color: border,
         height: 1,
