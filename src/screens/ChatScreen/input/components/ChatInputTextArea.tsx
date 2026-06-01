@@ -24,7 +24,7 @@ export function ChatInputTextArea() {
     <TextArea
       ref={inputRef}
       multiline
-      className={`h-auto min-h-11 flex-1 rounded-3xl px-2! py-3! text-base leading-5 ${transparentInputSurfaceClassName}`}
+      className={`h-auto min-h-11 flex-1 rounded-3xl py-3! pr-12! pl-2! text-base leading-5 ${transparentInputSurfaceClassName}`}
       numberOfLines={6}
       placeholder={t('chat.inputPlaceholder')}
       style={[
