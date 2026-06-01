@@ -205,7 +205,7 @@ function SettingsProfileEditor({
             {t('settings.profile.userName')}
           </Text>
           <Input
-            accessibilityLabel={t('settings.profile.name')}
+            accessibilityLabel={t('settings.profile.userName')}
             autoCorrect={false}
             className="rounded-2xl px-4 text-base text-foreground leading-5"
             onChangeText={onDraftNameChange}
