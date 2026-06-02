@@ -8,7 +8,7 @@ import type { CherryInProviderSettings } from '@cherrystudio/ai-sdk-provider';
 import { ENDPOINT_TYPE } from '@cherrystudio/provider-registry';
 import type { EndpointType, Model } from '@/data/types/model';
 import type { AuthConfig, Provider } from '@/data/types/provider';
-
+import { generateSignature } from '@/integration/cherryai';
 import type { ProviderConfig } from '../types';
 import { type AppProviderId, type AppProviderSettingsMap, appProviderIds } from '../types';
 import {
@@ -117,6 +117,7 @@ export async function providerToAiSdkConfig(
   };
 
   const builders: ConfigBuilderEntry[] = [
+    { match: (p) => isCherryAIProvider(p), build: buildCherryAIConfig },
     { match: (p) => isAzureOpenAIProvider(p), build: buildAzureConfig },
     { match: (_, id) => id === 'cherryin', build: buildRoutedGatewayConfig },
     { match: (_, id) => id === 'newapi', build: buildRoutedGatewayConfig },
@@ -184,6 +185,40 @@ function buildRoutedGatewayConfig(ctx: BuilderContext): ProviderConfig {
       headers: { ...defaultAppHeaders(), ...getExtraHeaders(ctx.actualProvider) },
     },
   };
+}
+
+function buildCherryAIConfig(ctx: BuilderContext): ProviderConfig<'openai-compatible'> {
+  return {
+    providerId: 'openai-compatible',
+    endpoint: ctx.endpoint,
+    providerSettings: {
+      ...ctx.baseConfig,
+      headers: { ...defaultAppHeaders(), ...getExtraHeaders(ctx.actualProvider) },
+      includeUsage: ctx.actualProvider.apiFeatures.streamOptions,
+      name: ctx.actualProvider.id,
+      fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+        const signature = generateSignature({
+          method: 'POST',
+          path: '/chat/completions',
+          query: '',
+          body: getJsonBody(init?.body),
+        });
+        return fetch(input, { ...init, headers: { ...init?.headers, ...signature } });
+      },
+    },
+  };
+}
+
+function getJsonBody(body: BodyInit | null | undefined): Record<string, unknown> | undefined {
+  if (typeof body !== 'string') {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(body) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
 }
 
 function formatAzureBaseURL(baseURL: string, forAnthropic: boolean): string {
@@ -289,6 +324,10 @@ function isOllamaProvider(provider: Provider): boolean {
 
 function isGeminiProvider(provider: Provider): boolean {
   return isPreset(provider, 'gemini') || isPreset(provider, 'google');
+}
+
+function isCherryAIProvider(provider: Provider): boolean {
+  return isPreset(provider, 'cherryai');
 }
 
 function isAzureOpenAIProvider(provider: Provider): boolean {
