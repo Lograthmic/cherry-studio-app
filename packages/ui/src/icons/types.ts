@@ -1,43 +1,10 @@
-import type { ComponentType, ReactNode } from 'react';
-import type { SvgProps } from 'react-native-svg';
+import type { GENERAL_ICONS } from '../icons-png/general';
+import type { MODEL_ICONS } from '../icons-png/models';
+import type { PROVIDER_ICONS } from '../icons-png/providers';
+import type { IconPngSource } from '../icons-png/types';
 
-export type IconVariant = 'light' | 'dark';
+export type { IconPngSource };
 
-export type IconComponentProps = SvgProps & {
-  className?: string;
-};
-
-export type IconComponent = ComponentType<IconComponentProps>;
-
-export type CompoundIconProps = IconComponentProps & {
-  variant?: IconVariant;
-};
-
-export type IconAvatarProps = {
-  icon: IconComponent | CompoundIcon;
-  size?: number;
-  shape?: 'circle' | 'rounded';
-  background?: string;
-  className?: string;
-};
-
-export type CompoundIcon = ComponentType<CompoundIconProps> & {
-  Avatar: ComponentType<Omit<IconAvatarProps, 'icon'>>;
-  colorPrimary: string;
-};
-
-export interface IconMeta {
-  id: string;
-  colorPrimary: string;
-  colorScheme?: 'mono' | 'color';
-}
-
-export interface CatalogEntry extends IconMeta {
-  component: CompoundIcon;
-}
-
-export type IconProps = CompoundIconProps & {
-  id: string;
-  size?: number | string;
-  fallback?: ReactNode;
-};
+export type GeneralIconKey = keyof typeof GENERAL_ICONS;
+export type ModelIconKey = keyof typeof MODEL_ICONS;
+export type ProviderIconKey = keyof typeof PROVIDER_ICONS;

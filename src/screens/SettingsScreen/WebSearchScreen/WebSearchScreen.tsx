@@ -1,4 +1,4 @@
-import { resolveProviderIcon } from '@cherrystudio/ui/icons-png/providers';
+import { resolveProviderIcon } from '@cherrystudio/ui/icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

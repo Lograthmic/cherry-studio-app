@@ -19,4 +19,5 @@ export const PROVIDER_ID_ALIASES: Record<string, string> = {
   zai: 'zAi',
   'minimax-global': 'minimax',
   cherryai: 'cherryin',
+  runaway: 'runway',
 };

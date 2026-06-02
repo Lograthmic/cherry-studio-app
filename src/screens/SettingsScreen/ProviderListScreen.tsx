@@ -1,4 +1,4 @@
-import { resolveProviderIcon } from '@cherrystudio/ui/icons-png/providers';
+import { resolveProviderIcon } from '@cherrystudio/ui/icons';
 import { useRouter } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { Accordion } from 'heroui-native/accordion';
@@ -10,8 +10,8 @@ import { useUniwind, withUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
 import { isLiquidGlassAvailable } from '@/config/constants';
-import { useDataQuery } from '@/data/hooks';
 import { queryKeys } from '@/data/api';
+import { useDataQuery } from '@/data/hooks';
 import { SettingsSection } from './components/SettingsSection';
 import { SettingsServiceRow, type SettingsServiceRowProps } from './components/SettingsServiceRow';
 

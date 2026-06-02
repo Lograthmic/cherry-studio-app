@@ -1,5 +1,4 @@
-import { resolveModelIcon } from '@cherrystudio/ui/icons';
-import { resolveModelProviderIcon } from '@cherrystudio/ui/icons-png';
+import { resolveIcon } from '@cherrystudio/ui/icons';
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import { useUniwind } from 'uniwind';
@@ -15,8 +14,7 @@ type ModelPickerIconProps = {
 export function ModelPickerIcon({ item, providerIconSize, size = 32 }: ModelPickerIconProps) {
   const { theme } = useUniwind();
   const iconTheme = theme === 'dark' ? 'dark' : 'light';
-  const modelIcon = resolveModelIcon(item.modelIdentifier);
-  const providerIconSource = resolveModelProviderIcon(
+  const iconSource = resolveIcon(
     item.modelIdentifier,
     item.provider.presetProviderId ?? item.provider.id,
   );
@@ -28,13 +26,7 @@ export function ModelPickerIcon({ item, providerIconSize, size = 32 }: ModelPick
   };
   const imageSize = providerIconSize ?? Math.round(size * 0.8125);
 
-  if (modelIcon) {
-    const Avatar = modelIcon.Avatar;
-
-    return <Avatar background="transparent" size={size} />;
-  }
-
-  if (providerIconSource) {
+  if (iconSource) {
     return (
       <View
         className="items-center justify-center overflow-hidden"
@@ -44,7 +36,7 @@ export function ModelPickerIcon({ item, providerIconSize, size = 32 }: ModelPick
           cachePolicy="memory-disk"
           contentFit="contain"
           recyclingKey={item.modelId}
-          source={providerIconSource[iconTheme]}
+          source={iconSource[iconTheme]}
           style={{
             height: imageSize,
             width: imageSize,

@@ -1,3 +1,18 @@
-export type { ProviderIconKey, ProviderIconSource } from './providers';
-export { resolveModelProviderIcon, resolveModelToProviderIcon } from './model-provider-icons';
-export { PROVIDER_ICONS, resolveProviderIcon } from './providers';
+export {
+  resolveGeneralIcon,
+  resolveIcon,
+  resolveModelIcon,
+  resolveModelProviderIcon,
+  resolveModelToProviderIcon,
+  resolveProviderIcon,
+} from '../icons';
+export type {
+  GeneralIconKey,
+  IconPngSource,
+  ModelIconKey,
+  ProviderIconKey,
+} from '../icons';
+export { GENERAL_ICONS } from './general';
+export { MODEL_ICONS } from './models';
+export { PROVIDER_ICONS } from './providers';
+export type { IconPngSource as IconSourcePair } from './types';

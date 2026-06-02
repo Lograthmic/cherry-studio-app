@@ -2,22 +2,19 @@
  * Auto-generated provider icon registry
  * Do not edit manually.
  *
- * Total provider icons: 159
+ * Total icons: 159
  */
 
 import { PROVIDER_ID_ALIASES } from '../provider-aliases';
 
-export type ProviderIconSource = {
-  light: number;
-  dark: number;
-};
+import type { IconPngSource } from '../types';
 
 export const PROVIDER_ICONS = {
   '302ai': {
     light: require('./light/302ai.png'),
     dark: require('./light/302ai.png'),
   },
-  '3minTop': {
+  '3min-top': {
     light: require('./light/3min-top.png'),
     dark: require('./light/3min-top.png'),
   },
@@ -25,11 +22,11 @@ export const PROVIDER_ICONS = {
     light: require('./light/abacus.png'),
     dark: require('./light/abacus.png'),
   },
-  aiOnly: {
+  'ai-only': {
     light: require('./light/ai-only.png'),
     dark: require('./light/ai-only.png'),
   },
-  aiStudio: {
+  'ai-studio': {
     light: require('./light/ai-studio.png'),
     dark: require('./dark/ai-studio.png'),
   },
@@ -61,11 +58,11 @@ export const PROVIDER_ICONS = {
     light: require('./light/application.png'),
     dark: require('./light/application.png'),
   },
-  arceeAi: {
+  'arcee-ai': {
     light: require('./light/arcee-ai.png'),
     dark: require('./light/arcee-ai.png'),
   },
-  awsBedrock: {
+  'aws-bedrock': {
     light: require('./light/aws-bedrock.png'),
     dark: require('./light/aws-bedrock.png'),
   },
@@ -81,7 +78,7 @@ export const PROVIDER_ICONS = {
     light: require('./light/baichuan.png'),
     dark: require('./light/baichuan.png'),
   },
-  baiduCloud: {
+  'baidu-cloud': {
     light: require('./light/baidu-cloud.png'),
     dark: require('./light/baidu-cloud.png'),
   },
@@ -95,7 +92,7 @@ export const PROVIDER_ICONS = {
   },
   bfl: {
     light: require('./light/bfl.png'),
-    dark: require('./light/bfl.png'),
+    dark: require('./dark/bfl.png'),
   },
   bing: {
     light: require('./light/bing.png'),
@@ -105,7 +102,7 @@ export const PROVIDER_ICONS = {
     light: require('./light/bocha.png'),
     dark: require('./light/bocha.png'),
   },
-  boltNew: {
+  'bolt-new': {
     light: require('./light/bolt-new.png'),
     dark: require('./dark/bolt-new.png'),
   },
@@ -139,7 +136,7 @@ export const PROVIDER_ICONS = {
   },
   composio: {
     light: require('./light/composio.png'),
-    dark: require('./light/composio.png'),
+    dark: require('./dark/composio.png'),
   },
   coze: {
     light: require('./light/coze.png'),
@@ -185,7 +182,7 @@ export const PROVIDER_ICONS = {
     light: require('./light/dola.png'),
     dark: require('./light/dola.png'),
   },
-  dolphinAi: {
+  'dolphin-ai': {
     light: require('./light/dolphin-ai.png'),
     dark: require('./dark/dolphin-ai.png'),
   },
@@ -199,9 +196,9 @@ export const PROVIDER_ICONS = {
   },
   elevenlabs: {
     light: require('./light/elevenlabs.png'),
-    dark: require('./light/elevenlabs.png'),
+    dark: require('./dark/elevenlabs.png'),
   },
-  essentialAi: {
+  'essential-ai': {
     light: require('./light/essential-ai.png'),
     dark: require('./dark/essential-ai.png'),
   },
@@ -219,19 +216,19 @@ export const PROVIDER_ICONS = {
   },
   flowith: {
     light: require('./light/flowith.png'),
-    dark: require('./light/flowith.png'),
+    dark: require('./dark/flowith.png'),
   },
   genspark: {
     light: require('./light/genspark.png'),
     dark: require('./light/genspark.png'),
   },
-  giteeAi: {
+  'gitee-ai': {
     light: require('./light/gitee-ai.png'),
     dark: require('./dark/gitee-ai.png'),
   },
-  githubCopilot: {
+  'github-copilot': {
     light: require('./light/github-copilot.png'),
-    dark: require('./light/github-copilot.png'),
+    dark: require('./dark/github-copilot.png'),
   },
   github: {
     light: require('./light/github.png'),
@@ -239,7 +236,7 @@ export const PROVIDER_ICONS = {
   },
   glama: {
     light: require('./light/glama.png'),
-    dark: require('./light/glama.png'),
+    dark: require('./dark/glama.png'),
   },
   google: {
     light: require('./light/google.png'),
@@ -249,13 +246,13 @@ export const PROVIDER_ICONS = {
     light: require('./light/gpustack.png'),
     dark: require('./light/gpustack.png'),
   },
-  graphRag: {
+  'graph-rag': {
     light: require('./light/graph-rag.png'),
     dark: require('./light/graph-rag.png'),
   },
   grok: {
     light: require('./light/grok.png'),
-    dark: require('./light/grok.png'),
+    dark: require('./dark/grok.png'),
   },
   groq: {
     light: require('./light/groq.png'),
@@ -275,7 +272,7 @@ export const PROVIDER_ICONS = {
   },
   ideogram: {
     light: require('./light/ideogram.png'),
-    dark: require('./light/ideogram.png'),
+    dark: require('./dark/ideogram.png'),
   },
   ima: {
     light: require('./light/ima.png'),
@@ -283,7 +280,7 @@ export const PROVIDER_ICONS = {
   },
   inceptionlabs: {
     light: require('./light/inceptionlabs.png'),
-    dark: require('./light/inceptionlabs.png'),
+    dark: require('./dark/inceptionlabs.png'),
   },
   infini: {
     light: require('./light/infini.png'),
@@ -291,7 +288,7 @@ export const PROVIDER_ICONS = {
   },
   inflection: {
     light: require('./light/inflection.png'),
-    dark: require('./light/inflection.png'),
+    dark: require('./dark/inflection.png'),
   },
   intel: {
     light: require('./light/intel.png'),
@@ -335,7 +332,7 @@ export const PROVIDER_ICONS = {
   },
   liquid: {
     light: require('./light/liquid.png'),
-    dark: require('./light/liquid.png'),
+    dark: require('./dark/liquid.png'),
   },
   lmstudio: {
     light: require('./light/lmstudio.png'),
@@ -373,13 +370,13 @@ export const PROVIDER_ICONS = {
     light: require('./light/mineru.png'),
     dark: require('./dark/mineru.png'),
   },
-  minimaxAgent: {
+  'minimax-agent': {
     light: require('./light/minimax-agent.png'),
     dark: require('./dark/minimax-agent.png'),
   },
   minimax: {
     light: require('./light/minimax.png'),
-    dark: require('./light/minimax.png'),
+    dark: require('./dark/minimax.png'),
   },
   mistral: {
     light: require('./light/mistral.png'),
@@ -405,11 +402,11 @@ export const PROVIDER_ICONS = {
     light: require('./light/n8n.png'),
     dark: require('./light/n8n.png'),
   },
-  namiAi: {
+  'nami-ai': {
     light: require('./light/nami-ai.png'),
     dark: require('./light/nami-ai.png'),
   },
-  neteaseYoudao: {
+  'netease-youdao': {
     light: require('./light/netease-youdao.png'),
     dark: require('./light/netease-youdao.png'),
   },
@@ -443,7 +440,7 @@ export const PROVIDER_ICONS = {
   },
   ollama: {
     light: require('./light/ollama.png'),
-    dark: require('./light/ollama.png'),
+    dark: require('./dark/ollama.png'),
   },
   openai: {
     light: require('./light/openai.png'),
@@ -499,7 +496,7 @@ export const PROVIDER_ICONS = {
   },
   relace: {
     light: require('./light/relace.png'),
-    dark: require('./light/relace.png'),
+    dark: require('./dark/relace.png'),
   },
   riverflow: {
     light: require('./light/riverflow.png'),
@@ -507,7 +504,7 @@ export const PROVIDER_ICONS = {
   },
   runway: {
     light: require('./light/runway.png'),
-    dark: require('./light/runway.png'),
+    dark: require('./dark/runway.png'),
   },
   searxng: {
     light: require('./light/searxng.png'),
@@ -553,15 +550,15 @@ export const PROVIDER_ICONS = {
     light: require('./light/tavily.png'),
     dark: require('./light/tavily.png'),
   },
-  tencentCloudTi: {
+  'tencent-cloud-ti': {
     light: require('./light/tencent-cloud-ti.png'),
     dark: require('./light/tencent-cloud-ti.png'),
   },
-  tesseractJs: {
+  'tesseract-js': {
     light: require('./light/tesseract-js.png'),
     dark: require('./light/tesseract-js.png'),
   },
-  thinkAny: {
+  'think-any': {
     light: require('./light/think-any.png'),
     dark: require('./light/think-any.png'),
   },
@@ -579,7 +576,7 @@ export const PROVIDER_ICONS = {
   },
   twitter: {
     light: require('./light/twitter.png'),
-    dark: require('./light/twitter.png'),
+    dark: require('./dark/twitter.png'),
   },
   upstage: {
     light: require('./light/upstage.png'),
@@ -587,7 +584,7 @@ export const PROVIDER_ICONS = {
   },
   vercel: {
     light: require('./light/vercel.png'),
-    dark: require('./light/vercel.png'),
+    dark: require('./dark/vercel.png'),
   },
   vertexai: {
     light: require('./light/vertexai.png'),
@@ -609,7 +606,7 @@ export const PROVIDER_ICONS = {
     light: require('./light/wenxin.png'),
     dark: require('./light/wenxin.png'),
   },
-  workersAi: {
+  'workers-ai': {
     light: require('./light/workers-ai.png'),
     dark: require('./light/workers-ai.png'),
   },
@@ -633,11 +630,11 @@ export const PROVIDER_ICONS = {
     light: require('./light/yuanbao.png'),
     dark: require('./light/yuanbao.png'),
   },
-  zAi: {
+  'z-ai': {
     light: require('./light/z-ai.png'),
-    dark: require('./light/z-ai.png'),
+    dark: require('./dark/z-ai.png'),
   },
-  zeroOne: {
+  'zero-one': {
     light: require('./light/zero-one.png'),
     dark: require('./light/zero-one.png'),
   },
@@ -649,12 +646,12 @@ export const PROVIDER_ICONS = {
     light: require('./light/zhipu.png'),
     dark: require('./dark/zhipu.png'),
   },
-} as const satisfies Record<string, ProviderIconSource>;
+} as const satisfies Record<string, IconPngSource>;
 
 export type ProviderIconKey = keyof typeof PROVIDER_ICONS;
 
-function toProviderIconKey(providerId: string) {
-  const parts = providerId.split('-');
+function toCamelCase(iconId: string) {
+  const parts = iconId.split('-');
 
   return (
     parts[0] +
@@ -665,11 +662,23 @@ function toProviderIconKey(providerId: string) {
   );
 }
 
-export function resolveProviderIcon(providerId: string): ProviderIconSource | undefined {
-  if (!providerId) return undefined;
-
-  const key = PROVIDER_ID_ALIASES[providerId] ?? providerId;
-  const icons = PROVIDER_ICONS as Record<string, ProviderIconSource>;
-
-  return icons[key as ProviderIconKey] ?? icons[toProviderIconKey(key) as ProviderIconKey];
+function toKebabCase(iconId: string) {
+  return iconId
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase();
 }
+
+export function resolveProviderAssetIcon(iconId: string): IconPngSource | undefined {
+  if (!iconId) return undefined;
+
+  const key = PROVIDER_ID_ALIASES[iconId] ?? iconId;
+  const icons = PROVIDER_ICONS as Record<string, IconPngSource>;
+
+  return (
+    icons[key as ProviderIconKey] ??
+    icons[toKebabCase(key) as ProviderIconKey] ??
+    icons[toCamelCase(key) as ProviderIconKey]
+  );
+}
+export const resolveProviderIcon = resolveProviderAssetIcon;

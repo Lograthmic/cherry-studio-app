@@ -6,11 +6,11 @@
   "types": "src/index.ts",
   "sideEffects": false,
   "scripts": {
-    "icons:generate": "pnpm icons:generate:svg && pnpm provider-icons:generate",
-    "icons:generate:svg": "tsx src/scripts/generate-icons.ts",
+    "icons:generate": "tsx src/scripts/generate-icons.ts",
+    "icons:generate:png": "tsx src/scripts/generate-icons.ts",
     "icons:generate:general": "tsx src/scripts/generate-icons.ts --type=general",
     "icons:generate:models": "tsx src/scripts/generate-icons.ts --type=models",
-    "provider-icons:generate": "tsx src/scripts/generate-provider-icons.ts"
+    "provider-icons:generate": "tsx src/scripts/generate-icons.ts --type=providers"
   },
   "exports": {
     ".": {
@@ -37,6 +37,18 @@
       "import": "./src/icons-png/providers/index.ts",
       "default": "./src/icons-png/providers/index.ts"
     },
+    "./icons-png/general": {
+      "types": "./src/icons-png/general/index.ts",
+      "react-native": "./src/icons-png/general/index.ts",
+      "import": "./src/icons-png/general/index.ts",
+      "default": "./src/icons-png/general/index.ts"
+    },
+    "./icons-png/models": {
+      "types": "./src/icons-png/models/index.ts",
+      "react-native": "./src/icons-png/models/index.ts",
+      "import": "./src/icons-png/models/index.ts",
+      "default": "./src/icons-png/models/index.ts"
+    },
     "./icons-png/*": {
       "types": "./src/icons-png/*",
       "react-native": "./src/icons-png/*",
@@ -44,22 +56,26 @@
       "default": "./src/icons-png/*"
     },
     "./icons/general": {
-      "types": "./src/icons/general/index.ts",
-      "react-native": "./src/icons/general/index.ts",
-      "import": "./src/icons/general/index.ts",
-      "default": "./src/icons/general/index.ts"
+      "types": "./src/icons-png/general/index.ts",
+      "react-native": "./src/icons-png/general/index.ts",
+      "import": "./src/icons-png/general/index.ts",
+      "default": "./src/icons-png/general/index.ts"
     },
     "./icons/models": {
-      "types": "./src/icons/models/index.ts",
-      "react-native": "./src/icons/models/index.ts",
-      "import": "./src/icons/models/index.ts",
-      "default": "./src/icons/models/index.ts"
+      "types": "./src/icons-png/models/index.ts",
+      "react-native": "./src/icons-png/models/index.ts",
+      "import": "./src/icons-png/models/index.ts",
+      "default": "./src/icons-png/models/index.ts"
+    },
+    "./icons/providers": {
+      "types": "./src/icons-png/providers/index.ts",
+      "react-native": "./src/icons-png/providers/index.ts",
+      "import": "./src/icons-png/providers/index.ts",
+      "default": "./src/icons-png/providers/index.ts"
     }
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "react-native-svg": "*",
-    "uniwind": "*"
+    "react-native": "*"
   }
 }

@@ -1,5 +1,14 @@
-export * from './general';
-export * as ModelIcons from './models';
-export { MODEL_ICON_CATALOG, type ModelIconKey } from './models/catalog';
-export { resolveModelIcon } from './registry';
-export * from './types';
+export {
+  resolveGeneralIcon,
+  resolveIcon,
+  resolveModelIcon,
+  resolveModelProviderIcon,
+  resolveModelToProviderIcon,
+  resolveProviderIcon,
+} from './registry';
+export type {
+  GeneralIconKey,
+  IconPngSource,
+  ModelIconKey,
+  ProviderIconKey,
+} from './types';
