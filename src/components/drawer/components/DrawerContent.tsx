@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { TextInput, useWindowDimensions } from 'react-native';
+import { StyleSheet, TextInput, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -48,8 +48,13 @@ export function DrawerContent() {
       className="flex-1"
       edges={['top', 'bottom']}
       importantForAccessibility={isOpen ? 'auto' : 'no-hide-descendants'}
+      style={styles.container}
     >
-      <Animated.View className="flex-1 gap-2" layout={drawerContentLayoutTransition}>
+      <Animated.View
+        className="flex-1 gap-2"
+        layout={drawerContentLayoutTransition}
+        style={styles.content}
+      >
         <DrawerHeader
           closeButtonSize={closeButtonSize}
           closeButtonStyle={closeButtonStyle}
@@ -63,10 +68,27 @@ export function DrawerContent() {
           searchText={searchText}
           setSearchText={setSearchText}
         />
-        <Animated.View className="flex-1" layout={drawerContentLayoutTransition}>
+        <Animated.View
+          className="flex-1"
+          layout={drawerContentLayoutTransition}
+          style={styles.topicListSlot}
+        >
           <DrawerTopicList />
         </Animated.View>
       </Animated.View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    gap: 8,
+  },
+  topicListSlot: {
+    flex: 1,
+  },
+});
