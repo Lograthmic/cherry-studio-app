@@ -93,7 +93,7 @@ export default function ProviderDetailSettingsScreen() {
       <BackHeader title={providerName ?? t('settings.pages.provider.title')} />
       <StyledPressable
         accessible={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         onPress={Keyboard.dismiss}
       >
         <ScrollView

@@ -621,6 +621,7 @@
   --color-ring: var(--cs-theme-ring);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-settings-grouped-surface: var(--settings-grouped-surface);
   --color-destructive: var(--cs-destructive);
   --color-destructive-hover: var(--cs-destructive-hover);
   --color-info: var(--cs-info);
@@ -853,6 +854,9 @@
       --separator: var(--cs-frame-border);
       --focus: var(--cs-ring);
       --link: var(--foreground);
+
+      /*Cherry Studio App*/
+      --settings-grouped-surface: oklch(0 0 0 / 0.05);
     }
 
     @variant dark {
@@ -955,6 +959,9 @@
       --separator: var(--cs-frame-border);
       --focus: var(--cs-ring);
       --link: var(--foreground);
+
+      /*Cherry Studio App*/
+      --settings-grouped-surface: oklch(1 0 0 / 0.05);
     }
   }
 }

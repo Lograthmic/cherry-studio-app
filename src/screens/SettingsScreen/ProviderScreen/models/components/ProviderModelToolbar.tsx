@@ -66,7 +66,7 @@ function ModelActionButton({
     <StyledPressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      className="h-7 flex-row items-center gap-1 rounded-xl bg-surface-secondary px-2 active:opacity-60"
+      className="h-7 flex-row items-center gap-1 rounded-xl bg-settings-grouped-surface px-2 active:opacity-60"
       hitSlop={6}
     >
       {icon}

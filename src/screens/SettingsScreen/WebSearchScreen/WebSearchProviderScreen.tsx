@@ -59,7 +59,7 @@ export default function WebSearchProviderSettingsScreen() {
       <BackHeader rightActions={rightActions} title={provider.name} />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

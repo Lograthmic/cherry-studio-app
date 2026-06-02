@@ -13,14 +13,14 @@ export function ProviderModelSearchField({
 
   return (
     <SearchField className="w-full" onChange={setSearchText} value={searchText}>
-      <SearchField.Group className="h-10">
+      <SearchField.Group className="h-10 rounded-xl bg-settings-grouped-surface">
         <SearchField.SearchIcon iconProps={{ size: 18 }} />
         <SearchField.Input
           accessibilityLabel={t('navigation.search')}
           autoCapitalize="none"
           autoComplete="off"
           autoCorrect={false}
-          className="h-10 min-h-10 rounded-3xl border-0 py-0 pl-9 pr-10 text-base leading-5"
+          className="h-10 min-h-10 rounded-xl border-0 bg-transparent py-0 pl-9 pr-10 text-base leading-5"
           placeholder={t('navigation.search')}
           returnKeyType="search"
           spellCheck={false}

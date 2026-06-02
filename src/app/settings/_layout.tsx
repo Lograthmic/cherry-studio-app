@@ -4,20 +4,12 @@ import { useThemeColor } from 'heroui-native/hooks';
 import { isIOS, isLiquidGlassAvailable } from '@/config/constants';
 
 export default function SettingsStackLayout() {
-  const [backgroundColor, foregroundColor] = useThemeColor(['background', 'foreground']);
+  const foregroundColor = useThemeColor('foreground');
 
   return (
     <Stack
       screenOptions={{
-        contentStyle: {
-          backgroundColor,
-        },
         headerShadowVisible: isIOS ? undefined : false,
-        headerStyle: isIOS
-          ? undefined
-          : {
-              backgroundColor,
-            },
         headerTransparent: isLiquidGlassAvailable,
         headerTintColor: foregroundColor,
       }}

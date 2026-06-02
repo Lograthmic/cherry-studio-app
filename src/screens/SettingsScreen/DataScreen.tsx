@@ -72,7 +72,7 @@ export default function DataSettingsScreen() {
       <BackHeader title={t('settings.pages.data.title')} />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >

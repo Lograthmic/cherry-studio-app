@@ -52,7 +52,7 @@ export default function ModelSettingsScreen() {
       <BackHeader title={t('settings.pages.model.title')} />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >

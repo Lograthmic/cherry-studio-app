@@ -124,7 +124,7 @@ export function ProviderApiServiceEndpointForm({
           })}
         </View>
       ) : (
-        <Text className="rounded-xl bg-surface-secondary px-3 py-3 text-center text-default-foreground text-sm">
+        <Text className="rounded-xl bg-settings-grouped-surface px-3 py-3 text-center text-default-foreground text-sm">
           {t('settings.provider.apiService.noAdditionalEndpoints')}
         </Text>
       )}
@@ -214,7 +214,7 @@ function AddEndpointSelect({
     <Select value={undefined} onValueChange={handleValueChange}>
       <Select.Trigger
         accessibilityLabel={label}
-        className="h-10 min-h-10 flex-row items-center justify-center gap-2 rounded-xl bg-surface-secondary px-3 py-0"
+        className="h-10 min-h-10 flex-row items-center justify-center gap-2 rounded-xl bg-settings-grouped-surface px-3 py-0"
       >
         <PlusIcon className="size-4 text-default-foreground" strokeWidth={2} />
         <Text className="text-base text-foreground" numberOfLines={1}>

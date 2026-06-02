@@ -29,7 +29,7 @@ export default function SettingsScreen() {
       <CloseHeader />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >

@@ -72,19 +72,19 @@ export default function ProviderSettingsScreen() {
       <BackHeader title={t('settings.pages.provider.title')} />
       <StyledPressable
         accessible={false}
-        className="flex-1 gap-3 bg-background px-4"
+        className="flex-1 gap-3 px-4"
         onPress={Keyboard.dismiss}
         style={{ paddingTop: topInset }}
       >
         <SearchField className="w-full" onChange={setSearchText} value={searchText}>
-          <SearchField.Group className="h-10">
+          <SearchField.Group className="h-10 rounded-xl bg-settings-grouped-surface">
             <SearchField.SearchIcon iconProps={{ size: 18 }} />
             <SearchField.Input
               accessibilityLabel={t('navigation.search')}
               autoCapitalize="none"
               autoComplete="off"
               autoCorrect={false}
-              className="h-10 min-h-10 rounded-3xl border-0 py-0 pl-9 pr-3 text-base leading-5"
+              className="h-10 min-h-10 rounded-xl border-0 bg-transparent py-0 pl-9 pr-3 text-base leading-5"
               placeholder={t('navigation.search')}
               returnKeyType="search"
               spellCheck={false}
@@ -103,7 +103,7 @@ export default function ProviderSettingsScreen() {
           style={styles.list}
         >
           {filteredProviderItems.length > 0 ? (
-            <View className="overflow-hidden bg-surface-secondary">
+            <View className="overflow-hidden rounded-xl bg-settings-grouped-surface">
               {filteredProviderItems.map((item) => (
                 <SettingsServiceRow key={item.id} {...item} />
               ))}
@@ -133,7 +133,12 @@ function DisabledProvidersAccordion({ items }: { items: SettingsServiceRowProps[
   const { t } = useTranslation();
 
   return (
-    <Accordion className="bg-surface-secondary" hideSeparator isCollapsible selectionMode="single">
+    <Accordion
+      className="overflow-hidden rounded-xl bg-settings-grouped-surface"
+      hideSeparator
+      isCollapsible
+      selectionMode="single"
+    >
       <Accordion.Item value="disabled-providers">
         <Accordion.Trigger className="min-h-11 px-3 py-3">
           <View className="flex-1 flex-row items-center gap-2">

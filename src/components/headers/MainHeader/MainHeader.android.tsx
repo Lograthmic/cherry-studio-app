@@ -26,7 +26,6 @@ export function MainHeader() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View
-        className="bg-background"
         style={{ borderBottomColor: separatorColor, borderBottomWidth: StyleSheet.hairlineWidth }}
       >
         <View style={{ height: insets.top }} />

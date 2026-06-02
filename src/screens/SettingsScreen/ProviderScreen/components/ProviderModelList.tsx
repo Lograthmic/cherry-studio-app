@@ -39,7 +39,7 @@ export function ProviderModelList({ isLoading, models }: ProviderModelListProps)
           onExpandedValuesChange={setExpandedValues}
         />
       ) : (
-        <View className="min-h-12 justify-center rounded-2xl bg-surface-secondary px-4 py-4">
+        <View className="min-h-12 justify-center rounded-2xl bg-settings-grouped-surface px-4 py-4">
           <Text className="text-base text-default-foreground">{emptyTitle}</Text>
         </View>
       )}

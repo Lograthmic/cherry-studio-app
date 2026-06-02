@@ -1,4 +1,3 @@
-import { useThemeColor } from 'heroui-native/hooks';
 import { StyleSheet } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 
@@ -7,8 +6,6 @@ type ChatInitialRenderCoverProps = {
 };
 
 export function ChatInitialRenderCover({ isVisible }: ChatInitialRenderCoverProps) {
-  const [backgroundColor] = useThemeColor(['background']);
-
   if (!isVisible) {
     return null;
   }
@@ -17,7 +14,7 @@ export function ChatInitialRenderCover({ isVisible }: ChatInitialRenderCoverProp
     <Animated.View
       exiting={FadeOut.duration(400)}
       pointerEvents="none"
-      style={[styles.cover, { backgroundColor }]}
+      style={styles.cover}
     />
   );
 }

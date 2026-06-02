@@ -4,16 +4,19 @@ import { useThemeColor } from 'heroui-native/hooks';
 import { isIOS, isLiquidGlassAvailable } from '@/config/constants';
 
 export default function ChatStackLayout() {
-  const [backgroundColor, foregroundColor] = useThemeColor(['background', 'foreground']);
+  const foregroundColor = useThemeColor('foreground');
 
   return (
     <Stack
       screenOptions={{
+        contentStyle: {
+          backgroundColor: 'transparent',
+        },
         headerShadowVisible: isIOS ? undefined : false,
         headerStyle: isIOS
           ? undefined
           : {
-              backgroundColor,
+              backgroundColor: 'transparent',
             },
         headerTransparent: isLiquidGlassAvailable,
         headerTintColor: foregroundColor,

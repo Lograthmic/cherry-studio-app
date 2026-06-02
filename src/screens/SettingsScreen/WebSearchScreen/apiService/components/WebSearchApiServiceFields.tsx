@@ -47,7 +47,7 @@ function DescriptionSection() {
   }
 
   return (
-    <View className="rounded-2xl bg-surface-secondary p-4">
+    <View className="rounded-2xl bg-settings-grouped-surface p-4">
       <Text className="text-base text-default-foreground">{t(descriptionKey)}</Text>
     </View>
   );

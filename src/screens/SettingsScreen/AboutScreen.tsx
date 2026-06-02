@@ -50,12 +50,12 @@ export default function AboutSettingsScreen() {
       <BackHeader rightActions={rightActions} title={t('settings.about.header')} />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
         <View className="gap-6 px-4 py-5">
-          <View className="flex-row gap-4 rounded-2xl bg-surface-secondary px-4 py-5">
+          <View className="flex-row gap-4 rounded-2xl bg-settings-grouped-surface px-4 py-5">
             <Image
               accessibilityIgnoresInvertColors
               source={require('@/assets/icon.png')}

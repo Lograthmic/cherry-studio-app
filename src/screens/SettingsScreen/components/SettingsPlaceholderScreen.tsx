@@ -19,12 +19,12 @@ export function SettingsPlaceholderScreen({
       <BackHeader title={t(titleKey)} />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 py-5">
-          <View className="rounded-2xl bg-surface-secondary px-4 py-5">
+          <View className="rounded-2xl bg-settings-grouped-surface px-4 py-5">
             <Text className="text-base text-default-foreground">{t(placeholderKey)}</Text>
           </View>
         </View>

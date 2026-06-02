@@ -13,7 +13,7 @@ export function SettingsSection({ items, title }: SettingsSectionProps) {
       {title ? (
         <Text className="px-1 font-medium text-default-foreground text-sm">{title}</Text>
       ) : null}
-      <View className="overflow-hidden rounded-2xl bg-surface-secondary">
+      <View className="overflow-hidden rounded-xl bg-settings-grouped-surface">
         {items.map((item) => (
           <SettingsItem key={item.id ?? item.title} {...item} />
         ))}

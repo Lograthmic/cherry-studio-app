@@ -211,7 +211,7 @@ export default function ProviderApiKeySettingsScreen() {
       {confirmDialog}
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"

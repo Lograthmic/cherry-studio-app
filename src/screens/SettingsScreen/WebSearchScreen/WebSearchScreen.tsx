@@ -51,7 +51,7 @@ export default function WebSearchSettingsScreen() {
       <BackHeader title={t('settings.pages.websearch.title')} />
       <ScrollView
         alwaysBounceVertical={false}
-        className="flex-1 bg-background"
+        className="flex-1"
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -124,7 +124,7 @@ export default function WebSearchSettingsScreen() {
           <Text className="px-1 font-medium text-default-foreground text-sm">
             {t('settings.websearch.apiProviders.title')}
           </Text>
-          <View className="overflow-hidden bg-surface-secondary">
+          <View className="overflow-hidden bg-settings-grouped-surface">
             {apiWebSearchProviderItems.map((item) => (
               <SettingsServiceRow key={item.id} {...item} />
             ))}

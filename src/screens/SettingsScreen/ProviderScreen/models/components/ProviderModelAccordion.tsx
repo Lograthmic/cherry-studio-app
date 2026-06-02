@@ -19,7 +19,7 @@ export function ProviderModelAccordion({
 
   return (
     <Accordion
-      className="bg-surface-secondary"
+      className="overflow-hidden rounded-xl bg-settings-grouped-surface"
       hideSeparator
       isCollapsible
       onValueChange={onExpandedValuesChange}
@@ -50,7 +50,7 @@ export function ProviderModelAccordion({
 
 function ModelRow({ model }: { model: Model }) {
   return (
-    <View className="min-h-12 justify-center bg-surface-secondary px-4 py-3">
+    <View className="min-h-12 justify-center bg-transparent px-4 py-3">
       <Text className="text-base text-foreground" numberOfLines={1}>
         {model.name}
       </Text>

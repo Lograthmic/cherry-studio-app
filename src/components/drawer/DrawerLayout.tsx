@@ -139,6 +139,7 @@ export function DrawerLayout() {
               .activeOffsetX([-drawerActivationOffset, drawerActivationOffset])
               .failOffsetY([-drawerActivationOffset, drawerActivationOffset]),
           drawerStyle: {
+            backgroundColor: 'transparent',
             width,
           },
           drawerType: 'back',
