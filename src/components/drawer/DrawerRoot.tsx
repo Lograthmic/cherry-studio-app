@@ -33,17 +33,6 @@ export function DrawerRoot() {
             sheetInitialDetentIndex: 0,
           }}
         />
-        <Stack.Screen
-          name="model-picker"
-          options={{
-            headerShown: false,
-            presentation: 'formSheet',
-            sheetAllowedDetents: [1],
-            sheetCornerRadius: 24,
-            sheetGrabberVisible: true,
-            sheetInitialDetentIndex: 0,
-          }}
-        />
       </Stack>
     </DrawerProvider>
   );

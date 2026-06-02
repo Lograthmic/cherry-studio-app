@@ -57,15 +57,21 @@ Before enabling it, verify:
 - Local `BackHandler` usage does not break system preview.
 - Active generation, unsaved edits, and dangerous confirmations can block or confirm back correctly.
 
-## Route-Level formSheet
+## Picker Sheets
 
-Model selection, provider selection, attachment source selection, and long-list pickers with search/grouping/explanations default to Expo Router route-level `formSheet`. This kind of sheet is the top route in the navigation stack, not a plain overlay; Android system back should dismiss/pop the sheet before the underlying chat screen receives back.
+Short local pickers, such as model setting selection, use reusable Expo UI `BottomSheet`
+components owned by their feature module. These sheets are plain overlays controlled by local
+state; their triggers should only pass open/close and selection state.
+
+Long-list pickers with search/grouping/explanations default to Expo Router route-level
+`formSheet`. This kind of sheet is the top route in the navigation stack, not a plain overlay;
+Android system back should dismiss/pop the sheet before the underlying screen receives back.
 
 Recommended shape:
 
 ```tsx
 <Stack.Screen
-  name="model-picker"
+  name="provider-picker"
   options={{
     presentation: 'formSheet',
     sheetAllowedDetents: [0.5, 0.9],
@@ -73,20 +79,6 @@ Recommended shape:
     sheetCornerRadius: 24,
   }}
 />
-```
-
-When opening model selection from chat input, blur the input before pushing the sheet route:
-
-```ts
-inputRef.current?.blur()
-router.push('/chat/model-picker')
-```
-
-After selection, update the draft model and return:
-
-```ts
-setDraftModel(modelId)
-router.back()
 ```
 
 In v1, `formSheet` content stays single-screen. Search, provider grouping, recent models, and capability labels are allowed in the same sheet, but do not push nested detail screens inside the Android sheet. If details are needed, close the sheet and enter a normal page, or expand detail with local state inside the sheet.

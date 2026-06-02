@@ -653,10 +653,23 @@ export const PROVIDER_ICONS = {
 
 export type ProviderIconKey = keyof typeof PROVIDER_ICONS;
 
+function toProviderIconKey(providerId: string) {
+  const parts = providerId.split('-');
+
+  return (
+    parts[0] +
+    parts
+      .slice(1)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('')
+  );
+}
+
 export function resolveProviderIcon(providerId: string): ProviderIconSource | undefined {
   if (!providerId) return undefined;
 
   const key = PROVIDER_ID_ALIASES[providerId] ?? providerId;
+  const icons = PROVIDER_ICONS as Record<string, ProviderIconSource>;
 
-  return (PROVIDER_ICONS as Record<string, ProviderIconSource>)[key as ProviderIconKey];
+  return icons[key as ProviderIconKey] ?? icons[toProviderIconKey(key) as ProviderIconKey];
 }

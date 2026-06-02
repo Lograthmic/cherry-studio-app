@@ -36,7 +36,7 @@ owning `src/screens/*` module and keep the route as an adapter.
 
 - Use Expo Router's required filenames for routing: `index.tsx`, `_layout.tsx`, `[param].tsx`, and
   `(group)/`.
-- Use `kebab-case` for literal route segment filenames, such as `model-picker.tsx`.
+- Use `kebab-case` for literal route segment filenames, such as `api-key-settings.tsx`.
 - Use meaningful dynamic segment names, such as `[providerId]`.
 - Keep public URL structure in `src/app`; keep module names and implementation ownership in
   `src/screens`.

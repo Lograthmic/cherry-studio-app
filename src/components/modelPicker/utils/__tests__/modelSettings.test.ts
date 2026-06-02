@@ -1,18 +1,9 @@
 import {
   getNextModelSelection,
-  isModelPickerTarget,
   MODEL_SETTING_PREFERENCE_KEYS,
 } from '../modelSettings';
 
 describe('model settings helpers', () => {
-  test('only accepts whitelisted picker targets', () => {
-    expect(isModelPickerTarget('default')).toBe(true);
-    expect(isModelPickerTarget('fast')).toBe(true);
-    expect(isModelPickerTarget('translate')).toBe(true);
-    expect(isModelPickerTarget('chat.default_model_id')).toBe(false);
-    expect(isModelPickerTarget(undefined)).toBe(false);
-  });
-
   test('maps picker targets to model preference keys', () => {
     expect(MODEL_SETTING_PREFERENCE_KEYS).toEqual({
       default: 'chat.default_model_id',

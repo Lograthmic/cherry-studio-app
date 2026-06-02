@@ -1,16 +1,28 @@
+export { ModelPickerBottomSheet } from './components/ModelPickerBottomSheet';
+export { ModelPickerIcon } from './components/ModelPickerIcon';
 export { ModelPickerSheetContent } from './components/ModelPickerSheetContent';
+export { useModelPickerData } from './hooks/useModelPickerData';
 export { useModelSettingSelections } from './hooks/useModelSettingSelections';
 export {
-  getModelSettingOptionLabel,
+  buildModelPickerGroups,
+  getAvailableModelPickerFilterTags,
+  getModelPickerModelItem,
+  getModelPickerModelLabel,
+  getModelPickerTagLabelKey,
+  getModelPickerTags,
+  getPinnedModelIds,
+  MODEL_PICKER_FILTER_TAGS,
+  MODEL_PICKER_TAGS,
+  type ModelPickerGroup,
+  type ModelPickerModelItem,
+  type ModelPickerTag,
+} from './utils/modelPickerData';
+export { resolveModelPickerProviderIcon } from './utils/modelPickerIcons';
+export {
   getNextModelSelection,
-  isModelPickerTarget,
-  isModelSettingKind,
   MODEL_SETTING_KIND_TITLE_KEYS,
   MODEL_SETTING_KINDS,
-  MODEL_SETTING_OPTIONS,
   MODEL_SETTING_PREFERENCE_KEYS,
-  type ModelPickerTarget,
   type ModelSettingKind,
-  type ModelSettingOption,
   type ModelSettingSelectionState,
 } from './utils/modelSettings';
