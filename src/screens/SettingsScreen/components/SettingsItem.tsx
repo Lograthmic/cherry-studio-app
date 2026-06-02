@@ -2,7 +2,6 @@ import { ChevronRightIcon } from 'lucide-uniwind';
 import type { ComponentType, ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
-import { withUniwind } from 'uniwind';
 
 export type SettingsItemProps = {
   accessory?: ReactNode;
@@ -14,8 +13,6 @@ export type SettingsItemProps = {
   onPressIn?: () => void;
   title: string;
 };
-
-const StyledPressable = withUniwind(Pressable);
 
 export function SettingsItem({
   accessory,
@@ -29,7 +26,7 @@ export function SettingsItem({
   const isPressable = Boolean(onPress);
 
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={title}
       accessibilityRole={isPressable ? 'button' : undefined}
       className="flex-row items-center justify-between gap-4 px-4 py-3 active:opacity-60 disabled:active:opacity-100"
@@ -52,6 +49,6 @@ export function SettingsItem({
         : (accessory ?? (
             <ChevronRightIcon className="size-6 text-default-foreground" strokeWidth={2} />
           ))}
-    </StyledPressable>
+    </Pressable>
   );
 }

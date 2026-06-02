@@ -2,16 +2,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import { TextInput, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { withUniwind } from 'uniwind';
 
 import { useDrawerActions, useDrawerPanelState } from '../context/DrawerProvider';
 import { useDrawerHeaderAnimation } from '../hooks/useDrawerHeaderAnimation';
 import { drawerContentLayoutTransition } from '../utils/drawerAnimation';
 import { DrawerHeader } from './DrawerHeader';
 import { DrawerTopicList } from './DrawerTopicList';
-
-const StyledSafeAreaView = withUniwind(SafeAreaView);
-const StyledAnimatedView = withUniwind(Animated.View);
 
 export function DrawerContent() {
   const inputRef = useRef<TextInput>(null);
@@ -47,13 +43,13 @@ export function DrawerContent() {
   }, [closeSearch]);
 
   return (
-    <StyledSafeAreaView
+    <SafeAreaView
       accessibilityElementsHidden={!isOpen}
       className="flex-1"
       edges={['top', 'bottom']}
       importantForAccessibility={isOpen ? 'auto' : 'no-hide-descendants'}
     >
-      <StyledAnimatedView className="flex-1 gap-2" layout={drawerContentLayoutTransition}>
+      <Animated.View className="flex-1 gap-2" layout={drawerContentLayoutTransition}>
         <DrawerHeader
           closeButtonSize={closeButtonSize}
           closeButtonStyle={closeButtonStyle}
@@ -67,10 +63,10 @@ export function DrawerContent() {
           searchText={searchText}
           setSearchText={setSearchText}
         />
-        <StyledAnimatedView className="flex-1" layout={drawerContentLayoutTransition}>
+        <Animated.View className="flex-1" layout={drawerContentLayoutTransition}>
           <DrawerTopicList />
-        </StyledAnimatedView>
-      </StyledAnimatedView>
-    </StyledSafeAreaView>
+        </Animated.View>
+      </Animated.View>
+    </SafeAreaView>
   );
 }

@@ -1,10 +1,10 @@
 import { KeyboardChatLegendList } from '@legendapp/list/keyboard-chat';
 import { type LegendListRef, type LegendListRenderItemProps } from '@legendapp/list/react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollShadow } from 'heroui-native/scroll-shadow';
 import { type RefObject, useCallback, useMemo } from 'react';
-import { type NativeScrollEvent, type NativeSyntheticEvent, StyleSheet } from 'react-native';
+import { type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
+import { LinearGradient } from '@/components/uniwind';
 import type { Message } from '@/data/types/message';
 
 import { AssistantMessageItem, UserMessageItem } from '../../messageItem';
@@ -61,7 +61,7 @@ export function ChatMessageList({
   return (
     <ScrollShadow
       LinearGradientComponent={LinearGradient}
-      style={styles.list}
+      className="flex-1"
       visibility="bottom"
       size={80}
     >
@@ -95,14 +95,8 @@ export function ChatMessageList({
         recycleItems
         renderItem={renderMessageItem}
         scrollsToTop
-        style={styles.list}
+        className="flex-1"
       />
     </ScrollShadow>
   );
 }
-
-const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-  },
-});

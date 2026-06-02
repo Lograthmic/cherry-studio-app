@@ -1,8 +1,9 @@
-import { Image, type ImageSource } from 'expo-image';
+import type { ImageSource } from 'expo-image';
+import { cn } from 'heroui-native/utils';
 import { ChevronRightIcon } from 'lucide-uniwind';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { withUniwind } from 'uniwind';
+import { Pressable, Text, View } from 'react-native';
+import { Image } from '@/components/uniwind';
 
 export type SettingsServiceRowProps = {
   id: string;
@@ -11,8 +12,6 @@ export type SettingsServiceRowProps = {
   name: string;
   onPress: () => void;
 };
-
-const StyledPressable = withUniwind(Pressable);
 
 export const SettingsServiceRow = memo(function SettingsServiceRow({
   id,
@@ -23,7 +22,7 @@ export const SettingsServiceRow = memo(function SettingsServiceRow({
 }: SettingsServiceRowProps) {
   return (
     <View>
-      <StyledPressable
+      <Pressable
         accessibilityLabel={name}
         accessibilityRole="button"
         className="flex-row items-center justify-between active:opacity-60 py-2 px-2"
@@ -33,31 +32,24 @@ export const SettingsServiceRow = memo(function SettingsServiceRow({
           {imageSource ? (
             <Image
               cachePolicy="memory-disk"
+              className="size-7"
               contentFit="contain"
               recyclingKey={id}
               source={imageSource}
-              style={styles.icon}
             />
           ) : null}
           <Text
-            className={[
+            className={cn(
               'flex-1 text-base',
               isEnabled ? 'text-foreground' : 'text-default-foreground',
-            ].join(' ')}
+            )}
             numberOfLines={1}
           >
             {name}
           </Text>
         </View>
         <ChevronRightIcon className="size-6 text-default-foreground" strokeWidth={2} />
-      </StyledPressable>
+      </Pressable>
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  icon: {
-    height: 28,
-    width: 28,
-  },
 });

@@ -1,6 +1,7 @@
 import { Select } from 'heroui-native';
 import { Button } from 'heroui-native/button';
 import { Input } from 'heroui-native/input';
+import { cn } from 'heroui-native/utils';
 import { PlusIcon, SettingsIcon, Trash2Icon } from 'lucide-uniwind';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -106,7 +107,10 @@ export function ProviderApiServiceEndpointForm({
                   {!isPrimaryEndpoint ? (
                     <Button
                       accessibilityLabel={t('settings.provider.apiService.removeEndpoint')}
-                      className={`h-10 min-h-0 rounded-xl ${pendingEndpoint === endpoint ? 'opacity-40' : ''}`}
+                      className={cn(
+                        'h-10 min-h-0 rounded-xl',
+                        pendingEndpoint === endpoint && 'opacity-40',
+                      )}
                       isDisabled={pendingEndpoint === endpoint}
                       isIconOnly
                       onPress={() => onRemoveEndpoint(endpoint)}
@@ -173,7 +177,7 @@ function EndpointBaseUrlInput({
       accessibilityLabel={accessibilityLabel}
       autoCapitalize="none"
       autoCorrect={false}
-      className={`h-10 min-h-0 rounded-xl px-3 py-0 text-base leading-5 ${className ?? ''}`}
+      className={cn('h-10 min-h-0 rounded-xl px-3 py-0 text-base leading-5', className)}
       isDisabled={isDisabled}
       onBlur={handleCommitEvent}
       onChangeText={onChangeText}

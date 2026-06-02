@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 type ChatInputSelectedPhotoBarProps = {
   selectedPhotoCount: number;
@@ -17,33 +17,17 @@ export function ChatInputSelectedPhotoBar({
   }
 
   return (
-    <View pointerEvents="box-none" style={styles.floatingActionContainer}>
+    <View className="right-0 left-0" pointerEvents="box-none">
       <Pressable
         accessibilityLabel={t('chat.media.addSelectedPhoto', { count: selectedPhotoCount })}
         accessibilityRole="button"
-        className="items-center justify-center rounded-full py-3 active:opacity-80"
+        className="w-[85%] items-center justify-center self-center rounded-full bg-black py-3 active:opacity-80"
         onPress={onPress}
-        style={styles.floatingActionButton}
       >
-        <Text className="font-semibold text-lg" style={styles.floatingActionButtonText}>
+        <Text className="font-semibold text-lg text-white">
           {t('chat.media.addSelectedPhoto', { count: selectedPhotoCount })}
         </Text>
       </Pressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  floatingActionButton: {
-    alignSelf: 'center',
-    backgroundColor: '#000000',
-    width: '85%',
-  },
-  floatingActionButtonText: {
-    color: '#FFFFFF',
-  },
-  floatingActionContainer: {
-    left: 0,
-    right: 0,
-  },
-});

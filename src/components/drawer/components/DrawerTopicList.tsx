@@ -1,18 +1,15 @@
 import { LegendList, type LegendListRenderItemProps } from '@legendapp/list/react-native';
+import { cn } from 'heroui-native/utils';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { withUniwind } from 'uniwind';
 import type { Topic } from '@/data/types/topic';
 
 import { useDrawerActions, useDrawerPanelState, useDrawerTopics } from '../context/DrawerProvider';
 import { drawerContentLayoutTransition, drawerFeatureAreaEntering } from '../utils/drawerAnimation';
 
 import { DrawerFeatureArea } from './DrawerFeatureArea';
-
-const StyledPressable = withUniwind(Pressable);
-const StyledAnimatedView = withUniwind(Animated.View);
 
 type DrawerTopicRowProps = {
   isActive: boolean;
@@ -78,12 +75,12 @@ export const DrawerTopicList = memo(function DrawerTopicList() {
       ListEmptyComponent={listEmptyComponent}
       ListHeaderComponent={
         isSearchActive ? null : (
-          <StyledAnimatedView
+          <Animated.View
             entering={drawerFeatureAreaEntering}
             layout={drawerContentLayoutTransition}
           >
             <DrawerFeatureArea />
-          </StyledAnimatedView>
+          </Animated.View>
         )
       }
       onEndReached={loadMoreTopics}
@@ -105,26 +102,26 @@ const DrawerTopicRow = memo(function DrawerTopicRow({
   }, [onPress, topic.id]);
 
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={topic.name}
       accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
-      className={[
+      className={cn(
         'mx-2 justify-center rounded-lg px-3 active:opacity-70',
-        isActive && showActiveBackground ? 'bg-surface' : '',
-      ].join(' ')}
+        isActive && showActiveBackground && 'bg-surface',
+      )}
       onPress={handlePress}
       style={{ height: topicItemHeight }}
     >
       <Text
-        className={[
+        className={cn(
           'text-base',
           isActive ? 'font-semibold text-foreground' : 'font-medium text-default-foreground',
-        ].join(' ')}
+        )}
         numberOfLines={1}
       >
         {topic.name}
       </Text>
-    </StyledPressable>
+    </Pressable>
   );
 });

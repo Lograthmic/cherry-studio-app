@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Button } from 'heroui-native/button';
 import { Input } from 'heroui-native/input';
 import { Switch } from 'heroui-native/switch';
+import { cn } from 'heroui-native/utils';
 import { CopyIcon, EyeIcon, EyeOffIcon, KeyRoundIcon, PlusIcon, Trash2Icon } from 'lucide-uniwind';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -249,7 +250,7 @@ function ApiKeyRow({
         />
         <Button
           accessibilityLabel={t('settings.provider.apiService.copyApiKey')}
-          className={`h-10 min-h-0 rounded-xl ${isPending ? 'opacity-40' : ''}`}
+          className={cn('h-10 min-h-0 rounded-xl', isPending && 'opacity-40')}
           isDisabled={isPending}
           isIconOnly
           onPress={() => void Clipboard.setStringAsync(apiKey.key)}
@@ -259,7 +260,7 @@ function ApiKeyRow({
         </Button>
         <Button
           accessibilityLabel={t('settings.provider.apiService.removeApiKey')}
-          className={`h-10 min-h-0 rounded-xl ${isPending ? 'opacity-40' : ''}`}
+          className={cn('h-10 min-h-0 rounded-xl', isPending && 'opacity-40')}
           isDisabled={isPending}
           isIconOnly
           onPress={() => onRemove(apiKey.id)}

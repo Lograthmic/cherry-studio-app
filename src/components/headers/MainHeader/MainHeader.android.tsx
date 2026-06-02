@@ -9,8 +9,6 @@ import { useDrawerActions } from '@/components/drawer';
 
 import { HeaderIconButton } from '../components/HeaderIconButton';
 
-const headerContentHeight = 44;
-
 export function MainHeader() {
   const { t } = useTranslation();
   const { openDrawer } = useDrawerActions();
@@ -29,7 +27,7 @@ export function MainHeader() {
         style={{ borderBottomColor: separatorColor, borderBottomWidth: StyleSheet.hairlineWidth }}
       >
         <View style={{ height: insets.top }} />
-        <View className="flex-row items-center justify-between px-4" style={styles.content}>
+        <View className="h-11 flex-row items-center justify-between px-4">
           <HeaderIconButton accessibilityLabel={t('navigation.openSidebar')} onPress={openDrawer}>
             <MenuIcon className="size-6 text-foreground" strokeWidth={2} />
           </HeaderIconButton>
@@ -41,9 +39,3 @@ export function MainHeader() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    height: headerContentHeight,
-  },
-});

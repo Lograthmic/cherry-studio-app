@@ -4,7 +4,7 @@ import {
   BottomSheetView,
 } from '@expo/ui/community/bottom-sheet';
 import { type MenuAction, MenuView, type NativeActionEvent } from '@expo/ui/community/menu';
-import { Image, type ImageSource } from 'expo-image';
+import type { ImageSource } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Input } from 'heroui-native/input';
@@ -13,6 +13,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Image } from '@/components/uniwind';
 import { usePreference } from '@/data/hooks';
 
 const avatarSource = require('@/assets/icon.png');
@@ -307,6 +308,7 @@ function AvatarImage({ imageSource, size }: AvatarImageProps) {
     <Image
       accessibilityIgnoresInvertColors
       cachePolicy="memory-disk"
+      className="rounded-full"
       source={source}
       style={{ borderRadius: size / 2, height: size, width: size }}
     />
@@ -325,9 +327,8 @@ function AvatarEditBadge({ icon, size }: AvatarEditBadgeProps) {
 
   return (
     <View
-      className="bg-surface border border-border"
+      className="absolute right-0 bottom-0 items-center justify-center border border-border bg-surface"
       style={[
-        styles.avatarEditBadge,
         {
           borderRadius: badgeSize / 2,
           height: badgeSize,
@@ -341,13 +342,6 @@ function AvatarEditBadge({ icon, size }: AvatarEditBadgeProps) {
 }
 
 const styles = StyleSheet.create({
-  avatarEditBadge: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 0,
-  },
   avatarMenuTrigger: {
     bottom: 0,
     left: 0,

@@ -2,9 +2,6 @@ import { ActivityIcon, DownloadIcon, PlusIcon } from 'lucide-uniwind';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import { withUniwind } from 'uniwind';
-
-const StyledPressable = withUniwind(Pressable);
 
 export function ProviderModelToolbar() {
   const { t } = useTranslation();
@@ -42,14 +39,14 @@ function ModelIconActionButton({
   icon: ReactNode;
 }) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       className="size-7 items-center justify-center active:opacity-60"
       hitSlop={6}
     >
       {icon}
-    </StyledPressable>
+    </Pressable>
   );
 }
 
@@ -63,7 +60,7 @@ function ModelActionButton({
   label: string;
 }) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       className="h-7 flex-row items-center gap-1 rounded-xl bg-settings-grouped-surface px-2 active:opacity-60"
@@ -71,6 +68,6 @@ function ModelActionButton({
     >
       {icon}
       <Text className="font-medium text-default-foreground text-sm">{label}</Text>
-    </StyledPressable>
+    </Pressable>
   );
 }

@@ -1,7 +1,7 @@
+import { cn } from 'heroui-native/utils';
 import { CheckIcon, ChevronRightIcon } from 'lucide-uniwind';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 import {
   type ChatInputActionId,
@@ -19,8 +19,6 @@ type ChatInputActionListProps = {
   reasoningEffort: ChatInputReasoningEffort;
   selectedActionId: ChatInputActionId | null;
 };
-
-const StyledPressable = withUniwind(Pressable);
 
 export function ChatInputActionList({
   onActionPress,
@@ -41,7 +39,7 @@ export function ChatInputActionList({
           const isReasoningActive = isChatInputReasoningEffortActive(reasoningEffort);
 
           return (
-            <StyledPressable
+            <Pressable
               accessibilityLabel={title}
               accessibilityRole="button"
               accessibilityState={{ selected: isReasoningActive }}
@@ -50,45 +48,43 @@ export function ChatInputActionList({
               onPress={onReasoningPress}
             >
               <Icon
-                className={['size-7', isReasoningActive ? 'text-accent' : 'text-foreground'].join(
-                  ' ',
-                )}
+                className={cn('size-7', isReasoningActive ? 'text-accent' : 'text-foreground')}
                 strokeWidth={2}
               />
               <Text
-                className={[
+                className={cn(
                   'flex-1 font-semibold text-base',
                   isReasoningActive ? 'text-accent' : 'text-foreground',
-                ].join(' ')}
+                )}
               >
                 {title}
               </Text>
               <View className="max-w-40 flex-row items-center gap-2">
                 <Text
-                  className={[
+                  className={cn(
                     'text-right text-base',
                     isReasoningActive ? 'text-accent' : 'text-default-foreground',
-                  ].join(' ')}
+                  )}
                   numberOfLines={1}
                 >
                   {selectedReasoningOption ? t(selectedReasoningOption.labelKey) : null}
                 </Text>
                 <ChevronRightIcon
-                  className={[
+                  className={cn(
                     'size-5',
                     isReasoningActive ? 'text-accent' : 'text-default-foreground',
-                  ].join(' ')}
+                  )}
                   strokeWidth={2}
                 />
               </View>
-            </StyledPressable>
+            </Pressable>
           );
         }
 
         const isSelected = action.id === selectedActionId;
 
         return (
-          <StyledPressable
+          <Pressable
             accessibilityLabel={title}
             accessibilityRole="button"
             accessibilityState={{ selected: isSelected }}
@@ -97,19 +93,19 @@ export function ChatInputActionList({
             onPress={() => onActionPress(action.id)}
           >
             <Icon
-              className={['size-7', isSelected ? 'text-accent' : 'text-foreground'].join(' ')}
+              className={cn('size-7', isSelected ? 'text-accent' : 'text-foreground')}
               strokeWidth={2}
             />
             <Text
-              className={[
+              className={cn(
                 'flex-1 font-semibold text-base',
                 isSelected ? 'text-accent' : 'text-foreground',
-              ].join(' ')}
+              )}
             >
               {title}
             </Text>
             {isSelected ? <CheckIcon className="size-5 text-accent" strokeWidth={2.25} /> : null}
-          </StyledPressable>
+          </Pressable>
         );
       })}
     </View>

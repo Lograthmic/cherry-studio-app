@@ -1,9 +1,10 @@
-import { Image, type ImageSource } from 'expo-image';
+import type { ImageSource } from 'expo-image';
 import { Select } from 'heroui-native';
 import { ChevronsUpDownIcon } from 'lucide-uniwind';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { Image } from '@/components/uniwind';
 
 const selectTriggerWidth = 128;
 const selectContentWidth = 256;
@@ -73,10 +74,10 @@ export function SettingSelect<TValue extends string>(props: SettingSelectProps<T
           {selectedOption?.imageSource ? (
             <Image
               cachePolicy="memory-disk"
+              className="size-[18px]"
               contentFit="contain"
               recyclingKey={selectedOption.value}
               source={selectedOption.imageSource}
-              style={styles.icon}
             />
           ) : null}
           <Text className="text-right text-base text-default-foreground" numberOfLines={1}>
@@ -101,10 +102,10 @@ export function SettingSelect<TValue extends string>(props: SettingSelectProps<T
                 {option.imageSource ? (
                   <Image
                     cachePolicy="memory-disk"
+                    className="size-[22px]"
                     contentFit="contain"
                     recyclingKey={option.value}
                     source={option.imageSource}
-                    style={styles.itemIcon}
                   />
                 ) : null}
                 <Select.ItemLabel className="flex-1" numberOfLines={1} />
@@ -117,14 +118,3 @@ export function SettingSelect<TValue extends string>(props: SettingSelectProps<T
     </Select>
   );
 }
-
-const styles = StyleSheet.create({
-  icon: {
-    height: 18,
-    width: 18,
-  },
-  itemIcon: {
-    height: 22,
-    width: 22,
-  },
-});

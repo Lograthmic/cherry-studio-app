@@ -1,7 +1,7 @@
+import { cn } from 'heroui-native/utils';
 import { type PropsWithChildren } from 'react';
-import { StyleSheet, type ViewProps } from 'react-native';
+import { type ViewProps } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { withUniwind } from 'uniwind';
 import {
   chatInputFadeIn,
   chatInputLayoutTransition,
@@ -19,8 +19,6 @@ type ChatInputAccessoryItemProps = PropsWithChildren<
   }
 >;
 
-const StyledAnimatedView = withUniwind(Animated.View);
-
 export function ChatInputAccessorySection({
   children,
   className,
@@ -28,14 +26,14 @@ export function ChatInputAccessorySection({
   ...props
 }: ChatInputAccessorySectionProps) {
   return (
-    <StyledAnimatedView
-      className={className}
+    <Animated.View
+      className={cn('overflow-hidden', className)}
       layout={chatInputLayoutTransition}
-      style={[styles.section, style]}
+      style={style}
       {...props}
     >
       {children}
-    </StyledAnimatedView>
+    </Animated.View>
   );
 }
 
@@ -45,19 +43,13 @@ export function ChatInputAccessoryItem({
   ...props
 }: ChatInputAccessoryItemProps) {
   return (
-    <StyledAnimatedView
+    <Animated.View
       className={className}
       entering={chatInputFadeIn}
       layout={chatInputLayoutTransition}
       {...props}
     >
       {children}
-    </StyledAnimatedView>
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    overflow: 'hidden',
-  },
-});

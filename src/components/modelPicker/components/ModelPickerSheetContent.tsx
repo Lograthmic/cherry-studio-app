@@ -1,10 +1,9 @@
 import { useThemeColor } from 'heroui-native/hooks';
+import { cn } from 'heroui-native/utils';
 import { Pin as NativePinIcon } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-
-import { cn } from '@/utils/cn';
 import type { ModelPickerGroup, ModelPickerModelItem } from '../utils/modelPickerData';
 import { getModelPickerTags } from '../utils/modelPickerData';
 import { ModelPickerIcon } from './ModelPickerIcon';

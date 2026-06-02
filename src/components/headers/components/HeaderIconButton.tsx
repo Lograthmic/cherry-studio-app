@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Pressable } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 type HeaderIconButtonProps = {
   accessibilityLabel: string;
@@ -9,8 +8,6 @@ type HeaderIconButtonProps = {
   onPress?: () => void;
 };
 
-const StyledPressable = withUniwind(Pressable);
-
 export function HeaderIconButton({
   accessibilityLabel,
   children,
@@ -18,7 +15,7 @@ export function HeaderIconButton({
   onPress,
 }: HeaderIconButtonProps) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       className="size-9 items-center justify-center active:opacity-60"
@@ -27,6 +24,6 @@ export function HeaderIconButton({
       onPress={onPress}
     >
       {children}
-    </StyledPressable>
+    </Pressable>
   );
 }

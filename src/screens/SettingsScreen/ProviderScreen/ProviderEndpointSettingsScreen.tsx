@@ -1,9 +1,11 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
+import type { EndpointType } from '@/data/types/model';
+import type { Provider } from '@/data/types/provider';
 import {
   buildAddableEndpointOptions,
   buildProviderApiServiceEndpointUpdates,
@@ -18,8 +20,6 @@ import {
   useProviderApiServiceQueries,
   useProviderApiServiceSheetClose,
 } from '@/screens/SettingsScreen/ProviderScreen/apiService';
-import type { EndpointType } from '@/data/types/model';
-import type { Provider } from '@/data/types/provider';
 
 export default function ProviderEndpointSettingsScreen() {
   const { providerId, providerName } = useLocalSearchParams<{
@@ -210,7 +210,7 @@ export default function ProviderEndpointSettingsScreen() {
       <ScrollView
         alwaysBounceVertical={false}
         className="flex-1"
-        contentContainerStyle={styles.content}
+        contentContainerClassName="flex-grow"
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
@@ -248,9 +248,3 @@ function removeEndpointError(
   const { [endpoint]: _removedError, ...nextErrors } = errors;
   return nextErrors;
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-  },
-});

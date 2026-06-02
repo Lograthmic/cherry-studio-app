@@ -2,7 +2,7 @@ import { resolveProviderIcon } from '@cherrystudio/ui/icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
@@ -52,7 +52,7 @@ export default function WebSearchSettingsScreen() {
       <ScrollView
         alwaysBounceVertical={false}
         className="flex-1"
-        contentContainerStyle={styles.content}
+        contentContainerClassName="gap-6 px-4 py-5"
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
@@ -160,12 +160,3 @@ function resolveWebSearchProviderIcon(providerId: WebSearchProviderId) {
 
   return resolveProviderIcon(providerId);
 }
-
-const styles = StyleSheet.create({
-  content: {
-    gap: 24,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-});

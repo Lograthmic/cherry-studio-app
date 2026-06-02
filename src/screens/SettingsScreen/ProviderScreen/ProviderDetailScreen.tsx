@@ -1,8 +1,7 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { withUniwind } from 'uniwind';
+import { Alert, Keyboard, Pressable, ScrollView, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
 import {
@@ -15,8 +14,6 @@ import {
 import { ProviderApiManagementSection } from './components/ProviderApiManagementSection';
 import { ProviderModelList } from './components/ProviderModelList';
 import { useProviderDetailSettings } from './detail';
-
-const StyledPressable = withUniwind(Pressable);
 
 export default function ProviderDetailSettingsScreen() {
   const { providerId, providerName } = useLocalSearchParams<{
@@ -91,19 +88,15 @@ export default function ProviderDetailSettingsScreen() {
   return (
     <>
       <BackHeader title={providerName ?? t('settings.pages.provider.title')} />
-      <StyledPressable
-        accessible={false}
-        className="flex-1"
-        onPress={Keyboard.dismiss}
-      >
+      <Pressable accessible={false} className="flex-1" onPress={Keyboard.dismiss}>
         <ScrollView
           alwaysBounceVertical={false}
-          contentContainerStyle={styles.content}
+          className="flex-1"
+          contentContainerClassName="flex-grow"
           contentInsetAdjustmentBehavior="automatic"
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          style={styles.scrollView}
         >
           <View className="gap-6 px-4 py-5">
             <ProviderApiManagementSection
@@ -123,16 +116,7 @@ export default function ProviderDetailSettingsScreen() {
             <ProviderModelList isLoading={modelsQuery.isPending} models={models} />
           </View>
         </ScrollView>
-      </StyledPressable>
+      </Pressable>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});

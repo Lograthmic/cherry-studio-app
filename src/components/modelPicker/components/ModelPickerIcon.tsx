@@ -1,7 +1,7 @@
 import { resolveIcon } from '@cherrystudio/ui/icons';
-import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useUniwind } from 'uniwind';
+import { Image } from '@/components/uniwind';
 
 import type { ModelPickerModelItem } from '../utils/modelPickerData';
 
@@ -29,8 +29,8 @@ export function ModelPickerIcon({ item, providerIconSize, size = 32 }: ModelPick
   if (iconSource) {
     return (
       <View
-        className="items-center justify-center overflow-hidden"
-        style={[styles.iconFrame, frameStyle]}
+        className="items-center justify-center overflow-hidden border-continuous"
+        style={frameStyle}
       >
         <Image
           cachePolicy="memory-disk"
@@ -52,9 +52,3 @@ export function ModelPickerIcon({ item, providerIconSize, size = 32 }: ModelPick
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  iconFrame: {
-    borderCurve: 'continuous',
-  },
-});

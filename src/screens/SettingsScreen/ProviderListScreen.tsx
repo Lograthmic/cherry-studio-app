@@ -6,7 +6,7 @@ import { SearchField } from 'heroui-native/search-field';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useUniwind, withUniwind } from 'uniwind';
+import { useUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
 import { isLiquidGlassAvailable } from '@/config/constants';
@@ -14,8 +14,6 @@ import { queryKeys } from '@/data/api';
 import { useDataQuery } from '@/data/hooks';
 import { SettingsSection } from './components/SettingsSection';
 import { SettingsServiceRow, type SettingsServiceRowProps } from './components/SettingsServiceRow';
-
-const StyledPressable = withUniwind(Pressable);
 
 const providerListStaleTime = 1000 * 60 * 5;
 
@@ -70,7 +68,7 @@ export default function ProviderSettingsScreen() {
   return (
     <>
       <BackHeader title={t('settings.pages.provider.title')} />
-      <StyledPressable
+      <Pressable
         accessible={false}
         className="flex-1 gap-3 px-4"
         onPress={Keyboard.dismiss}
@@ -95,12 +93,12 @@ export default function ProviderSettingsScreen() {
         </SearchField>
         <ScrollView
           alwaysBounceVertical={false}
-          contentContainerStyle={styles.listContent}
+          className="flex-1"
+          contentContainerClassName="gap-3 pb-5"
           contentInsetAdjustmentBehavior="automatic"
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          style={styles.list}
         >
           {filteredProviderItems.length > 0 ? (
             <View className="overflow-hidden rounded-xl bg-settings-grouped-surface">
@@ -124,7 +122,7 @@ export default function ProviderSettingsScreen() {
             <DisabledProvidersAccordion items={disabledProviderItems} />
           )}
         </ScrollView>
-      </StyledPressable>
+      </Pressable>
     </>
   );
 }
@@ -160,13 +158,6 @@ function DisabledProvidersAccordion({ items }: { items: SettingsServiceRowProps[
 }
 
 const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    gap: 12,
-    paddingBottom: 20,
-  },
   searchInput: {
     includeFontPadding: false,
     textAlignVertical: 'center',

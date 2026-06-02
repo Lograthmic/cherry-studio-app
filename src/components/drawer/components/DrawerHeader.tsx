@@ -1,16 +1,14 @@
 import { CloseButton } from 'heroui-native/close-button';
+import { cn } from 'heroui-native/utils';
 import { SearchIcon } from 'lucide-uniwind';
 import { memo, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Pressable, Text, TextInput, View, type ViewStyle } from 'react-native';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
-import { withUniwind } from 'uniwind';
 
 import { useDrawerActions } from '../context/DrawerProvider';
 import { DrawerSearchField } from './DrawerSearchField';
 
-const StyledAnimatedView = withUniwind(Animated.View);
-const StyledPressable = withUniwind(Pressable);
 const searchControlSurfaceClassName = 'bg-field ios:shadow-field android:shadow-sm';
 
 type DrawerHeaderProps = {
@@ -105,7 +103,7 @@ function CollapsedHeaderLayer({
   title,
 }: CollapsedHeaderLayerProps) {
   return (
-    <StyledAnimatedView
+    <Animated.View
       className="absolute inset-0 flex-row items-center gap-3"
       pointerEvents={isSearchVisible ? 'none' : 'auto'}
       style={style}
@@ -114,7 +112,7 @@ function CollapsedHeaderLayer({
         {title}
       </Text>
       <View
-        className={`flex-row items-center gap-1 rounded-3xl ${searchControlSurfaceClassName}`}
+        className={cn('flex-row items-center gap-1 rounded-3xl', searchControlSurfaceClassName)}
         style={{ height: controlSize }}
       >
         <DrawerHeaderIconButton
@@ -130,7 +128,7 @@ function CollapsedHeaderLayer({
           onPress={onSettingsPress}
         />
       </View>
-    </StyledAnimatedView>
+    </Animated.View>
   );
 }
 
@@ -158,8 +156,8 @@ function SearchFieldLayer({
   style,
 }: SearchFieldLayerProps) {
   return (
-    <StyledAnimatedView
-      className={`absolute top-0 rounded-3xl ${searchControlSurfaceClassName}`}
+    <Animated.View
+      className={cn('absolute top-0 rounded-3xl', searchControlSurfaceClassName)}
       pointerEvents={isSearchVisible ? 'auto' : 'none'}
       style={[{ height: controlSize }, style]}
     >
@@ -172,7 +170,7 @@ function SearchFieldLayer({
           searchIconStyle={iconStyle}
           value={searchText}
         />
-        <StyledPressable
+        <Pressable
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="button"
           className="absolute inset-0"
@@ -180,7 +178,7 @@ function SearchFieldLayer({
           pointerEvents={isSearchVisible ? 'none' : 'auto'}
         />
       </View>
-    </StyledAnimatedView>
+    </Animated.View>
   );
 }
 
@@ -200,7 +198,7 @@ function SearchCloseButtonLayer({
   style,
 }: SearchCloseButtonLayerProps) {
   return (
-    <StyledAnimatedView
+    <Animated.View
       className="absolute top-0"
       pointerEvents={isSearchVisible ? 'auto' : 'none'}
       style={[
@@ -214,13 +212,13 @@ function SearchCloseButtonLayer({
       <CloseButton
         accessibilityLabel={accessibilityLabel}
         accessibilityRole="button"
-        className={`rounded-3xl ${searchControlSurfaceClassName}`}
+        className={cn('rounded-3xl', searchControlSurfaceClassName)}
         hitSlop={8}
         onPress={onClose}
         style={{ height: closeButtonSize, width: closeButtonSize }}
         variant="ghost"
       />
-    </StyledAnimatedView>
+    </Animated.View>
   );
 }
 
@@ -238,7 +236,7 @@ function DrawerHeaderIconButton({
   onPress,
 }: DrawerHeaderIconButtonProps) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       className="items-center justify-center rounded-3xl active:opacity-60"
@@ -247,7 +245,7 @@ function DrawerHeaderIconButton({
       style={{ height: controlSize, width: controlSize }}
     >
       {children}
-    </StyledPressable>
+    </Pressable>
   );
 }
 
@@ -259,7 +257,7 @@ type DrawerAvatarButtonProps = {
 
 function DrawerAvatarButton({ accessibilityLabel, controlSize, onPress }: DrawerAvatarButtonProps) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       className="items-center justify-center overflow-hidden rounded-full active:opacity-60"
@@ -272,6 +270,6 @@ function DrawerAvatarButton({ accessibilityLabel, controlSize, onPress }: Drawer
         source={require('@/assets/icon.png')}
         style={{ height: 24, width: 24 }}
       />
-    </StyledPressable>
+    </Pressable>
   );
 }

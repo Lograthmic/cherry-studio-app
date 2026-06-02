@@ -1,4 +1,5 @@
 import { TextArea } from 'heroui-native/text-area';
+import { cn } from 'heroui-native/utils';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
 import {
@@ -24,7 +25,10 @@ export function ChatInputTextArea() {
     <TextArea
       ref={inputRef}
       multiline
-      className={`h-auto min-h-11 flex-1 rounded-3xl py-3! pr-12! pl-2! text-base leading-5 ${transparentInputSurfaceClassName}`}
+      className={cn(
+        'h-auto min-h-11 flex-1 rounded-3xl py-3! pr-12! pl-2! text-base leading-5',
+        transparentInputSurfaceClassName,
+      )}
       numberOfLines={6}
       placeholder={t('chat.inputPlaceholder')}
       style={[

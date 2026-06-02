@@ -1,16 +1,16 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
+import { WEB_SEARCH_PROVIDER_IDS, type WebSearchProviderId } from '@/data/preference';
 import {
   normalizeWebSearchApiKeys,
   useWebSearchApiKeySettings,
-  WebSearchApiServiceApiKeyForm,
   type WebSearchApiKeyEntry,
+  WebSearchApiServiceApiKeyForm,
 } from '@/screens/SettingsScreen/WebSearchScreen/apiService';
-import { WEB_SEARCH_PROVIDER_IDS, type WebSearchProviderId } from '@/data/preference';
 import { useSettingsConfirmDialog } from '../hooks/useSettingsConfirmDialog';
 import {
   getWebSearchProviderDetailSections,
@@ -183,7 +183,7 @@ export default function WebSearchApiKeySettingsScreen() {
       <ScrollView
         alwaysBounceVertical={false}
         className="flex-1"
-        contentContainerStyle={styles.content}
+        contentContainerClassName="flex-grow"
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
@@ -213,9 +213,3 @@ function removeApiKeyError(errors: Record<string, string>, id: string): Record<s
   const { [id]: _removedError, ...nextErrors } = errors;
   return nextErrors;
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-  },
-});

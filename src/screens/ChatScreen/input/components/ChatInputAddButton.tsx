@@ -1,7 +1,7 @@
+import { cn } from 'heroui-native/utils';
 import { PlusIcon } from 'lucide-uniwind';
 import { Pressable, type ViewStyle } from 'react-native';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
-import { withUniwind } from 'uniwind';
 import { chatInputMinTextAreaHeight } from '@/screens/ChatScreen/input/chatInputLayout';
 import { useChatInputActions } from '@/screens/ChatScreen/input/context/ChatInputProvider';
 
@@ -11,14 +11,11 @@ type ChatInputAddButtonProps = {
 
 const inputSurfaceClassName = 'bg-field ios:shadow-field android:shadow-sm';
 
-const StyledAnimatedView = withUniwind(Animated.View);
-const StyledPressable = withUniwind(Pressable);
-
 export function ChatInputAddButton({ separatedSurfaceStyle }: ChatInputAddButtonProps) {
   const { openActionSheet } = useChatInputActions();
 
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel="Add"
       accessibilityRole="button"
       className="items-center justify-center rounded-full active:opacity-70"
@@ -29,12 +26,12 @@ export function ChatInputAddButton({ separatedSurfaceStyle }: ChatInputAddButton
         width: chatInputMinTextAreaHeight,
       }}
     >
-      <StyledAnimatedView
-        className={`absolute inset-0 rounded-full ${inputSurfaceClassName}`}
+      <Animated.View
+        className={cn('absolute inset-0 rounded-full', inputSurfaceClassName)}
         pointerEvents="none"
         style={separatedSurfaceStyle}
       />
       <PlusIcon className="size-5 text-foreground" strokeWidth={2} />
-    </StyledPressable>
+    </Pressable>
   );
 }

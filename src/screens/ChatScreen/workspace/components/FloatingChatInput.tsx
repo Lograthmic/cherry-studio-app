@@ -1,13 +1,12 @@
 import { useCallback } from 'react';
-import { type LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { type LayoutChangeEvent, View } from 'react-native';
 import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { ChatInput } from '../../input';
 import {
   chatInputHorizontalScreenInset,
   chatInputMinBottomPadding,
 } from '../../input/chatInputLayout';
-import { ChatInput } from '../../input';
 
 type FloatingChatInputProps = {
   onHeightChange: (height: number) => void;
@@ -27,8 +26,12 @@ export function FloatingChatInput({ onHeightChange }: FloatingChatInputProps) {
 
   return (
     <View
+      className="absolute right-0 bottom-0 left-0 z-10"
       pointerEvents="box-none"
-      style={[styles.layer, { paddingBottom: bottomPadding }]}
+      style={{
+        paddingBottom: bottomPadding,
+        paddingHorizontal: chatInputHorizontalScreenInset,
+      }}
       onLayout={handleLayout}
     >
       <KeyboardStickyView offset={{ opened: keyboardInputOffset }}>
@@ -37,14 +40,3 @@ export function FloatingChatInput({ onHeightChange }: FloatingChatInputProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  layer: {
-    bottom: 0,
-    left: 0,
-    paddingHorizontal: chatInputHorizontalScreenInset,
-    position: 'absolute',
-    right: 0,
-    zIndex: 10,
-  },
-});

@@ -1,17 +1,10 @@
-import { Image } from 'expo-image';
+import { cn } from 'heroui-native/utils';
 import { CameraIcon, FileIcon, ImagesIcon, XIcon } from 'lucide-uniwind';
 import { type ComponentType, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  type GestureResponderEvent,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { type GestureResponderEvent, Pressable, ScrollView, Text, View } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
-import { withUniwind } from 'uniwind';
+import { Image } from '@/components/uniwind';
 import {
   ChatInputAccessoryItem,
   ChatInputAccessorySection,
@@ -55,15 +48,12 @@ type ImagePreviewTileProps = {
   uri: string;
 };
 
-const mediaTileSize = 112;
-const StyledPressable = withUniwind(Pressable);
-
 export function ChatInputMediaStrip({ children }: ChatInputMediaStripProps) {
   return (
     <ScrollView
       horizontal
       alwaysBounceHorizontal={false}
-      contentContainerStyle={styles.mediaPreviewContent}
+      contentContainerClassName="gap-3 pr-1"
       showsHorizontalScrollIndicator={false}
     >
       {children}
@@ -152,16 +142,15 @@ export function ChatInputAttachmentPreviewStrip({
 
 function MediaTile({ accessibilityLabel, icon: Icon, label, onPress }: MediaTileProps) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      className="items-center justify-center gap-2 rounded-2xl bg-surface-secondary active:opacity-70"
+      className="size-28 items-center justify-center gap-2 rounded-2xl bg-surface-secondary active:opacity-70"
       onPress={onPress}
-      style={styles.mediaTile}
     >
       <Icon className="size-7 text-foreground" strokeWidth={2} />
       <Text className="font-semibold text-base text-foreground">{label}</Text>
-    </StyledPressable>
+    </Pressable>
   );
 }
 
@@ -200,25 +189,25 @@ function ImagePreviewTile({
   uri,
 }: ImagePreviewTileProps) {
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={isSelected === undefined ? undefined : { selected: isSelected }}
-      className="items-center justify-center overflow-hidden rounded-2xl bg-surface-secondary active:opacity-80"
+      className={cn(
+        'items-center justify-center overflow-hidden rounded-2xl bg-surface-secondary active:opacity-80',
+        shouldFillParent ? 'absolute inset-0' : 'size-28',
+        isSelected && 'border-2 border-[#007AFF]',
+      )}
       onPress={onPress}
-      style={[
-        shouldFillParent ? StyleSheet.absoluteFill : styles.mediaTile,
-        isSelected ? styles.imagePreviewTileSelected : null,
-      ]}
     >
       <Image
         cachePolicy="memory-disk"
+        className="absolute inset-0"
         contentFit="cover"
         source={uri}
-        style={StyleSheet.absoluteFill}
       />
       {badge}
-    </StyledPressable>
+    </Pressable>
   );
 }
 
@@ -235,9 +224,8 @@ function AttachmentImagePreviewTile({
 
   return (
     <ChatInputAccessoryItem
-      className="items-center justify-center overflow-hidden rounded-2xl bg-surface-secondary"
+      className="size-28 items-center justify-center overflow-hidden rounded-2xl bg-surface-secondary"
       accessibilityLabel={attachment.name || t('chat.attachments.image')}
-      style={styles.mediaTile}
     >
       <ImagePreviewTile
         accessibilityLabel={attachment.name || t('chat.attachments.image')}
@@ -261,9 +249,8 @@ function AttachmentFilePreviewTile({
 
   return (
     <ChatInputAccessoryItem
-      className="items-center justify-center gap-2 overflow-hidden rounded-2xl bg-surface-secondary px-3"
+      className="size-28 items-center justify-center gap-2 overflow-hidden rounded-2xl bg-surface-secondary px-3"
       accessibilityLabel={attachment.name}
-      style={styles.mediaTile}
     >
       <FileIcon className="size-8 text-default-foreground" strokeWidth={2} />
       {extension ? (
@@ -288,32 +275,21 @@ function XBadge({ onPress }: { onPress?: () => void }) {
 
   if (onPress) {
     return (
-      <StyledPressable
+      <Pressable
         accessibilityLabel={t('common.remove')}
         accessibilityRole="button"
-        className="active:opacity-70"
+        className="absolute top-0 right-0 z-[1] size-11 active:opacity-70"
         onPress={handlePress}
-        style={styles.imageTileBadgeTouchTarget}
       >
-        <View
-          className="items-center justify-center rounded-full"
-          style={[
-            styles.imageTileBadgePosition,
-            styles.imageTileBadge,
-            styles.imageTileBadgeFilled,
-          ]}
-        >
+        <View className="absolute top-2 right-2 size-5 items-center justify-center rounded-full bg-white">
           <XIcon className="size-3.5 text-black" strokeWidth={2.5} />
         </View>
-      </StyledPressable>
+      </Pressable>
     );
   }
 
   return (
-    <View
-      className="items-center justify-center rounded-full"
-      style={[styles.imageTileBadgePosition, styles.imageTileBadge, styles.imageTileBadgeFilled]}
-    >
+    <View className="absolute top-2 right-2 size-5 items-center justify-center rounded-full bg-white">
       <XIcon className="size-3.5 text-black" strokeWidth={2.5} />
     </View>
   );
@@ -321,19 +297,13 @@ function XBadge({ onPress }: { onPress?: () => void }) {
 
 function EmptySelectionBadge() {
   return (
-    <View
-      className="rounded-full"
-      style={[styles.imageTileBadgePosition, styles.imageTileBadge, styles.imageTileBadgeEmpty]}
-    />
+    <View className="absolute top-2 right-2 size-5 rounded-full border-2 border-white bg-black/20" />
   );
 }
 
 function SelectionIndexBadge({ selectionIndex }: { selectionIndex: number }) {
   return (
-    <View
-      className="items-center justify-center rounded-full"
-      style={[styles.imageTileBadgePosition, styles.imageTileBadge, styles.imageTileBadgeFilled]}
-    >
+    <View className="absolute top-2 right-2 size-5 items-center justify-center rounded-full bg-white">
       <Text
         adjustsFontSizeToFit
         className="font-semibold text-black text-xs"
@@ -345,44 +315,3 @@ function SelectionIndexBadge({ selectionIndex }: { selectionIndex: number }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mediaPreviewContent: {
-    gap: 12,
-    paddingRight: 4,
-  },
-  mediaTile: {
-    height: mediaTileSize,
-    width: mediaTileSize,
-  },
-  imagePreviewTileSelected: {
-    borderColor: '#007AFF',
-    borderWidth: 2,
-  },
-  imageTileBadge: {
-    height: 20,
-    width: 20,
-  },
-  imageTileBadgePosition: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-  },
-  imageTileBadgeTouchTarget: {
-    elevation: 1,
-    height: 44,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: 44,
-    zIndex: 1,
-  },
-  imageTileBadgeFilled: {
-    backgroundColor: '#FFFFFF',
-  },
-  imageTileBadgeEmpty: {
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
-    borderColor: '#FFFFFF',
-    borderWidth: 2,
-  },
-});

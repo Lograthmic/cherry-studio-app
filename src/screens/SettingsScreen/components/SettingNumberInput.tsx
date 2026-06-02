@@ -2,9 +2,6 @@ import { Input } from 'heroui-native';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-const numberInputWidth = 96;
-const numberInputHeight = 32;
-
 type SettingNumberInputProps = {
   accessibilityLabel: string;
   min?: number;
@@ -44,20 +41,14 @@ export function SettingNumberInput({
   return (
     <Input
       accessibilityLabel={accessibilityLabel}
-      className="h-8 min-h-0 rounded-xl px-2 py-0 text-right text-base leading-5"
+      className="h-8 min-h-0 w-24 rounded-xl px-2 py-0 text-right text-base leading-5"
       inputMode="numeric"
       keyboardType="number-pad"
       onBlur={commitValue}
       onChangeText={handleChangeText}
       onSubmitEditing={commitValue}
       returnKeyType="done"
-      style={[
-        styles.input,
-        {
-          height: numberInputHeight,
-          width: numberInputWidth,
-        },
-      ]}
+      style={styles.input}
       value={draftValue}
       variant="secondary"
     />

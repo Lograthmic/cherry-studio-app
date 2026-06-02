@@ -1,8 +1,9 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { BackHeader } from '@/components/headers';
+import type { ApiKeyEntry } from '@/data/types/provider';
 import {
   getProviderApiServiceApiKeysDirtyState,
   normalizeApiKeyEntries,
@@ -13,7 +14,6 @@ import {
   useProviderApiServiceQueries,
   useProviderApiServiceSheetClose,
 } from '@/screens/SettingsScreen/ProviderScreen/apiService';
-import type { ApiKeyEntry } from '@/data/types/provider';
 
 export default function ProviderApiKeySettingsScreen() {
   const { providerId, providerName } = useLocalSearchParams<{
@@ -212,7 +212,7 @@ export default function ProviderApiKeySettingsScreen() {
       <ScrollView
         alwaysBounceVertical={false}
         className="flex-1"
-        contentContainerStyle={styles.content}
+        contentContainerClassName="flex-grow"
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
@@ -245,9 +245,3 @@ function removeApiKeyError(errors: Record<string, string>, id: string): Record<s
   const { [id]: _removedError, ...nextErrors } = errors;
   return nextErrors;
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flexGrow: 1,
-  },
-});

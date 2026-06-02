@@ -1,7 +1,6 @@
 import { BrainIcon, XIcon } from 'lucide-uniwind';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 import {
   ChatInputAccessoryItem,
@@ -24,8 +23,6 @@ type SelectedToolTagProps = {
 type SelectedReasoningEffortTagProps = {
   onClear: () => void;
 };
-
-const StyledPressable = withUniwind(Pressable);
 
 export function ChatInputToolbar({
   onReasoningEffortClear,
@@ -84,7 +81,7 @@ function ClearTagButton({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation();
 
   return (
-    <StyledPressable
+    <Pressable
       accessibilityLabel={t('common.clear')}
       accessibilityRole="button"
       className="size-7 items-center justify-center rounded-full active:opacity-60"
@@ -92,6 +89,6 @@ function ClearTagButton({ onPress }: { onPress: () => void }) {
       onPress={onPress}
     >
       <XIcon className="size-5 text-accent" strokeWidth={2.25} />
-    </StyledPressable>
+    </Pressable>
   );
 }

@@ -1,4 +1,5 @@
 import { MODEL_CAPABILITY } from '@cherrystudio/provider-registry';
+import { cn } from 'heroui-native/utils';
 import {
   AudioLinesIcon,
   BrainIcon,
@@ -10,8 +11,6 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { cn } from '@/utils/cn';
 import type { ModelPickerTag } from '../utils/modelPickerData';
 import { getModelPickerTagLabelKey } from '../utils/modelPickerData';
 

@@ -1,7 +1,7 @@
+import { cn } from 'heroui-native/utils';
 import { CheckIcon, ChevronLeftIcon } from 'lucide-uniwind';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
-import { withUniwind } from 'uniwind';
 
 import {
   type ChatInputReasoningEffort,
@@ -14,8 +14,6 @@ type ChatInputReasoningSheetPageProps = {
   reasoningEffort: ChatInputReasoningEffort;
 };
 
-const StyledPressable = withUniwind(Pressable);
-
 export function ChatInputReasoningSheetPage({
   onBack,
   onReasoningEffortChange,
@@ -26,7 +24,7 @@ export function ChatInputReasoningSheetPage({
   return (
     <View className="gap-4 px-4 pt-2">
       <View className="min-h-8 flex-row items-center gap-3">
-        <StyledPressable
+        <Pressable
           accessibilityLabel={t('navigation.back')}
           accessibilityRole="button"
           className="size-8 items-center justify-center rounded-full active:bg-surface-secondary active:opacity-70"
@@ -34,7 +32,7 @@ export function ChatInputReasoningSheetPage({
           onPress={onBack}
         >
           <ChevronLeftIcon className="size-6 text-foreground" strokeWidth={2} />
-        </StyledPressable>
+        </Pressable>
         <Text className="flex-1 font-semibold text-base text-foreground" numberOfLines={1}>
           {t('chat.reasoning.title')}
         </Text>
@@ -45,7 +43,7 @@ export function ChatInputReasoningSheetPage({
           const isSelected = option.value === reasoningEffort;
 
           return (
-            <StyledPressable
+            <Pressable
               accessibilityLabel={label}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
@@ -54,16 +52,16 @@ export function ChatInputReasoningSheetPage({
               onPress={() => onReasoningEffortChange(option.value)}
             >
               <Text
-                className={[
+                className={cn(
                   'flex-1 font-semibold text-base',
                   isSelected ? 'text-accent' : 'text-foreground',
-                ].join(' ')}
+                )}
                 numberOfLines={1}
               >
                 {label}
               </Text>
               {isSelected ? <CheckIcon className="size-5 text-accent" strokeWidth={2.25} /> : null}
-            </StyledPressable>
+            </Pressable>
           );
         })}
       </View>
