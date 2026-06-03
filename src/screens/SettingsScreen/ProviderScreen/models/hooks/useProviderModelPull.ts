@@ -13,6 +13,10 @@ import {
   type ProviderModelPullApplyPayload,
   type ProviderModelPullPreview,
 } from '../utils/providerModelPullPreview';
+import {
+  isProviderModelPullTimeoutError,
+  withProviderModelPullTimeout,
+} from '../utils/providerModelPullTimeout';
 
 type UseProviderModelPullOptions = {
   provider: Provider | undefined;
@@ -55,10 +59,16 @@ export function useProviderModelPull({ provider, providerId }: UseProviderModelP
 
     setIsPreviewLoading(true);
     try {
-      const [localModels, remoteModels] = await Promise.all([
-        services.model.list({ providerId }),
-        services.ai.listModels({ providerId, throwOnError: true }),
-      ]);
+      const [localModels, remoteModels] = await withProviderModelPullTimeout((signal) =>
+        Promise.all([
+          services.model.list({ providerId }),
+          services.ai.listModels({
+            providerId,
+            requestOptions: { signal },
+            throwOnError: true,
+          }),
+        ]),
+      );
       const nextPreview = buildProviderModelPullPreview({
         localModels,
         providerId,
@@ -82,9 +92,13 @@ export function useProviderModelPull({ provider, providerId }: UseProviderModelP
 
       setPreview(nextPreview);
       setIsSheetOpen(true);
-    } catch {
+    } catch (error) {
       toast.show({
-        label: t('settings.provider.models.pullFailed'),
+        label: t(
+          isProviderModelPullTimeoutError(error)
+            ? 'settings.provider.models.pullTimedOut'
+            : 'settings.provider.models.pullFailed',
+        ),
         variant: 'danger',
       });
     } finally {
