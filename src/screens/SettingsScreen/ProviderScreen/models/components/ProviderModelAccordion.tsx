@@ -117,7 +117,9 @@ export function ProviderModelAccordion({
 
   return (
     <LegendList
+      automaticallyAdjustsScrollIndicatorInsets
       contentContainerStyle={styles.contentContainer}
+      contentInsetAdjustmentBehavior="automatic"
       data={listItems}
       estimatedItemSize={modelRowHeight}
       extraData={extraData}
