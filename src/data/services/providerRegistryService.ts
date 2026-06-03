@@ -175,6 +175,7 @@ export function applyCapabilityOverride(
 
 export function createCustomModel(providerId: string, modelId: string): Model {
   return {
+    apiModelId: modelId,
     capabilities: [],
     id: createUniqueModelId(providerId, modelId),
     isDeprecated: false,
@@ -216,10 +217,12 @@ export function mergePresetModel(
       : presetModel.pricing;
 
   return {
+    apiModelId: catalogOverride?.apiModelId ?? presetModel.id,
     capabilities,
     contextWindow: catalogOverride?.limits?.contextWindow ?? presetModel.contextWindow,
     description: presetModel.description,
     endpointTypes,
+    family: presetModel.family,
     id: createUniqueModelId(providerId, presetModel.id),
     inputModalities: catalogOverride?.inputModalities ?? presetModel.inputModalities,
     isDeprecated: false,
@@ -230,6 +233,7 @@ export function mergePresetModel(
     modelId: presetModel.id,
     name: presetModel.name ?? presetModel.id,
     outputModalities: catalogOverride?.outputModalities ?? presetModel.outputModalities,
+    ownedBy: presetModel.ownedBy,
     parameters: catalogOverride?.parameterSupport ?? presetModel.parameterSupport,
     presetModelId: presetModel.id,
     pricing,

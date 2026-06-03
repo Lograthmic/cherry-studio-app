@@ -1,7 +1,7 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Keyboard, Pressable, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
 import {
@@ -14,6 +14,7 @@ import {
 import { ProviderApiManagementSection } from './components/ProviderApiManagementSection';
 import { ProviderModelList } from './components/ProviderModelList';
 import { useProviderDetailSettings } from './detail';
+import { ProviderModelPullSheet, useProviderModelPull } from './models';
 
 export default function ProviderDetailSettingsScreen() {
   const { providerId, providerName } = useLocalSearchParams<{
@@ -25,6 +26,16 @@ export default function ProviderDetailSettingsScreen() {
   const [apiKeysVisible, setApiKeysVisible] = useState(false);
   const { models, modelsQuery, provider, providerQuery, updateProviderEnabledMutation } =
     useProviderDetailSettings(providerId ?? '');
+  const {
+    applyPullPreview,
+    closeSheet: closePullSheet,
+    isApplying: isApplyingPull,
+    isBusy: isPullBusy,
+    isPreviewLoading: isPullPreviewLoading,
+    isSheetOpen: isPullSheetOpen,
+    openPullPreview,
+    preview: pullPreview,
+  } = useProviderModelPull({ provider, providerId: providerId ?? '' });
   const { apiKeys, apiKeysQuery, authConfig, authConfigQuery, replaceApiKeysMutation } =
     useProviderApiServiceQueries(providerId ?? '');
   const { draft, primaryBaseUrl, syncApiKeysDraft, updateApiKeysInput } =
@@ -88,17 +99,9 @@ export default function ProviderDetailSettingsScreen() {
   return (
     <>
       <BackHeader title={providerName ?? t('settings.pages.provider.title')} />
-      <Pressable accessible={false} className="flex-1" onPress={Keyboard.dismiss}>
-        <ScrollView
-          alwaysBounceVertical={false}
-          className="flex-1"
-          contentContainerClassName="flex-grow"
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="gap-6 px-4 py-5">
+      <ProviderModelList
+        header={
+          <View>
             <ProviderApiManagementSection
               apiKeysInput={draft?.apiKeysInput}
               apiKeysVisible={apiKeysVisible}
@@ -113,10 +116,23 @@ export default function ProviderDetailSettingsScreen() {
               onBaseUrlManagePress={openEndpointSettings}
               onEnabledChange={(enabled) => updateProviderEnabledMutation.mutate(enabled)}
             />
-            <ProviderModelList isLoading={modelsQuery.isPending} models={models} />
           </View>
-        </ScrollView>
-      </Pressable>
+        }
+        isLoading={modelsQuery.isPending}
+        isPullDisabled={!provider || isPullBusy}
+        isPullLoading={isPullPreviewLoading}
+        models={models}
+        provider={provider}
+        onPullPress={openPullPreview}
+      />
+      <ProviderModelPullSheet
+        isApplying={isApplyingPull}
+        isOpen={isPullSheetOpen}
+        preview={pullPreview}
+        provider={provider}
+        onApply={applyPullPreview}
+        onClose={closePullSheet}
+      />
     </>
   );
 }

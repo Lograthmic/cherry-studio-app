@@ -6,7 +6,7 @@ import {
 } from '@ai-sdk/provider-utils';
 import { ENDPOINT_TYPE } from '@cherrystudio/provider-registry';
 import * as z from 'zod';
-
+import { normalizeFetchedModelGroupName } from '@/data/services/utils/modelGroup';
 import { createUniqueModelId, type Model } from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 
@@ -85,19 +85,26 @@ function defaultGroup(modelId: string, providerId: string): string {
 }
 
 function toModel(apiModelId: string, provider: Provider, extra?: Partial<Model>): Partial<Model> {
+  const group = normalizeFetchedModelGroupName(
+    extra?.group ?? defaultGroup(apiModelId, provider.id),
+    apiModelId,
+    provider.id,
+  );
+
   return {
+    ...extra,
     id: createUniqueModelId(provider.id, apiModelId),
     providerId: provider.id,
+    apiModelId,
     modelId: apiModelId,
     name: extra?.name || apiModelId,
-    group: extra?.group || defaultGroup(apiModelId, provider.id),
+    group,
     description: extra?.description,
-    capabilities: [],
-    supportsStreaming: true,
-    isDeprecated: false,
-    isEnabled: true,
-    isHidden: false,
-    ...extra,
+    capabilities: extra?.capabilities ?? [],
+    supportsStreaming: extra?.supportsStreaming ?? true,
+    isDeprecated: extra?.isDeprecated ?? false,
+    isEnabled: extra?.isEnabled ?? true,
+    isHidden: extra?.isHidden ?? false,
   };
 }
 
@@ -177,7 +184,7 @@ const togetherFetcher: ModelFetcher = {
       toModel(model.id, provider, {
         name: model.display_name || model.id,
         description: model.description,
-        group: model.organization,
+        ownedBy: model.organization,
       }),
     );
   },
@@ -195,7 +202,7 @@ const newApiFetcher: ModelFetcher = {
       abortSignal: signal,
     });
     return dedup(response.data, (model) => model.id).map((model) =>
-      toModel(model.id, provider, { group: model.owned_by }),
+      toModel(model.id, provider, { ownedBy: model.owned_by }),
     );
   },
 };
@@ -220,7 +227,7 @@ const openRouterFetcher: ModelFetcher = {
     ]);
     const all = [...modelsResponse.data, ...embedModelsResponse.data];
     return dedup(all, (model) => model.id).map((model) =>
-      toModel(model.id, provider, { group: model.owned_by }),
+      toModel(model.id, provider, { ownedBy: model.owned_by }),
     );
   },
 };
@@ -259,7 +266,7 @@ const gatewayFetcher: ModelFetcher = {
       toModel(model.id, provider, {
         name: model.name || model.id,
         description: model.description,
-        group: model.specification?.provider,
+        ownedBy: model.specification?.provider,
       }),
     );
   },
@@ -276,7 +283,7 @@ const openAICompatibleFetcher: ModelFetcher = {
       abortSignal: signal,
     });
     return dedup(response.data, (model) => model.id).map((model) =>
-      toModel(model.id, provider, { group: model.owned_by }),
+      toModel(model.id, provider, { ownedBy: model.owned_by }),
     );
   },
 };

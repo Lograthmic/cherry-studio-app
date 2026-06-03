@@ -1,10 +1,23 @@
+import { useThemeColor } from 'heroui-native/hooks';
+import { Spinner } from 'heroui-native/spinner';
 import { ActivityIcon, DownloadIcon, PlusIcon } from 'lucide-uniwind';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
-export function ProviderModelToolbar() {
+type ProviderModelToolbarProps = {
+  isPullDisabled?: boolean;
+  isPullLoading?: boolean;
+  onPullPress?: () => void;
+};
+
+export function ProviderModelToolbar({
+  isPullDisabled = false,
+  isPullLoading = false,
+  onPullPress,
+}: ProviderModelToolbarProps) {
   const { t } = useTranslation();
+  const foregroundColor = useThemeColor('foreground');
 
   return (
     <View className="flex-row items-center justify-between gap-3 px-1">
@@ -18,8 +31,22 @@ export function ProviderModelToolbar() {
         />
         <ModelActionButton
           accessibilityLabel={t('settings.provider.models.pull')}
-          icon={<DownloadIcon className="size-4 text-default-foreground" strokeWidth={2} />}
+          icon={
+            isPullLoading ? (
+              <Spinner color={foregroundColor} size="sm" />
+            ) : (
+              <DownloadIcon
+                className={
+                  isPullDisabled ? 'size-4 text-default-foreground' : 'size-4 text-foreground'
+                }
+                strokeWidth={2}
+              />
+            )
+          }
+          isDisabled={isPullDisabled}
+          isLoading={isPullLoading}
           label={t('settings.provider.models.pull')}
+          onPress={onPullPress}
         />
         <ModelActionButton
           accessibilityLabel={t('settings.provider.models.add')}
@@ -53,18 +80,27 @@ function ModelIconActionButton({
 function ModelActionButton({
   accessibilityLabel,
   icon,
+  isDisabled = false,
+  isLoading = false,
   label,
+  onPress,
 }: {
   accessibilityLabel: string;
   icon: ReactNode;
+  isDisabled?: boolean;
+  isLoading?: boolean;
   label: string;
+  onPress?: () => void;
 }) {
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      className="h-7 flex-row items-center gap-1 rounded-xl bg-settings-grouped-surface px-2 active:opacity-60"
+      accessibilityState={{ busy: isLoading, disabled: isDisabled }}
+      className="h-7 flex-row items-center gap-1 rounded-xl bg-settings-grouped-surface px-2 active:opacity-60 disabled:opacity-40"
+      disabled={isDisabled}
       hitSlop={6}
+      onPress={onPress}
     >
       {icon}
       <Text className="font-medium text-default-foreground text-sm">{label}</Text>

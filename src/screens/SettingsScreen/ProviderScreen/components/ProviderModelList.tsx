@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { type ReactElement, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 
 import type { Model } from '@/data/types/model';
+import type { Provider } from '@/data/types/provider';
 import {
   ProviderModelAccordion,
   ProviderModelSearchField,
@@ -11,11 +12,24 @@ import {
 } from '../models';
 
 type ProviderModelListProps = {
+  header?: ReactElement;
   isLoading: boolean;
+  isPullDisabled?: boolean;
+  isPullLoading?: boolean;
   models: Model[];
+  onPullPress?: () => void;
+  provider: Provider | undefined;
 };
 
-export function ProviderModelList({ isLoading, models }: ProviderModelListProps) {
+export function ProviderModelList({
+  header,
+  isLoading,
+  isPullDisabled = false,
+  isPullLoading = false,
+  models,
+  onPullPress,
+  provider,
+}: ProviderModelListProps) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const { displayedExpandedValues, groups, isSearching, setExpandedValues } =
@@ -28,21 +42,26 @@ export function ProviderModelList({ isLoading, models }: ProviderModelListProps)
       : t('settings.provider.models.empty');
 
   return (
-    <View className="gap-3">
-      <ProviderModelToolbar />
-      <ProviderModelSearchField searchText={searchText} setSearchText={setSearchText} />
-
-      {groups.length > 0 ? (
-        <ProviderModelAccordion
-          displayedExpandedValues={displayedExpandedValues}
-          groups={groups}
-          onExpandedValuesChange={setExpandedValues}
-        />
-      ) : (
-        <View className="min-h-12 justify-center rounded-2xl bg-settings-grouped-surface px-4 py-4">
-          <Text className="text-base text-default-foreground">{emptyTitle}</Text>
+    <ProviderModelAccordion
+      displayedExpandedValues={displayedExpandedValues}
+      emptyTitle={emptyTitle}
+      groups={groups}
+      ListHeaderComponent={
+        <View className="gap-6 px-4 py-5">
+          {header}
+          <View className="gap-3">
+            <ProviderModelToolbar
+              isPullDisabled={isPullDisabled}
+              isPullLoading={isPullLoading}
+              onPullPress={onPullPress}
+            />
+            <ProviderModelSearchField searchText={searchText} setSearchText={setSearchText} />
+          </View>
         </View>
-      )}
-    </View>
+      }
+      provider={provider}
+      onExpandedValuesChange={setExpandedValues}
+      onScrollBeginDrag={Keyboard.dismiss}
+    />
   );
 }

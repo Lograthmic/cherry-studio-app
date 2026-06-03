@@ -11,6 +11,7 @@ import {
   mergePresetModel,
   providerRegistryService,
 } from './providerRegistryService';
+import { normalizeFetchedModelGroupName } from './utils/modelGroup';
 import { insertManyWithOrderKey, insertWithOrderKey } from './utils/orderKey';
 
 export type CreateModelInput = {
@@ -37,10 +38,21 @@ export type CreateModelInput = {
   supportsStreaming?: boolean;
 };
 
+export type ReconcileProviderModelsInput = {
+  toAdd?: CreateModelInput[];
+  toRemove?: string[];
+};
+
+export type ReconcileProviderModelsResult = {
+  added: Model[];
+  removedIds: string[];
+};
+
 type ModelInputWithoutOrderKey = Omit<UserModelInsert, 'orderKey'>;
 
 function rowToModel(row: UserModelSelect): Model {
   return {
+    apiModelId: row.modelId,
     capabilities: row.capabilities,
     contextWindow: row.contextWindow ?? undefined,
     customEndpointUrl: row.customEndpointUrl ?? undefined,
@@ -224,6 +236,59 @@ export class ModelService {
     });
 
     return rows.map(rowToModel);
+  }
+
+  async reconcileProviderModels(
+    providerId: string,
+    input: ReconcileProviderModelsInput,
+    providerConfig?: {
+      defaultChatEndpoint?: EndpointType | null;
+      endpointConfigs?: EndpointConfigs | null;
+    },
+  ): Promise<ReconcileProviderModelsResult> {
+    const toAdd = input.toAdd ?? [];
+    const toRemove = Array.from(new Set(input.toRemove ?? []));
+
+    if (toAdd.length === 0 && toRemove.length === 0) {
+      return { added: [], removedIds: [] };
+    }
+
+    const values = toAdd.map((model) => {
+      const normalizedInput = {
+        ...model,
+        group: normalizeFetchedModelGroupName(model.group, model.modelId, providerId),
+        providerId,
+      };
+      const registryData =
+        model.registryData ??
+        providerRegistryService.lookupModel(providerId, model.modelId, providerConfig);
+
+      return buildCreateValues({ ...normalizedInput, registryData });
+    });
+
+    const rows = await this.dbService.withWriteTx(async (tx) => {
+      const inserted =
+        values.length > 0
+          ? ((await insertManyWithOrderKey(tx, userModelTable, values, {
+              scope: eq(userModelTable.providerId, providerId),
+            })) as UserModelSelect[])
+          : [];
+
+      if (toRemove.length > 0) {
+        await tx
+          .delete(userModelTable)
+          .where(
+            and(eq(userModelTable.providerId, providerId), inArray(userModelTable.id, toRemove)),
+          );
+      }
+
+      return inserted;
+    });
+
+    return {
+      added: rows.map(rowToModel),
+      removedIds: toRemove,
+    };
   }
 
   async createFromRegistry(

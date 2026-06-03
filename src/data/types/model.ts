@@ -144,11 +144,13 @@ export const RuntimeModelPricingSchema = z.object({
 export type RuntimeModelPricing = z.infer<typeof RuntimeModelPricingSchema>;
 
 export type Model = {
+  apiModelId?: string;
   capabilities: ModelCapability[];
   contextWindow?: number;
   customEndpointUrl?: string;
   description?: string;
   endpointTypes?: EndpointType[];
+  family?: string;
   group?: string;
   id: UniqueModelId;
   inputModalities?: Modality[];
@@ -160,6 +162,7 @@ export type Model = {
   modelId: string;
   name: string;
   outputModalities?: Modality[];
+  ownedBy?: string;
   parameters?: ParameterSupport;
   presetModelId?: string;
   pricing?: RuntimeModelPricing;
