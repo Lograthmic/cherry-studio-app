@@ -1,6 +1,5 @@
-import { Button } from 'heroui-native/button';
 import { useCallback, useMemo, useState } from 'react';
-import { Keyboard, Text, View } from 'react-native';
+import { Keyboard, Pressable, Text, View } from 'react-native';
 import {
   getWebSearchCapabilityTitleKey,
   getWebSearchProviderDescriptionKey,
@@ -22,16 +21,17 @@ function ZhipuApiKeyShortcutSection() {
   } = useWebSearchApiManagementContext();
 
   return (
-    <Button
+    <Pressable
       accessibilityLabel={t('settings.websearch.provider.configureZhipuApiKey')}
-      className="h-12 rounded-xl"
+      accessibilityRole="button"
+      className="h-12 items-center justify-center rounded-xl bg-settings-grouped-surface active:opacity-60"
+      hitSlop={6}
       onPress={openZhipuApiKeySettings}
-      variant="secondary"
     >
-      <Button.Label className="text-base">
+      <Text className="font-medium text-base text-foreground">
         {t('settings.websearch.provider.configureZhipuApiKey')}
-      </Button.Label>
-    </Button>
+      </Text>
+    </Pressable>
   );
 }
 
