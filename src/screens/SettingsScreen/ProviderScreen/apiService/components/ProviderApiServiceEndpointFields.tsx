@@ -1,5 +1,4 @@
 import { Select } from 'heroui-native';
-import { Button } from 'heroui-native/button';
 import { Input } from 'heroui-native/input';
 import { cn } from 'heroui-native/utils';
 import { PlusIcon, SettingsIcon, Trash2Icon } from 'lucide-uniwind';
@@ -14,6 +13,7 @@ import {
   isConfigurableEndpointType,
 } from '../utils/providerApiServiceEndpointRules';
 import { providerApiServiceStyles } from '../utils/providerApiServiceStyles';
+import { ProviderApiServiceIconButton } from './ProviderApiServiceIconButton';
 
 export function ProviderApiServiceEndpointField({
   baseUrl,
@@ -39,15 +39,12 @@ export function ProviderApiServiceEndpointField({
           value={baseUrl}
           variant="secondary"
         />
-        <Button
+        <ProviderApiServiceIconButton
           accessibilityLabel={t('settings.provider.apiService.manageEndpoints')}
-          className="h-10 min-h-0 rounded-xl"
-          isIconOnly
           onPress={onManagePress}
-          variant="secondary"
         >
           <SettingsIcon className="size-5 text-default-foreground" strokeWidth={2} />
-        </Button>
+        </ProviderApiServiceIconButton>
       </View>
     </View>
   );
@@ -105,19 +102,13 @@ export function ProviderApiServiceEndpointForm({
                     onCommit={(value) => onBaseUrlCommit(endpoint, value)}
                   />
                   {!isPrimaryEndpoint ? (
-                    <Button
+                    <ProviderApiServiceIconButton
                       accessibilityLabel={t('settings.provider.apiService.removeEndpoint')}
-                      className={cn(
-                        'h-10 min-h-0 rounded-xl',
-                        pendingEndpoint === endpoint && 'opacity-40',
-                      )}
                       isDisabled={pendingEndpoint === endpoint}
-                      isIconOnly
                       onPress={() => onRemoveEndpoint(endpoint)}
-                      variant="secondary"
                     >
                       <Trash2Icon className="size-5 text-default-foreground" strokeWidth={2} />
-                    </Button>
+                    </ProviderApiServiceIconButton>
                   ) : null}
                 </View>
                 {endpointErrors?.[endpoint] ? (
