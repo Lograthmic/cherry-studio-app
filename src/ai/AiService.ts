@@ -1,4 +1,8 @@
-import { generateImage as aiCoreGenerateImage } from '@cherrystudio/ai-core';
+import {
+  embedMany as aiCoreEmbedMany,
+  generateImage as aiCoreGenerateImage,
+} from '@cherrystudio/ai-core';
+import { MODEL_CAPABILITY } from '@cherrystudio/provider-registry';
 import { type LanguageModelUsage, type ModelMessage, type UIMessageChunk } from 'ai';
 import type { AssistantService } from '@/data/services/AssistantService';
 import type { ModelService } from '@/data/services/ModelService';
@@ -47,10 +51,10 @@ export interface AiImageRequest extends AiBaseRequest {
 }
 
 export interface AiImageResult {
-  images: Array<{
+  images: {
     base64: string;
     mediaType: string;
-  }>;
+  }[];
   usage?: unknown;
 }
 
@@ -177,14 +181,19 @@ export class AiService {
 
   // ── API validation ──
 
-  /** Dispatches to `generateText` for the first mobile AI migration slice. */
-  async checkModel(request: AiBaseRequest & { timeout?: number }): Promise<{ latency: number }> {
+  /** Dispatches to `embedMany` for embedding models, `generateText` otherwise. */
+  async checkModel(
+    request: AiBaseRequest & { apiKeyOverride?: string; timeout?: number },
+  ): Promise<{ latency: number }> {
     const start = performance.now();
     const timeout = request.timeout ?? 15000;
+    const requestSignal = request.requestOptions?.signal;
 
     // AbortController on timeout so the HTTP work cancels too (otherwise tokens keep burning).
     const controller = new AbortController();
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    let abortListener: (() => void) | undefined;
+    let abortPromise: Promise<never> | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutHandle = setTimeout(() => {
         controller.abort(new Error('Check model timeout'));
@@ -192,26 +201,86 @@ export class AiService {
       }, timeout);
     });
 
-    const probeRequest = {
-      ...request,
-      requestOptions: { ...request.requestOptions, signal: controller.signal },
-    };
-    const probe = this.generateText({ ...probeRequest, system: 'test', prompt: 'hi' });
-
     try {
-      await Promise.race([probe, timeoutPromise]);
+      throwIfAiRequestAborted(requestSignal);
+      if (requestSignal) {
+        abortPromise = new Promise<never>((_, reject) => {
+          abortListener = () => {
+            const reason = getAiRequestAbortReason(requestSignal);
+            controller.abort(reason);
+            reject(reason);
+          };
+          requestSignal.addEventListener('abort', abortListener, { once: true });
+        });
+      }
+
+      const probeRequest = {
+        ...request,
+        requestOptions: { ...request.requestOptions, signal: controller.signal },
+      };
+      const probe = this.runCheckModelProbe(probeRequest, controller.signal);
+      const probes: Promise<unknown>[] = [probe, timeoutPromise];
+      if (abortPromise) {
+        probes.push(abortPromise);
+      }
+
+      await Promise.race(probes);
       return { latency: performance.now() - start };
     } finally {
       if (timeoutHandle) clearTimeout(timeoutHandle);
+      if (abortListener) {
+        requestSignal?.removeEventListener('abort', abortListener);
+      }
+      if (requestSignal?.aborted) {
+        if (!controller.signal.aborted) {
+          controller.abort(requestSignal.reason);
+        }
+      }
     }
+  }
+
+  private async runCheckModelProbe(
+    request: AiBaseRequest & { apiKeyOverride?: string },
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    const { sdkConfig, model, options } = await this.buildAgentParamsFor(request);
+
+    if (isEmbeddingModel(model)) {
+      return aiCoreEmbedMany<AppProviderSettingsMap>(
+        sdkConfig.providerId,
+        sdkConfig.providerSettings as never,
+        {
+          model: sdkConfig.modelId,
+          values: ['test'],
+          maxRetries: options.maxRetries,
+          abortSignal: signal,
+          ...(options.providerOptions && { providerOptions: options.providerOptions }),
+          ...(options.headers && { headers: stripUndefinedHeaders(options.headers) }),
+        },
+      );
+    }
+
+    const agent = new Agent({
+      providerId: sdkConfig.providerId,
+      providerSettings: sdkConfig.providerSettings,
+      modelId: sdkConfig.modelId,
+      plugins: [],
+      system: 'test',
+      options,
+    });
+
+    return agent.generate({ prompt: 'hi' }, signal);
   }
 
   // ── Shared agent parameter resolution ──
 
-  private async buildAgentParamsFor(request: AiBaseRequest & { chatId?: string }) {
+  private async buildAgentParamsFor(
+    request: AiBaseRequest & { apiKeyOverride?: string; chatId?: string },
+  ) {
     const { provider, model, assistant } = await this.getProviderAndModel(request);
     const sdkConfig = await providerToAiSdkConfig(provider, model, {
-      getRotatedApiKey: (providerId) => this.services.provider.getRotatedApiKey(providerId),
+      getRotatedApiKey: async (providerId) =>
+        request.apiKeyOverride ?? this.services.provider.getRotatedApiKey(providerId),
       getAuthConfig: (providerId) => this.services.provider.getAuthConfig(providerId),
     });
     const capabilities = assistant ? resolveCapabilities(model, assistant) : undefined;
@@ -333,6 +402,10 @@ function resolveCapabilities(model: Model, assistant: Assistant) {
   };
 }
 
+function isEmbeddingModel(model: Model): boolean {
+  return model.capabilities.includes(MODEL_CAPABILITY.EMBEDDING);
+}
+
 function getCustomParameters(assistant: Assistant): Record<string, unknown> {
   const params: Record<string, unknown> = {};
   for (const item of assistant.settings?.customParameters ?? []) {
@@ -347,4 +420,16 @@ function stripUndefinedHeaders(
   return Object.fromEntries(
     Object.entries(headers).filter((entry): entry is [string, string] => entry[1] !== undefined),
   );
+}
+
+function throwIfAiRequestAborted(signal: AbortSignal | undefined) {
+  if (!signal?.aborted) {
+    return;
+  }
+
+  throw getAiRequestAbortReason(signal);
+}
+
+function getAiRequestAbortReason(signal: AbortSignal): unknown {
+  return signal.reason ?? new Error('AI request aborted');
 }

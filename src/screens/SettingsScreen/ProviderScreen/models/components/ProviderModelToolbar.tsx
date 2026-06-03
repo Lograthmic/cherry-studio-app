@@ -6,14 +6,20 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 type ProviderModelToolbarProps = {
+  isCheckDisabled?: boolean;
+  isCheckLoading?: boolean;
   isPullDisabled?: boolean;
   isPullLoading?: boolean;
+  onCheckPress?: () => void;
   onPullPress?: () => void;
 };
 
 export function ProviderModelToolbar({
+  isCheckDisabled = false,
+  isCheckLoading = false,
   isPullDisabled = false,
   isPullLoading = false,
+  onCheckPress,
   onPullPress,
 }: ProviderModelToolbarProps) {
   const { t } = useTranslation();
@@ -26,8 +32,22 @@ export function ProviderModelToolbar({
       </Text>
       <View className="flex-row items-center gap-2">
         <ModelIconActionButton
-          accessibilityLabel={t('settings.provider.models.activity')}
-          icon={<ActivityIcon className="size-4 text-default-foreground" strokeWidth={2} />}
+          accessibilityLabel={t('settings.provider.models.check')}
+          icon={
+            isCheckLoading ? (
+              <Spinner color={foregroundColor} size="sm" />
+            ) : (
+              <ActivityIcon
+                className={
+                  isCheckDisabled ? 'size-4 text-default-foreground' : 'size-4 text-foreground'
+                }
+                strokeWidth={2}
+              />
+            )
+          }
+          isDisabled={isCheckDisabled}
+          isLoading={isCheckLoading}
+          onPress={onCheckPress}
         />
         <ModelActionButton
           accessibilityLabel={t('settings.provider.models.pull')}
@@ -61,16 +81,25 @@ export function ProviderModelToolbar({
 function ModelIconActionButton({
   accessibilityLabel,
   icon,
+  isDisabled = false,
+  isLoading = false,
+  onPress,
 }: {
   accessibilityLabel: string;
   icon: ReactNode;
+  isDisabled?: boolean;
+  isLoading?: boolean;
+  onPress?: () => void;
 }) {
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
-      className="size-7 items-center justify-center active:opacity-60"
+      accessibilityState={{ busy: isLoading, disabled: isDisabled }}
+      className="size-7 items-center justify-center active:opacity-60 disabled:opacity-40"
+      disabled={isDisabled}
       hitSlop={6}
+      onPress={onPress}
     >
       {icon}
     </Pressable>

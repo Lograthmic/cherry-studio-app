@@ -13,20 +13,26 @@ import {
 
 type ProviderModelListProps = {
   header?: ReactElement;
+  isCheckDisabled?: boolean;
+  isCheckLoading?: boolean;
   isLoading: boolean;
   isPullDisabled?: boolean;
   isPullLoading?: boolean;
   models: Model[];
+  onCheckPress?: () => void;
   onPullPress?: () => void;
   provider: Provider | undefined;
 };
 
 export function ProviderModelList({
   header,
+  isCheckDisabled = false,
+  isCheckLoading = false,
   isLoading,
   isPullDisabled = false,
   isPullLoading = false,
   models,
+  onCheckPress,
   onPullPress,
   provider,
 }: ProviderModelListProps) {
@@ -51,8 +57,11 @@ export function ProviderModelList({
           {header}
           <View className="gap-3">
             <ProviderModelToolbar
+              isCheckDisabled={isCheckDisabled}
+              isCheckLoading={isCheckLoading}
               isPullDisabled={isPullDisabled}
               isPullLoading={isPullLoading}
+              onCheckPress={onCheckPress}
               onPullPress={onPullPress}
             />
             <ProviderModelSearchField searchText={searchText} setSearchText={setSearchText} />

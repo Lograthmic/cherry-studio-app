@@ -14,7 +14,12 @@ import {
 import { ProviderApiManagementSection } from './components/ProviderApiManagementSection';
 import { ProviderModelList } from './components/ProviderModelList';
 import { useProviderDetailSettings } from './detail';
-import { ProviderModelPullSheet, useProviderModelPull } from './models';
+import {
+  ProviderModelCheckSheet,
+  ProviderModelPullSheet,
+  useProviderModelCheck,
+  useProviderModelPull,
+} from './models';
 
 export default function ProviderDetailSettingsScreen() {
   const { providerId, providerName } = useLocalSearchParams<{
@@ -38,6 +43,22 @@ export default function ProviderDetailSettingsScreen() {
   } = useProviderModelPull({ provider, providerId: providerId ?? '' });
   const { apiKeys, apiKeysQuery, authConfig, authConfigQuery, replaceApiKeysMutation } =
     useProviderApiServiceQueries(providerId ?? '');
+  const {
+    apiKeyOptions: checkApiKeyOptions,
+    closeSheet: closeCheckSheet,
+    isChecking: isModelChecking,
+    isSheetOpen: isCheckSheetOpen,
+    openCheckSheet,
+    selectedApiKeyId: selectedCheckApiKeyId,
+    selectedModelId: selectedCheckModelId,
+    setSelectedApiKeyId: setSelectedCheckApiKeyId,
+    setSelectedModelId: setSelectedCheckModelId,
+    startCheck: startModelCheck,
+  } = useProviderModelCheck({
+    apiKeys,
+    models,
+    providerId: providerId ?? '',
+  });
   const { draft, primaryBaseUrl, syncApiKeysDraft, updateApiKeysInput } =
     useProviderApiServiceDraft({
       apiKeys,
@@ -119,11 +140,26 @@ export default function ProviderDetailSettingsScreen() {
           </View>
         }
         isLoading={modelsQuery.isPending}
+        isCheckDisabled={models.length === 0}
+        isCheckLoading={isModelChecking}
         isPullDisabled={!provider || isPullBusy}
         isPullLoading={isPullPreviewLoading}
         models={models}
         provider={provider}
+        onCheckPress={openCheckSheet}
         onPullPress={openPullPreview}
+      />
+      <ProviderModelCheckSheet
+        apiKeyOptions={checkApiKeyOptions}
+        isChecking={isModelChecking}
+        isOpen={isCheckSheetOpen}
+        models={models}
+        selectedApiKeyId={selectedCheckApiKeyId}
+        selectedModelId={selectedCheckModelId}
+        onApiKeyChange={setSelectedCheckApiKeyId}
+        onClose={closeCheckSheet}
+        onModelChange={setSelectedCheckModelId}
+        onStart={startModelCheck}
       />
       <ProviderModelPullSheet
         isApplying={isApplyingPull}

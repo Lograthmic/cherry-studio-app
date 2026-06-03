@@ -14,7 +14,7 @@ import type { Provider } from '@/data/types/provider';
 import { getModelGroupLabel, type ProviderModelGroup } from '../utils/providerModelGroups';
 
 const groupHeaderHeight = 48;
-const modelRowHeight = 64;
+const modelRowHeight = 56;
 
 type ProviderModelListItem =
   | {
@@ -242,23 +242,21 @@ const ModelRow = memo(function ModelRow({
       ) : (
         <ModelFallbackIcon model={model} />
       )}
-      <View className="min-w-0 flex-1 gap-1">
-        <View className="min-w-0 flex-row items-center gap-2">
-          <Text className="min-w-0 shrink text-base text-foreground" numberOfLines={1}>
-            {model.name}
-          </Text>
-          {model.modelId !== model.name ? (
-            <Text className="max-w-32 shrink text-default-foreground text-xs" numberOfLines={1}>
-              {model.modelId}
-            </Text>
-          ) : null}
-        </View>
-        <View className="min-h-5 flex-row items-center gap-1">
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text className="min-w-0 shrink text-base text-foreground" numberOfLines={1}>
+          {model.name}
+        </Text>
+        <Text className="min-w-0 shrink text-default-foreground text-xs" numberOfLines={1}>
+          {model.modelId}
+        </Text>
+      </View>
+      {tags.length > 0 ? (
+        <View className="min-h-5 max-w-28 shrink-0 flex-row items-center justify-end gap-1 overflow-hidden">
           {tags.slice(0, 4).map((tag) => (
             <ModelPickerTagChip key={`${model.id}:${tag}`} tag={tag} />
           ))}
         </View>
-      </View>
+      ) : null}
     </Pressable>
   );
 });
