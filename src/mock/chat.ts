@@ -31,6 +31,7 @@ const benchmarkTopicSeeds = [
   createBenchmarkTopicSeed('complex', 5, 'a6'),
   createBenchmarkTopicSeed('complex', 10, 'a7'),
   createBenchmarkTopicSeed('complex', 100, 'a8'),
+  createBenchmarkTopicSeed('complex', 1000, 'a9'),
 ] satisfies readonly BenchmarkTopicSeed[];
 
 function createBenchmarkTopicSeed(

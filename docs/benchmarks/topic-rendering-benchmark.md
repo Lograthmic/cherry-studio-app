@@ -82,13 +82,13 @@ Result:
 
 ## Benchmark Fixture Matrix
 
-The development mock chat seeder now generates nine focused Topic fixtures:
+The development mock chat seeder now generates ten focused Topic fixtures:
 
 | Kind | Message counts | Purpose |
 | --- | --- | --- |
 | Plain text | 5, 10, 100 | Control group for ordinary wrapped text rendering |
 | LaTeX | 5, 10, 100 | Math-heavy rendering group |
-| Complex | 5, 10, 100 | Combined prose, list, table, code, inline math, and display math stress group |
+| Complex | 5, 10, 100, 1000 | Combined prose, list, table, code, inline math, and display math stress group |
 
 Seeder notes:
 - The mock chat seeder removes the earlier curated/generated mock topics and messages before inserting this matrix.
@@ -96,5 +96,58 @@ Seeder notes:
 - The benchmark message ids use the `mock-benchmark-message-` prefix.
 
 Device verification note:
-- Static fixture generation was verified locally with `tsx`; it produced the expected nine topics and message counts.
+- Static fixture generation was verified locally with `tsx`; it produced the expected ten topics and message counts.
 - The active simulator still showed old generated topics after app relaunch because `agent-device metro reload` failed against the dev-client session. Re-open the dev client with a fresh bundle or clear/reseed local app data before using the new fixture matrix for device-side benchmark runs.
+
+## Deferred: Secondary Runtime Message Rendering
+
+Date: 2026-06-03
+
+Status: not adopted. The React Native runtimes integration was removed from the
+working tree after this POC. Keep this section as future implementation context.
+
+Scenario:
+- Device/session: iOS simulator, iPhone 17 Pro, `agent-device` session `cherry`.
+- App target: `com.cherry-ai.cherry-studio-app`.
+- Dev server: Expo dev-client Metro on `http://127.0.0.1:8081`.
+- Fixture: `Benchmark Complex 1000`.
+- React profile window: start immediately before topic row press, stop after 1200ms for hot runs and 1800ms for cold-ish runtime start.
+- The app only fetches/renders the visible message window initially (`initialFetchCount = 12`, `initialRenderCount = 4`), so this benchmark measures topic switch, branch query, and initial visible complex Markdown rendering, not 1000 mounted rows.
+
+Implementation tested during the withdrawn POC:
+- Added `Benchmark Complex 1000` with 1000 deterministic complex messages.
+- Added `@react-native-runtimes/core`, `@react-native-runtimes/state`, and `react-native-nitro-modules`.
+- Mounted `Benchmark Complex 1000` through a benchmark-only `Threaded` surface. The threaded surface receives JSON-serializable `messages` and renders the same `MessageParts` Markdown path without main-runtime refs/callbacks.
+- Added an Expo config plugin so iOS secondary runtimes use `EXDevLauncherController.sharedInstance().sourceUrl()` in development. Without this, the secondary runtime failed with `No script URL provided`.
+
+### React Profile Runs
+
+| Build | Run | Flow | Commit count | Max commit | Next heavy commit | Slowest reported module |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| Baseline | 1 | cold-ish direct switch to Complex 1000 | 13 | 131.6ms | 44.8ms | Navigation/provider path |
+| Baseline | 2 | Complex 100 -> Complex 1000 | 11 | 15.9ms | 7.7ms | Navigation/provider path |
+| Baseline | 3 | Complex 100 -> Complex 1000 | 11 | 15.8ms | 8.7ms | Navigation/provider path |
+| Runtime POC | 1 | cold-ish direct switch to Complex 1000 | 7 | 42.5ms | 1.5ms | Secondary runtime `Animated(ScrollView)` / `ScrollView` |
+| Runtime POC | 2 | Complex 100 -> Complex 1000 | 12 | 10.2ms | 3.7ms | Secondary runtime `Component#17` / list surface |
+| Runtime POC | 3 | Complex 100 -> Complex 1000 | 12 | 11.5ms | 3.9ms | Secondary runtime `Component#17` / list surface |
+| Runtime POC + click-time prewarm | 1 | cold-ish direct switch to Complex 1000 | 7 | 55.2ms | 1.9ms | Secondary runtime `Animated(ScrollView)` / `ScrollView` |
+| Runtime POC + click-time prewarm | 2 | Complex 100 -> Complex 1000 | 12 | 23.1ms | 15.9ms | Secondary runtime `Component#17` / list surface |
+| Runtime POC + click-time prewarm | 3 | Complex 100 -> Complex 1000 | 12 | 9.8ms | 6.6ms | Secondary runtime `Component#17` / list surface |
+
+Result:
+- Hot-switch max commit improved from 15.8-15.9ms to 10.2-11.5ms.
+- Cold-ish direct switch improved from 131.6ms to 42.5ms, but the cold number still includes a large secondary-runtime list mount commit.
+- The threaded surface rendered real complex Markdown rows (`Benchmark Complex 1000 message 997` through `1000`) rather than a blank/fallback view.
+- Adding fire-and-forget prewarm in the topic click handler did not improve the cold-ish entry sample: 55.2ms versus the previous 42.5ms runtime POC sample. This prewarm is likely too late to hide secondary-runtime startup because it starts in the same click handler that navigates to the threaded surface.
+- Hot-switch with click-time prewarm was mostly in the same range as the runtime POC (9.8ms normal run), but one run spiked to 23.1ms. Treat this as no stable hot-path improvement yet.
+
+Decision:
+- Do not ship secondary-runtime message rendering yet.
+- Keep `Benchmark Complex 1000` as the stress fixture for future comparisons.
+- If this is revisited, start behind a feature flag and use the secondary runtime only for read-only heavy message rendering first.
+- Do not use click-time prewarm as the first optimization; it was too late to hide startup cost. If prewarm is revisited, trigger it earlier, such as drawer-open, focused topic candidate, or `onPressIn`, and cap retained runtimes to avoid memory growth.
+- Future work must measure streaming updates, JSON serialization cost, fallback behavior, memory, native rebuild complexity, and real message interactions before replacing the default `ChatMessageList`.
+
+Notes:
+- React DevTools saw both runtimes after the POC (`Apps: 2 connected`). Exporting profile data from the secondary runtime triggered a DevTools warning overlay (`getProfilingData() called before any profiling data was recorded`), so the reported table uses bounded `profile slow` and `profile timeline` output rather than exported-profile automation.
+- `agent-device perf` still cannot report iOS simulator FPS, CPU, or memory for this setup.
