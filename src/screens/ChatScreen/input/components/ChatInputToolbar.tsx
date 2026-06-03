@@ -53,7 +53,7 @@ function SelectedToolTag({ onClear, tool }: SelectedToolTagProps) {
   const Icon = tool.icon;
 
   return (
-    <ChatInputAccessoryItem className="flex-row items-center gap-2 rounded-full bg-accent/10 px-2 py-1">
+    <ChatInputAccessoryItem className="flex-row items-center gap-1 rounded-full bg-accent/10 px-2 py-1">
       <Icon className="size-5 text-accent" strokeWidth={2.25} />
       <Text className="font-semibold text-accent text-base" numberOfLines={1}>
         {t(tool.tagTitleKey)}
@@ -84,7 +84,7 @@ function ClearTagButton({ onPress }: { onPress: () => void }) {
     <Pressable
       accessibilityLabel={t('common.clear')}
       accessibilityRole="button"
-      className="size-7 items-center justify-center rounded-full active:opacity-60"
+      className="size-6 items-center justify-center rounded-full active:opacity-60"
       hitSlop={6}
       onPress={onPress}
     >
