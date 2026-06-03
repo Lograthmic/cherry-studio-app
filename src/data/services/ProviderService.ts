@@ -320,7 +320,7 @@ export class ProviderService {
   async create(input: CreateProviderInput): Promise<Provider> {
     const row = (await this.dbService.withWriteTx((tx) =>
       insertWithOrderKey(tx, userProviderTable, toInsert(input), {
-        scope: undefined,
+        pkColumn: userProviderTable.providerId,
       }),
     )) as UserProviderSelect;
 
@@ -439,7 +439,9 @@ export class ProviderService {
       const newRows = inputs.filter((input) => !existing.has(input.providerId)).map(toInsert);
 
       if (newRows.length > 0) {
-        await insertManyWithOrderKey(tx, userProviderTable, newRows, {});
+        await insertManyWithOrderKey(tx, userProviderTable, newRows, {
+          pkColumn: userProviderTable.providerId,
+        });
       }
 
       const inputByProviderId = new Map(inputs.map((input) => [input.providerId, input]));

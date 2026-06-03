@@ -53,7 +53,7 @@ describe('ModelService', () => {
     expect(result.removedIds).toEqual(['openai::old-model']);
   });
 
-  test('preserves concrete remote groups during reconcile', async () => {
+  test('persists remote ownedBy without treating it as group during reconcile', async () => {
     const dbService = {
       withWriteTx: jest.fn(async (callback) => callback({})),
     } as unknown as DbService;
@@ -62,9 +62,9 @@ describe('ModelService', () => {
     const result = await service.reconcileProviderModels('cherryin', {
       toAdd: [
         {
-          group: 'custom',
           modelId: 'anthropic/claude-sonnet-4-5',
           name: 'Claude Sonnet 4.5',
+          ownedBy: 'custom',
           providerId: 'ignored-provider',
         },
       ],
@@ -73,9 +73,9 @@ describe('ModelService', () => {
     expect(result.added).toEqual([
       expect.objectContaining({
         apiModelId: 'anthropic/claude-sonnet-4-5',
-        group: 'custom',
         id: 'cherryin::anthropic/claude-sonnet-4-5',
         modelId: 'anthropic/claude-sonnet-4-5',
+        ownedBy: 'custom',
         providerId: 'cherryin',
       }),
     ]);

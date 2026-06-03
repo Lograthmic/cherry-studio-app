@@ -78,6 +78,7 @@ export class GroupService {
         groupTable,
         { entityType: dto.entityType, name: dto.name },
         {
+          pkColumn: groupTable.id,
           scope: eq(groupTable.entityType, dto.entityType),
         },
       ),
@@ -133,7 +134,6 @@ export class GroupService {
     await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, groupTable, [{ anchor, id }], {
         pkColumn: groupTable.id,
-        resourceName: 'Group',
         scopeColumn: groupTable.entityType,
       }),
     );
@@ -147,7 +147,6 @@ export class GroupService {
     await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, groupTable, moves, {
         pkColumn: groupTable.id,
-        resourceName: 'Group',
         scopeColumn: groupTable.entityType,
       }),
     );

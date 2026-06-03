@@ -1,14 +1,56 @@
-import { and, asc, desc, eq, getTableName, gt, inArray, lt, ne, type SQL } from 'drizzle-orm';
+import {
+  type AnyColumn,
+  and,
+  asc,
+  desc,
+  eq,
+  getTableName,
+  gt,
+  inArray,
+  lt,
+  ne,
+  type SQL,
+} from 'drizzle-orm';
 import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { generateKeyBetween, generateNKeysBetween } from 'fractional-indexing';
+import { loggerService } from '@/core/logger/loggerService';
 import type { OrderRequest } from '@/data/api/schemas/_endpointHelpers';
 import { DataApiErrorFactory } from '@/data/types/apiTypes';
 
 type TxLike = any;
 
 interface TableWithOrderKey extends SQLiteTable {
-  orderKey: AnySQLiteColumn;
+  orderKey: AnyColumn;
 }
+
+interface InsertWithOrderKeyOptions {
+  pkColumn: AnyColumn;
+  position?: 'first' | 'last';
+  scope?: SQL;
+}
+
+interface InsertManyWithOrderKeyOptions {
+  pkColumn: AnyColumn;
+  position?: 'first' | 'last';
+  scope?: SQL;
+}
+
+interface ApplyMovesOptions {
+  pkColumn: AnyColumn;
+  scope?: SQL;
+}
+
+interface ResetOrderOptions {
+  pkColumn: AnyColumn;
+}
+
+interface ComputeOptions {
+  excludePkValue?: string;
+  pkColumn: AnyColumn;
+  scope?: SQL;
+}
+
+const logger = loggerService.withContext('orderKey');
 
 export function generateOrderKeySequence(count: number): string[] {
   if (count <= 0) {
@@ -41,27 +83,13 @@ export async function insertWithOrderKey<
   tx: TxLike,
   table: TTable,
   values: TValues,
-  options: { position?: 'first' | 'last'; scope?: SQL },
+  options: InsertWithOrderKeyOptions,
 ): Promise<Record<string, unknown>> {
-  const position = options.position ?? 'last';
-  const boundary =
-    position === 'last'
-      ? await selectBoundaryKey(tx, table, 'last', options.scope)
-      : await selectBoundaryKey(tx, table, 'first', options.scope);
-  const orderKey =
-    position === 'last'
-      ? generateOrderKeyBetween(boundary, null)
-      : generateOrderKeyBetween(null, boundary);
-  const [row] = await tx
-    .insert(table)
-    .values({ ...values, orderKey })
-    .returning();
-
+  const [row] = await insertManyWithOrderKey(tx, table, [values], options);
   if (!row) {
     throw new Error('insertWithOrderKey: insert returned no rows');
   }
-
-  return row as Record<string, unknown>;
+  return row;
 }
 
 export async function insertManyWithOrderKey<
@@ -70,25 +98,28 @@ export async function insertManyWithOrderKey<
 >(
   tx: TxLike,
   table: TTable,
-  values: TValues[],
-  options: { position?: 'first' | 'last'; scope?: SQL },
+  valuesList: TValues[],
+  options: InsertManyWithOrderKeyOptions,
 ): Promise<Record<string, unknown>[]> {
-  if (values.length === 0) {
+  if (valuesList.length === 0) {
     return [];
   }
 
   const position = options.position ?? 'last';
-  const boundary =
-    position === 'last'
-      ? await selectBoundaryKey(tx, table, 'last', options.scope)
-      : await selectBoundaryKey(tx, table, 'first', options.scope);
-  const orderKeys =
-    position === 'last'
-      ? generateOrderKeySequenceBetween(boundary, null, values.length)
-      : generateOrderKeySequenceBetween(null, boundary, values.length);
+  const scope = options.scope;
+  let orderKeys: string[];
+
+  if (position === 'last') {
+    const largest = await selectBoundaryKey(tx, table, 'last', scope);
+    orderKeys = generateOrderKeySequenceBetween(largest, null, valuesList.length);
+  } else {
+    const smallest = await selectBoundaryKey(tx, table, 'first', scope);
+    orderKeys = generateOrderKeySequenceBetween(null, smallest, valuesList.length);
+  }
+
   const rows = await tx
     .insert(table)
-    .values(values.map((value, index) => ({ ...value, orderKey: orderKeys[index] })))
+    .values(valuesList.map((value, index) => ({ ...value, orderKey: orderKeys[index] })))
     .returning();
 
   return rows as Record<string, unknown>[];
@@ -98,23 +129,31 @@ export async function applyMoves(
   tx: TxLike,
   table: TableWithOrderKey,
   moves: { anchor: OrderRequest; id: string }[],
-  options: { pkColumn: AnySQLiteColumn; resourceName: string; scope?: SQL },
+  options: ApplyMovesOptions,
 ): Promise<void> {
-  const byId = new Map(moves.map((move) => [move.id, move]));
+  const { deduped, droppedCount } = dedupMoves(moves);
+  if (droppedCount > 0) {
+    logger.warn('applyMoves: dropped duplicate move entries, keeping last occurrence', {
+      droppedCount,
+      totalInput: moves.length,
+    });
+  }
 
-  for (const move of byId.values()) {
+  const pkColumn = options.pkColumn;
+  const scope = options.scope;
+
+  for (const move of deduped) {
     assertAnchorNotSelf(move.id, move.anchor);
 
-    const current = await selectRowByPk(tx, table, options.pkColumn, move.id, options.scope);
+    const current = await selectRowByPk(tx, table, pkColumn, move.id, scope);
     if (!current) {
-      throw DataApiErrorFactory.notFound(options.resourceName, move.id);
+      throw DataApiErrorFactory.notFound(getTableName(table), move.id);
     }
 
     const newKey = await computeNewOrderKey(tx, table, move.anchor, {
       excludePkValue: move.id,
-      pkColumn: options.pkColumn,
-      resourceName: options.resourceName,
-      scope: options.scope,
+      pkColumn,
+      scope,
     });
 
     if (newKey === current.orderKey) {
@@ -124,11 +163,7 @@ export async function applyMoves(
     await tx
       .update(table)
       .set({ orderKey: newKey })
-      .where(
-        options.scope
-          ? and(eq(options.pkColumn, move.id), options.scope)
-          : eq(options.pkColumn, move.id),
-      );
+      .where(scope ? and(eq(pkColumn, move.id), scope) : eq(pkColumn, move.id));
   }
 }
 
@@ -152,7 +187,7 @@ export async function applyScopedMoves<TTable extends TableWithOrderKey>(
   tx: TxLike,
   table: TTable,
   moves: { anchor: OrderRequest; id: string }[],
-  options: { pkColumn: AnySQLiteColumn; resourceName?: string; scopeColumn: AnySQLiteColumn },
+  options: { pkColumn: AnySQLiteColumn; scopeColumn: AnySQLiteColumn },
 ): Promise<void> {
   if (moves.length === 0) {
     return;
@@ -171,7 +206,7 @@ export async function applyScopedMoves<TTable extends TableWithOrderKey>(
   // the same DataApiError shape applyMoves would produce, so the contract is
   // observable as a single uniform error regardless of which layer detected it.
   if (rows.length === 0) {
-    throw DataApiErrorFactory.notFound(options.resourceName ?? getTableName(table), ids[0]);
+    throw DataApiErrorFactory.notFound(getTableName(table), ids[0]);
   }
 
   // Cross-scope batch check — applyMoves cannot do this because it doesn't know
@@ -188,26 +223,39 @@ export async function applyScopedMoves<TTable extends TableWithOrderKey>(
   const [scopeValue] = [...scopes];
   await applyMoves(tx, table, moves, {
     pkColumn,
-    resourceName: options.resourceName ?? getTableName(table),
     scope: eq(scopeColumn, scopeValue),
   });
 }
 
-async function computeNewOrderKey(
+export async function resetOrder<T extends Record<string, unknown>>(
+  tx: TxLike,
+  table: TableWithOrderKey,
+  orderedRows: T[],
+  options: ResetOrderOptions,
+): Promise<void> {
+  if (orderedRows.length === 0) {
+    return;
+  }
+
+  const orderKeys = generateOrderKeySequence(orderedRows.length);
+  const pkColumn = options.pkColumn;
+
+  for (let i = 0; i < orderedRows.length; i++) {
+    const row = orderedRows[i] as Record<string, unknown>;
+    const pkValue = resolvePkValue(row, pkColumn);
+    await tx.update(table).set({ orderKey: orderKeys[i] }).where(eq(pkColumn, pkValue));
+  }
+}
+
+export async function computeNewOrderKey(
   tx: TxLike,
   table: TableWithOrderKey,
   request: OrderRequest,
-  options: {
-    excludePkValue?: string;
-    pkColumn: AnySQLiteColumn;
-    resourceName: string;
-    scope?: SQL;
-  },
+  options: ComputeOptions,
 ): Promise<string> {
+  const { excludePkValue, pkColumn, scope } = options;
   const exclusion =
-    options.excludePkValue !== undefined
-      ? buildExclusion(options.pkColumn, options.excludePkValue, options.scope)
-      : options.scope;
+    excludePkValue !== undefined ? buildExclusion(pkColumn, excludePkValue, scope) : scope;
 
   if ('position' in request) {
     if (request.position === 'first') {
@@ -220,28 +268,37 @@ async function computeNewOrderKey(
   }
 
   if ('before' in request) {
-    const anchorKey = await requireOrderKey(
-      tx,
-      table,
-      options.pkColumn,
-      request.before,
-      options.scope,
-      options.resourceName,
-    );
+    const anchorKey = await requireOrderKey(tx, table, pkColumn, request.before, scope);
     const predecessor = await selectAdjacentKey(tx, table, 'predecessor', anchorKey, exclusion);
     return generateOrderKeyBetween(predecessor, anchorKey);
   }
 
-  const anchorKey = await requireOrderKey(
-    tx,
-    table,
-    options.pkColumn,
-    request.after,
-    options.scope,
-    options.resourceName,
-  );
+  const anchorKey = await requireOrderKey(tx, table, pkColumn, request.after, scope);
   const successor = await selectAdjacentKey(tx, table, 'successor', anchorKey, exclusion);
   return generateOrderKeyBetween(anchorKey, successor);
+}
+
+function dedupMoves(moves: { anchor: OrderRequest; id: string }[]): {
+  deduped: { anchor: OrderRequest; id: string }[];
+  droppedCount: number;
+} {
+  const byId = new Map<string, { anchor: OrderRequest; id: string }>();
+  for (const move of moves) {
+    byId.set(move.id, move);
+  }
+  return {
+    deduped: [...byId.values()],
+    droppedCount: moves.length - byId.size,
+  };
+}
+
+function resolvePkValue(row: Record<string, unknown>, pkColumn: AnyColumn): string {
+  const name = pkColumn.name;
+  const value = row[name];
+  if (value === undefined || value === null || value === '') {
+    throw new Error(`resolvePkValue: row is missing primary-key field "${name}"`);
+  }
+  return String(value);
 }
 
 async function selectBoundaryKey(
@@ -285,14 +342,13 @@ async function selectAdjacentKey(
 async function requireOrderKey(
   tx: TxLike,
   table: TableWithOrderKey,
-  pkColumn: AnySQLiteColumn,
+  pkColumn: AnyColumn,
   id: string,
   scope: SQL | undefined,
-  resourceName: string,
 ): Promise<string> {
   const row = await selectRowByPk(tx, table, pkColumn, id, scope);
   if (!row) {
-    throw DataApiErrorFactory.notFound(resourceName, id);
+    throw DataApiErrorFactory.notFound(getTableName(table), id);
   }
 
   return row.orderKey;
@@ -301,7 +357,7 @@ async function requireOrderKey(
 async function selectRowByPk(
   tx: TxLike,
   table: TableWithOrderKey,
-  pkColumn: AnySQLiteColumn,
+  pkColumn: AnyColumn,
   id: string,
   scope?: SQL,
 ): Promise<{ orderKey: string } | null> {
@@ -310,7 +366,7 @@ async function selectRowByPk(
   return (rows[0] as { orderKey: string } | undefined) ?? null;
 }
 
-function buildExclusion(pkColumn: AnySQLiteColumn, excludePkValue: string, scope?: SQL): SQL {
+function buildExclusion(pkColumn: AnyColumn, excludePkValue: string, scope?: SQL): SQL {
   const notSelf = ne(pkColumn, excludePkValue);
   if (!scope) {
     return notSelf;

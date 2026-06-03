@@ -21,7 +21,6 @@ import type { UniqueModelId } from '@/data/types/model';
 import type { DbService } from '../db/DbService';
 import { messageTable, topicTable } from '../db/schema';
 import type { TopicService } from './TopicService';
-import { getBranchMessagePageIds } from './utils/branchMessagePagination';
 import { timestampToISO } from './utils/rowMappers';
 
 const previewLength = 50;
@@ -294,22 +293,36 @@ export class MessageService {
       throw DataApiErrorFactory.notFound('Message', nodeId);
     }
 
-    const pathIds = pathIdRows.map((row) => row.id).reverse();
-    const page = getBranchMessagePageIds(pathIds, { cursor, limit });
-    if (page === null) {
-      throw DataApiErrorFactory.notFound('Message (cursor)', cursor);
+    const pathIds = pathIdRows.map((row) => row.id);
+    const pathRows = await this.db
+      .select()
+      .from(messageTable)
+      .where(inArray(messageTable.id, pathIds));
+    const pathOrder = new Map(pathIds.map((id, index) => [id, index]));
+    const fullPath = pathRows
+      .sort(
+        (a, b) =>
+          (pathOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (pathOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      )
+      .reverse();
+
+    let startIndex = 0;
+    let endIndex = fullPath.length;
+
+    if (cursor) {
+      const cursorIndex = fullPath.findIndex((message) => message.id === cursor);
+      if (cursorIndex === -1) {
+        throw DataApiErrorFactory.notFound('Message (cursor)', cursor);
+      }
+      startIndex = Math.max(0, cursorIndex - limit);
+      endIndex = cursorIndex;
+    } else {
+      startIndex = Math.max(0, fullPath.length - limit);
     }
 
-    const pageRows =
-      page.ids.length === 0
-        ? []
-        : await this.db.select().from(messageTable).where(inArray(messageTable.id, page.ids));
-    const pageOrder = new Map(page.ids.map((id, index) => [id, index]));
-    const paginatedPath = pageRows.sort(
-      (a, b) =>
-        (pageOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-        (pageOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER),
-    );
+    const paginatedPath = fullPath.slice(startIndex, endIndex);
+    const nextCursor = startIndex > 0 ? fullPath[startIndex].id : undefined;
     const items = includeSiblings
       ? await this.buildBranchMessagesWithSiblings(paginatedPath)
       : paginatedPath.map((row) => ({ message: rowToMessage(row) }));
@@ -318,7 +331,7 @@ export class MessageService {
       activeNodeId: topic.activeNodeId,
       assistantId: topic.assistantId,
       items,
-      nextCursor: page.nextCursor,
+      nextCursor,
     };
   }
 

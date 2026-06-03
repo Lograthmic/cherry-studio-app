@@ -6,7 +6,6 @@ import {
 } from '@ai-sdk/provider-utils';
 import { ENDPOINT_TYPE } from '@cherrystudio/provider-registry';
 import * as z from 'zod';
-import { normalizeFetchedModelGroupName } from '@/data/services/utils/modelGroup';
 import { createUniqueModelId, type Model } from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 
@@ -85,12 +84,6 @@ function defaultGroup(modelId: string, providerId: string): string {
 }
 
 function toModel(apiModelId: string, provider: Provider, extra?: Partial<Model>): Partial<Model> {
-  const group = normalizeFetchedModelGroupName(
-    extra?.group ?? defaultGroup(apiModelId, provider.id),
-    apiModelId,
-    provider.id,
-  );
-
   return {
     ...extra,
     id: createUniqueModelId(provider.id, apiModelId),
@@ -98,7 +91,7 @@ function toModel(apiModelId: string, provider: Provider, extra?: Partial<Model>)
     apiModelId,
     modelId: apiModelId,
     name: extra?.name || apiModelId,
-    group,
+    group: extra?.group || defaultGroup(apiModelId, provider.id),
     description: extra?.description,
     capabilities: extra?.capabilities ?? [],
     supportsStreaming: extra?.supportsStreaming ?? true,

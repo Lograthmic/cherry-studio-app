@@ -61,30 +61,33 @@ describe('provider model pull preview helpers', () => {
     });
   });
 
-  test('preserves concrete remote groups in pull preview', () => {
+  test('keeps remote ownedBy separate from group in pull preview payload', () => {
     const preview = buildProviderModelPullPreview({
       localModels: [],
       providerId: 'cherryin',
       remoteModels: [
         {
-          group: 'custom',
+          group: 'anthropic',
           modelId: 'anthropic/claude-sonnet-4-5',
           name: 'Claude Sonnet 4.5',
+          ownedBy: 'custom',
         },
       ],
     });
 
     expect(preview.added[0]).toMatchObject({
-      group: 'custom',
+      group: 'anthropic',
       modelId: 'anthropic/claude-sonnet-4-5',
+      ownedBy: 'custom',
     });
     expect(
       buildProviderModelPullApplyPayload(preview, createDefaultProviderModelPullSelection(preview)),
     ).toEqual({
       toAdd: [
         expect.objectContaining({
-          group: 'custom',
+          group: 'anthropic',
           modelId: 'anthropic/claude-sonnet-4-5',
+          ownedBy: 'custom',
         }),
       ],
       toRemove: [],

@@ -11,7 +11,6 @@ import {
   mergePresetModel,
   providerRegistryService,
 } from './providerRegistryService';
-import { normalizeFetchedModelGroupName } from './utils/modelGroup';
 import { insertManyWithOrderKey, insertWithOrderKey } from './utils/orderKey';
 
 export type CreateModelInput = {
@@ -29,6 +28,7 @@ export type CreateModelInput = {
   modelId: string;
   name?: string | null;
   outputModalities?: UserModelInsert['outputModalities'];
+  ownedBy?: string | null;
   parameters?: UserModelInsert['parameters'];
   presetModelId?: string | null;
   pricing?: UserModelInsert['pricing'];
@@ -69,6 +69,7 @@ function rowToModel(row: UserModelSelect): Model {
     modelId: row.modelId,
     name: row.name,
     outputModalities: row.outputModalities ?? undefined,
+    ownedBy: row.ownedBy ?? undefined,
     parameters: row.parameters ?? undefined,
     presetModelId: row.presetModelId ?? undefined,
     pricing: row.pricing ?? undefined,
@@ -97,6 +98,7 @@ function modelToInsert(model: Model): ModelInputWithoutOrderKey {
     name: model.name,
     notes: null,
     outputModalities: model.outputModalities ?? null,
+    ownedBy: model.ownedBy ?? null,
     parameters: model.parameters ?? null,
     presetModelId: model.presetModelId ?? null,
     pricing: model.pricing ?? null,
@@ -126,6 +128,7 @@ function customInputToInsert(input: CreateModelInput): ModelInputWithoutOrderKey
     name: input.name ?? input.modelId,
     notes: null,
     outputModalities: input.outputModalities ?? null,
+    ownedBy: input.ownedBy ?? null,
     parameters: input.parameters ?? null,
     presetModelId: input.presetModelId ?? null,
     pricing: input.pricing ?? null,
@@ -160,6 +163,7 @@ function buildCreateValues(input: CreateModelInput): ModelInputWithoutOrderKey {
       isHidden: input.isHidden ?? merged.isHidden,
       modelId: input.modelId,
       name: input.name ?? merged.name,
+      ownedBy: input.ownedBy ?? merged.ownedBy,
       presetModelId: registryData.presetModel.id,
       supportsStreaming: input.supportsStreaming ?? merged.supportsStreaming,
     }),
@@ -210,6 +214,7 @@ export class ModelService {
   async create(input: CreateModelInput): Promise<Model> {
     const row = (await this.dbService.withWriteTx((tx) =>
       insertWithOrderKey(tx, userModelTable, buildCreateValues(input), {
+        pkColumn: userModelTable.id,
         scope: eq(userModelTable.providerId, input.providerId),
       }),
     )) as UserModelSelect;
@@ -228,6 +233,7 @@ export class ModelService {
       for (const providerId of new Set(values.map((value) => value.providerId))) {
         const scopedValues = values.filter((value) => value.providerId === providerId);
         const inserted = (await insertManyWithOrderKey(tx, userModelTable, scopedValues, {
+          pkColumn: userModelTable.id,
           scope: eq(userModelTable.providerId, providerId),
         })) as UserModelSelect[];
         result.push(...inserted);
@@ -256,7 +262,6 @@ export class ModelService {
     const values = toAdd.map((model) => {
       const normalizedInput = {
         ...model,
-        group: normalizeFetchedModelGroupName(model.group, model.modelId, providerId),
         providerId,
       };
       const registryData =
@@ -270,6 +275,7 @@ export class ModelService {
       const inserted =
         values.length > 0
           ? ((await insertManyWithOrderKey(tx, userModelTable, values, {
+              pkColumn: userModelTable.id,
               scope: eq(userModelTable.providerId, providerId),
             })) as UserModelSelect[])
           : [];

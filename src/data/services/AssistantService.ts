@@ -186,7 +186,7 @@ export class AssistantService {
           modelId,
           settings: dto.settings ?? DEFAULT_ASSISTANT_SETTINGS,
         },
-        {},
+        { pkColumn: assistantTable.id },
       )) as AssistantRow;
 
       await this.syncRelationsTx(tx, inserted.id, { knowledgeBaseIds, mcpServerIds });
@@ -325,7 +325,6 @@ export class AssistantService {
 
       await applyMoves(tx, assistantTable, [{ anchor, id }], {
         pkColumn: assistantTable.id,
-        resourceName: 'Assistant',
       });
     });
   }
@@ -350,7 +349,6 @@ export class AssistantService {
 
       await applyMoves(tx, assistantTable, moves, {
         pkColumn: assistantTable.id,
-        resourceName: 'Assistant',
       });
     });
   }

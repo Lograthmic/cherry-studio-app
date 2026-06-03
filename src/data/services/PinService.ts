@@ -121,6 +121,7 @@ export class PinService {
           pinTable,
           { entityId: dto.entityId, entityType: dto.entityType },
           {
+            pkColumn: pinTable.id,
             scope: eq(pinTable.entityType, dto.entityType),
           },
         );
@@ -166,7 +167,6 @@ export class PinService {
     await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, pinTable, [{ anchor, id }], {
         pkColumn: pinTable.id,
-        resourceName: 'Pin',
         scopeColumn: pinTable.entityType,
       }),
     );
@@ -180,7 +180,6 @@ export class PinService {
     await this.dbService.withWriteTx((tx) =>
       applyScopedMoves(tx, pinTable, moves, {
         pkColumn: pinTable.id,
-        resourceName: 'Pin',
         scopeColumn: pinTable.entityType,
       }),
     );

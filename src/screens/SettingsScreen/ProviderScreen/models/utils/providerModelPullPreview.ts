@@ -3,7 +3,6 @@ import {
   type ModelRegistryLookup,
   mergePresetModel,
 } from '@/data/services/providerRegistryService';
-import { normalizeFetchedModelGroupName } from '@/data/services/utils/modelGroup';
 import { createUniqueModelId, type Model, type UniqueModelId } from '@/data/types/model';
 
 export type ProviderModelPullPreview = {
@@ -106,7 +105,7 @@ function normalizeRemoteModels(
       description: remoteModel.description,
       endpointTypes: remoteModel.endpointTypes,
       family: remoteModel.family,
-      group: normalizeFetchedModelGroupName(remoteModel.group, modelId, providerId),
+      group: remoteModel.group,
       id,
       inputModalities: remoteModel.inputModalities,
       isDeprecated: remoteModel.isDeprecated ?? false,
@@ -157,8 +156,7 @@ function enrichRemoteModelFromRegistry(
     description: merged.description ?? model.description,
     endpointTypes: preferRegistryArray(merged.endpointTypes, model.endpointTypes),
     family: merged.family ?? model.family,
-    group:
-      merged.group ?? normalizeFetchedModelGroupName(model.group, model.modelId, model.providerId),
+    group: merged.group ?? model.group,
     inputModalities: preferRegistryArray(merged.inputModalities, model.inputModalities),
     maxInputTokens: merged.maxInputTokens ?? model.maxInputTokens,
     maxOutputTokens: merged.maxOutputTokens ?? model.maxOutputTokens,
@@ -195,6 +193,7 @@ function modelToCreateModelInput(model: Model): CreateModelInput {
     modelId: model.modelId,
     name: model.name,
     outputModalities: model.outputModalities,
+    ownedBy: model.ownedBy,
     parameters: model.parameters,
     presetModelId: model.presetModelId,
     pricing: model.pricing,

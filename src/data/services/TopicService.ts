@@ -26,7 +26,6 @@ import type { DbService } from '../db/DbService';
 import { messageTable, pinTable, topicTable } from '../db/schema';
 import type { PinService } from './PinService';
 import type { TagService } from './TagService';
-import { encodeCursor, splitCursor } from './utils/cursor';
 import { applyMoves, insertWithOrderKey } from './utils/orderKey';
 import { timestampToISO } from './utils/rowMappers';
 
@@ -93,6 +92,7 @@ export class TopicService {
           name: dto.name ?? '',
         },
         {
+          pkColumn: topicTable.id,
           scope: topicScopePredicate(groupId),
         },
       );
@@ -294,7 +294,6 @@ export class TopicService {
 
       await applyMoves(tx, topicTable, [{ anchor, id }], {
         pkColumn: topicTable.id,
-        resourceName: 'Topic',
         scope: topicScopePredicate(target.groupId),
       });
     });
@@ -330,7 +329,6 @@ export class TopicService {
       const [scopeValue] = [...scopeValues];
       await applyMoves(tx, topicTable, moves, {
         pkColumn: topicTable.id,
-        resourceName: 'Topic',
         scope: topicScopePredicate(scopeValue ?? null),
       });
     });
@@ -397,13 +395,25 @@ function decodeTopicCursor(raw: string): TopicCursor {
 }
 
 function encodePinCursor(orderKey: string): string {
-  return encodeCursor('pin', orderKey);
+  return `pin:${orderKey}`;
 }
 
 function encodeTopicCursor(updatedAt: number, id: string): string {
-  return `topic:${encodeCursor(String(updatedAt), id)}`;
+  return `topic:${updatedAt}:${id}`;
 }
 
 function encodeTopicSectionStart(): string {
   return 'topic:';
+}
+
+function splitCursor(raw: string): { id: string; key: string } | null {
+  const index = raw.indexOf(':');
+  if (index < 0) {
+    return null;
+  }
+
+  return {
+    id: raw.slice(index + 1),
+    key: raw.slice(0, index),
+  };
 }

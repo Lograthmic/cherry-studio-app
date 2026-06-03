@@ -99,7 +99,7 @@ export class PromptService {
           content: dto.content,
           title: dto.title,
         },
-        {},
+        { pkColumn: promptTable.id },
       ),
     )) as PromptRow;
 
@@ -135,7 +135,6 @@ export class PromptService {
       await this.assertPromptsExistTx(tx, [id, ...collectAnchorIds([anchor])]);
       await applyMoves(tx, promptTable, [{ anchor, id }], {
         pkColumn: promptTable.id,
-        resourceName: 'Prompt',
       });
     });
   }
@@ -152,7 +151,6 @@ export class PromptService {
       ]);
       await applyMoves(tx, promptTable, moves, {
         pkColumn: promptTable.id,
-        resourceName: 'Prompt',
       });
     });
   }
