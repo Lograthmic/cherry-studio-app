@@ -13,12 +13,15 @@ import {
 
 type ProviderModelListProps = {
   header?: ReactElement;
+  isAddDisabled?: boolean;
+  isAddLoading?: boolean;
   isCheckDisabled?: boolean;
   isCheckLoading?: boolean;
   isLoading: boolean;
   isPullDisabled?: boolean;
   isPullLoading?: boolean;
   models: Model[];
+  onAddPress?: () => void;
   onCheckPress?: () => void;
   onPullPress?: () => void;
   provider: Provider | undefined;
@@ -26,12 +29,15 @@ type ProviderModelListProps = {
 
 export function ProviderModelList({
   header,
+  isAddDisabled = false,
+  isAddLoading = false,
   isCheckDisabled = false,
   isCheckLoading = false,
   isLoading,
   isPullDisabled = false,
   isPullLoading = false,
   models,
+  onAddPress,
   onCheckPress,
   onPullPress,
   provider,
@@ -57,10 +63,13 @@ export function ProviderModelList({
           {header}
           <View className="gap-3">
             <ProviderModelToolbar
+              isAddDisabled={isAddDisabled}
+              isAddLoading={isAddLoading}
               isCheckDisabled={isCheckDisabled}
               isCheckLoading={isCheckLoading}
               isPullDisabled={isPullDisabled}
               isPullLoading={isPullLoading}
+              onAddPress={onAddPress}
               onCheckPress={onCheckPress}
               onPullPress={onPullPress}
             />

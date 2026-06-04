@@ -1,8 +1,10 @@
 export { ProviderModelAccordion } from './components/ProviderModelAccordion';
+export { ProviderModelAddSheet } from './components/ProviderModelAddSheet';
 export { ProviderModelCheckSheet } from './components/ProviderModelCheckSheet';
 export { ProviderModelPullSheet } from './components/ProviderModelPullSheet';
 export { ProviderModelSearchField } from './components/ProviderModelSearchField';
 export { ProviderModelToolbar } from './components/ProviderModelToolbar';
+export { useProviderModelAdd } from './hooks/useProviderModelAdd';
 export { useProviderModelCheck } from './hooks/useProviderModelCheck';
 export { useProviderModelGroups } from './hooks/useProviderModelGroups';
 export { useProviderModelPull } from './hooks/useProviderModelPull';

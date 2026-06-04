@@ -6,19 +6,25 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 
 type ProviderModelToolbarProps = {
+  isAddDisabled?: boolean;
+  isAddLoading?: boolean;
   isCheckDisabled?: boolean;
   isCheckLoading?: boolean;
   isPullDisabled?: boolean;
   isPullLoading?: boolean;
+  onAddPress?: () => void;
   onCheckPress?: () => void;
   onPullPress?: () => void;
 };
 
 export function ProviderModelToolbar({
+  isAddDisabled = false,
+  isAddLoading = false,
   isCheckDisabled = false,
   isCheckLoading = false,
   isPullDisabled = false,
   isPullLoading = false,
+  onAddPress,
   onCheckPress,
   onPullPress,
 }: ProviderModelToolbarProps) {
@@ -70,8 +76,22 @@ export function ProviderModelToolbar({
         />
         <ModelActionButton
           accessibilityLabel={t('settings.provider.models.add')}
-          icon={<PlusIcon className="size-4 text-default-foreground" strokeWidth={2} />}
+          icon={
+            isAddLoading ? (
+              <Spinner color={foregroundColor} size="sm" />
+            ) : (
+              <PlusIcon
+                className={
+                  isAddDisabled ? 'size-4 text-default-foreground' : 'size-4 text-foreground'
+                }
+                strokeWidth={2}
+              />
+            )
+          }
+          isDisabled={isAddDisabled}
+          isLoading={isAddLoading}
           label={t('settings.provider.models.add')}
+          onPress={onAddPress}
         />
       </View>
     </View>
@@ -96,7 +116,7 @@ function ModelIconActionButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ busy: isLoading, disabled: isDisabled }}
-      className="size-7 items-center justify-center active:opacity-60 disabled:opacity-40"
+      className="size-7 items-center justify-center rounded-xl bg-settings-grouped-surface active:opacity-60 disabled:opacity-40"
       disabled={isDisabled}
       hitSlop={6}
       onPress={onPress}
