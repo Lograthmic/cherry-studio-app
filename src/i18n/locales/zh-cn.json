@@ -6,6 +6,7 @@
   "chat.actions.createImage": "创建图片",
   "chat.actions.think": "思考深度",
   "chat.actions.webSearch": "网络搜索",
+  "chat.assistant.edit": "编辑助手",
   "chat.attachments.image": "图片附件",
   "chat.default.description": "你好，我是默认助手。你可以立刻开始跟我聊天",
   "chat.default.name": "默认助手",

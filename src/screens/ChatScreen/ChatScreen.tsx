@@ -13,11 +13,12 @@ export function ChatScreen() {
   const messageWindow = useMessages(topicId, { enabled: Boolean(topicId) });
   const isTopicAvailable =
     topicId !== undefined && !topic.isError && (topic.isLoading || Boolean(topic.data));
+  const topicName = topic.data?.name;
 
   if (isTopicAvailable) {
     return (
       <>
-        <MainHeader />
+        <MainHeader topicName={topicName} />
         <View className="flex-1">
           <ChatWorkspace messageWindow={messageWindow} renderGateKey={topicId} />
         </View>
@@ -27,7 +28,7 @@ export function ChatScreen() {
 
   return (
     <>
-      <MainHeader />
+      <MainHeader topicName={topicName} />
       <NewTopicScreen />
     </>
   );
