@@ -8,12 +8,12 @@ import type { TextInputEndEditingEvent } from 'react-native';
 import { Text, View } from 'react-native';
 
 import type { EndpointType } from '@/data/types/model';
+import { SettingsIconButton } from '@/screens/SettingsScreen/components/SettingsIconButton';
 import {
   getEndpointLabel,
   isConfigurableEndpointType,
 } from '../utils/providerApiServiceEndpointRules';
 import { providerApiServiceStyles } from '../utils/providerApiServiceStyles';
-import { ProviderApiServiceIconButton } from './ProviderApiServiceIconButton';
 
 export function ProviderApiServiceEndpointField({
   baseUrl,
@@ -39,12 +39,12 @@ export function ProviderApiServiceEndpointField({
           value={baseUrl}
           variant="secondary"
         />
-        <ProviderApiServiceIconButton
+        <SettingsIconButton
           accessibilityLabel={t('settings.provider.apiService.manageEndpoints')}
           onPress={onManagePress}
         >
           <SettingsIcon className="size-5 text-default-foreground" strokeWidth={2} />
-        </ProviderApiServiceIconButton>
+        </SettingsIconButton>
       </View>
     </View>
   );
@@ -102,13 +102,13 @@ export function ProviderApiServiceEndpointForm({
                     onCommit={(value) => onBaseUrlCommit(endpoint, value)}
                   />
                   {!isPrimaryEndpoint ? (
-                    <ProviderApiServiceIconButton
+                    <SettingsIconButton
                       accessibilityLabel={t('settings.provider.apiService.removeEndpoint')}
                       isDisabled={pendingEndpoint === endpoint}
                       onPress={() => onRemoveEndpoint(endpoint)}
                     >
                       <Trash2Icon className="size-5 text-default-foreground" strokeWidth={2} />
-                    </ProviderApiServiceIconButton>
+                    </SettingsIconButton>
                   ) : null}
                 </View>
                 {endpointErrors?.[endpoint] ? (

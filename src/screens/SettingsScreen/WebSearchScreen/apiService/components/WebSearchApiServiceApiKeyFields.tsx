@@ -1,25 +1,35 @@
 import * as Clipboard from 'expo-clipboard';
 import { Button } from 'heroui-native/button';
 import { Input } from 'heroui-native/input';
-import { cn } from 'heroui-native/utils';
-import { CopyIcon, EyeIcon, EyeOffIcon, KeyRoundIcon, PlusIcon, Trash2Icon } from 'lucide-uniwind';
+import {
+  ActivityIcon,
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  KeyRoundIcon,
+  PlusIcon,
+  Trash2Icon,
+} from 'lucide-uniwind';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TextInputEndEditingEvent } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { SettingsIconButton } from '@/screens/SettingsScreen/components/SettingsIconButton';
 import type { WebSearchApiKeyEntry } from '../utils/webSearchApiServiceApiKeys';
 
 export function WebSearchApiServiceApiKeysField({
   apiKeysInput,
   apiKeysVisible,
   onApiKeysInputChange,
+  onCheckPress,
   onManagePress,
   onToggleVisible,
 }: {
   apiKeysInput: string;
   apiKeysVisible: boolean;
   onApiKeysInputChange: (value: string) => void;
+  onCheckPress: () => void;
   onManagePress: () => void;
   onToggleVisible: () => void;
 }) {
@@ -38,28 +48,28 @@ export function WebSearchApiServiceApiKeysField({
           secureTextEntry={!apiKeysVisible}
           value={apiKeysInput}
         />
-        <Button
+        <SettingsIconButton
           accessibilityLabel={
             apiKeysVisible
               ? t('settings.websearch.provider.hideApiKeys')
               : t('settings.websearch.provider.showApiKeys')
           }
-          className="h-10 min-h-0 rounded-xl"
-          isIconOnly
           onPress={onToggleVisible}
-          variant="secondary"
         >
           <ApiKeysVisibilityIcon visible={apiKeysVisible} />
-        </Button>
-        <Button
+        </SettingsIconButton>
+        <SettingsIconButton
           accessibilityLabel={t('settings.websearch.provider.manageApiKeys')}
-          className="h-10 min-h-0 rounded-xl"
-          isIconOnly
           onPress={onManagePress}
-          variant="secondary"
         >
           <KeyRoundIcon className="size-5 text-default-foreground" strokeWidth={2} />
-        </Button>
+        </SettingsIconButton>
+        <SettingsIconButton
+          accessibilityLabel={t('settings.websearch.provider.check')}
+          onPress={onCheckPress}
+        >
+          <ActivityIcon className="size-5 text-default-foreground" strokeWidth={2} />
+        </SettingsIconButton>
       </View>
     </View>
   );
@@ -233,26 +243,20 @@ function ApiKeyRow({
           onCommit={(key) => onCommitKey(apiKey.id, key)}
           value={apiKey.key}
         />
-        <Button
+        <SettingsIconButton
           accessibilityLabel={t('settings.websearch.provider.copyApiKey')}
-          className={cn('h-10 min-h-0 rounded-xl', isPending && 'opacity-40')}
           isDisabled={isPending}
-          isIconOnly
           onPress={() => void Clipboard.setStringAsync(apiKey.key)}
-          variant="secondary"
         >
           <CopyIcon className="size-5 text-default-foreground" strokeWidth={2} />
-        </Button>
-        <Button
+        </SettingsIconButton>
+        <SettingsIconButton
           accessibilityLabel={t('settings.websearch.provider.removeApiKey')}
-          className={cn('h-10 min-h-0 rounded-xl', isPending && 'opacity-40')}
           isDisabled={isPending}
-          isIconOnly
           onPress={() => onRemove(apiKey.id)}
-          variant="secondary"
         >
           <Trash2Icon className="size-5 text-default-foreground" strokeWidth={2} />
-        </Button>
+        </SettingsIconButton>
       </View>
       {errorMessage ? <Text className="text-danger text-xs">{errorMessage}</Text> : null}
     </View>

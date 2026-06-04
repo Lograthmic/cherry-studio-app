@@ -2,22 +2,19 @@ import { cn } from 'heroui-native/utils';
 import type { ReactNode } from 'react';
 import { Pressable, type PressableProps } from 'react-native';
 
-type ProviderApiServiceIconButtonProps = Pick<
-  PressableProps,
-  'accessibilityLabel' | 'onPress'
-> & {
+type SettingsIconButtonProps = Pick<PressableProps, 'accessibilityLabel' | 'onPress'> & {
   children: ReactNode;
   className?: string;
   isDisabled?: boolean;
 };
 
-export function ProviderApiServiceIconButton({
+export function SettingsIconButton({
   accessibilityLabel,
   children,
   className,
   isDisabled = false,
   onPress,
-}: ProviderApiServiceIconButtonProps) {
+}: SettingsIconButtonProps) {
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}

@@ -9,8 +9,8 @@ import type { TextInputEndEditingEvent } from 'react-native';
 import { Text, View } from 'react-native';
 
 import type { ApiKeyEntry } from '@/data/types/provider';
+import { SettingsIconButton } from '@/screens/SettingsScreen/components/SettingsIconButton';
 import { providerApiServiceStyles } from '../utils/providerApiServiceStyles';
-import { ProviderApiServiceIconButton } from './ProviderApiServiceIconButton';
 
 export function ProviderApiServiceApiKeysField({
   apiKeysInput,
@@ -40,7 +40,7 @@ export function ProviderApiServiceApiKeysField({
           secureTextEntry={!apiKeysVisible}
           value={apiKeysInput}
         />
-        <ProviderApiServiceIconButton
+        <SettingsIconButton
           accessibilityLabel={
             apiKeysVisible
               ? t('settings.provider.apiService.hideApiKeys')
@@ -49,13 +49,13 @@ export function ProviderApiServiceApiKeysField({
           onPress={onToggleVisible}
         >
           <ApiKeysVisibilityIcon visible={apiKeysVisible} />
-        </ProviderApiServiceIconButton>
-        <ProviderApiServiceIconButton
+        </SettingsIconButton>
+        <SettingsIconButton
           accessibilityLabel={t('settings.provider.apiService.manageApiKeys')}
           onPress={onManagePress}
         >
           <KeyRoundIcon className="size-5 text-default-foreground" strokeWidth={2} />
-        </ProviderApiServiceIconButton>
+        </SettingsIconButton>
       </View>
     </View>
   );
@@ -242,20 +242,20 @@ function ApiKeyRow({
           onChangeText={(key) => onKeyChange(apiKey.id, key)}
           onCommit={(key) => onCommitKey(apiKey.id, key)}
         />
-        <ProviderApiServiceIconButton
+        <SettingsIconButton
           accessibilityLabel={t('settings.provider.apiService.copyApiKey')}
           isDisabled={isPending}
           onPress={() => void Clipboard.setStringAsync(apiKey.key)}
         >
           <CopyIcon className="size-5 text-default-foreground" strokeWidth={2} />
-        </ProviderApiServiceIconButton>
-        <ProviderApiServiceIconButton
+        </SettingsIconButton>
+        <SettingsIconButton
           accessibilityLabel={t('settings.provider.apiService.removeApiKey')}
           isDisabled={isPending}
           onPress={() => onRemove(apiKey.id)}
         >
           <Trash2Icon className="size-5 text-default-foreground" strokeWidth={2} />
-        </ProviderApiServiceIconButton>
+        </SettingsIconButton>
       </View>
       {errorMessage ? <Text className="text-danger text-xs">{errorMessage}</Text> : null}
     </View>

@@ -1,17 +1,21 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Keyboard, Pressable, Text, View } from 'react-native';
+import { useWebSearchApiManagementContext } from '../../context/WebSearchApiManagementContext';
 import {
   getWebSearchCapabilityTitleKey,
   getWebSearchProviderDescriptionKey,
   normalizeWebSearchApiHost,
   type WebSearchProviderDetailSection,
 } from '../../utils/providerSettings';
-import { useWebSearchApiManagementContext } from '../../context/WebSearchApiManagementContext';
 import {
   buildWebSearchApiKeysInput,
   parseWebSearchApiKeysInput,
 } from '../utils/webSearchApiServiceApiKeys';
 import { WebSearchApiServiceApiKeysField } from './WebSearchApiServiceApiKeyFields';
+import {
+  type WebSearchApiServiceCheckApiKeyOption,
+  WebSearchApiServiceCheckSheet,
+} from './WebSearchApiServiceCheckSheet';
 import { ConfigField, SettingTextInput } from './WebSearchApiServiceFieldPrimitives';
 
 function ZhipuApiKeyShortcutSection() {
@@ -56,12 +60,27 @@ function DescriptionSection() {
 function ApiKeysSection() {
   const {
     actions: { onProviderOverrideChange, openApiKeySettings },
+    meta: { t },
     state: { provider, providerOverride },
   } = useWebSearchApiManagementContext();
   const [apiKeysVisible, setApiKeysVisible] = useState(false);
+  const [isCheckSheetOpen, setIsCheckSheetOpen] = useState(false);
+  const [selectedCheckApiKeyId, setSelectedCheckApiKeyId] = useState<string | null>(null);
   const apiKeysInput = useMemo(
     () => buildWebSearchApiKeysInput(providerOverride?.apiKeys ?? []),
     [providerOverride?.apiKeys],
+  );
+  const checkApiKeyOptions = useMemo<WebSearchApiServiceCheckApiKeyOption[]>(
+    () =>
+      (providerOverride?.apiKeys ?? []).map((apiKey, index) => ({
+        key: apiKey,
+        label: t('settings.websearch.provider.checkApiKeyFallback', {
+          index: index + 1,
+          key: maskWebSearchApiKey(apiKey),
+        }),
+        value: `api-key-${index}`,
+      })),
+    [providerOverride?.apiKeys, t],
   );
 
   const handleApiKeysCommit = useCallback(
@@ -77,16 +96,49 @@ function ApiKeysSection() {
     Keyboard.dismiss();
     setApiKeysVisible((visible) => !visible);
   }, []);
+  const openCheckSheet = useCallback(() => {
+    Keyboard.dismiss();
+    setSelectedCheckApiKeyId((current) =>
+      checkApiKeyOptions.some((option) => option.value === current)
+        ? current
+        : (checkApiKeyOptions[0]?.value ?? null),
+    );
+    setIsCheckSheetOpen(true);
+  }, [checkApiKeyOptions]);
+  const closeCheckSheet = useCallback(() => {
+    setIsCheckSheetOpen(false);
+  }, []);
+  const startCheck = useCallback(() => undefined, []);
 
   return (
-    <WebSearchApiServiceApiKeysField
-      apiKeysInput={apiKeysInput}
-      apiKeysVisible={apiKeysVisible}
-      onApiKeysInputChange={handleApiKeysCommit}
-      onManagePress={openApiKeySettings}
-      onToggleVisible={handleApiKeysVisibilityToggle}
-    />
+    <>
+      <WebSearchApiServiceApiKeysField
+        apiKeysInput={apiKeysInput}
+        apiKeysVisible={apiKeysVisible}
+        onApiKeysInputChange={handleApiKeysCommit}
+        onCheckPress={openCheckSheet}
+        onManagePress={openApiKeySettings}
+        onToggleVisible={handleApiKeysVisibilityToggle}
+      />
+      <WebSearchApiServiceCheckSheet
+        apiKeyOptions={checkApiKeyOptions}
+        isOpen={isCheckSheetOpen}
+        selectedApiKeyId={selectedCheckApiKeyId}
+        onApiKeyChange={setSelectedCheckApiKeyId}
+        onClose={closeCheckSheet}
+        onStart={startCheck}
+      />
+    </>
   );
+}
+
+function maskWebSearchApiKey(apiKey: string): string {
+  const trimmed = apiKey.trim();
+  if (trimmed.length <= 8) {
+    return trimmed;
+  }
+
+  return `${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
 }
 
 function CapabilityApiHostSections() {

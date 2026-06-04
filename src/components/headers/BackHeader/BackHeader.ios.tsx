@@ -1,7 +1,10 @@
 import { Stack, useRouter } from 'expo-router';
+import { ChevronLeftIcon } from 'lucide-uniwind';
+import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { HeaderIconButton } from '../components/HeaderIconButton';
 import type { HeaderToolbarAction } from './BackHeader.types';
 
 export type BackHeaderProps = {
@@ -9,6 +12,25 @@ export type BackHeaderProps = {
   rightActions?: readonly HeaderToolbarAction[];
   title?: string;
 };
+
+function renderHeaderAction(action: HeaderToolbarAction): ReactNode {
+  if (action.hidden || !action.androidIcon) {
+    return null;
+  }
+
+  const Icon = action.androidIcon;
+
+  return (
+    <HeaderIconButton
+      accessibilityLabel={action.accessibilityLabel ?? ''}
+      disabled={action.disabled}
+      key={action.key}
+      onPress={action.onPress}
+    >
+      <Icon className="size-6 text-foreground" strokeWidth={2} />
+    </HeaderIconButton>
+  );
+}
 
 export function BackHeader({ onBack, rightActions, title = '' }: BackHeaderProps) {
   const { t } = useTranslation();
@@ -26,28 +48,18 @@ export function BackHeader({ onBack, rightActions, title = '' }: BackHeaderProps
   const options = useMemo(
     () => ({
       headerBackVisible: false,
+      headerLeft: () => (
+        <HeaderIconButton accessibilityLabel={t('navigation.back')} onPress={goBack}>
+          <ChevronLeftIcon className="size-6 text-foreground" strokeWidth={2} />
+        </HeaderIconButton>
+      ),
+      ...(rightActions && rightActions.length > 0
+        ? { headerRight: () => rightActions.map((action) => renderHeaderAction(action)) }
+        : null),
       title,
     }),
-    [title],
+    [goBack, rightActions, t, title],
   );
 
-  return (
-    <>
-      <Stack.Screen options={options} />
-      <Stack.Toolbar placement="left">
-        <Stack.Toolbar.Button
-          accessibilityLabel={t('navigation.back')}
-          icon="chevron.left"
-          onPress={goBack}
-        />
-      </Stack.Toolbar>
-      {rightActions && rightActions.length > 0 ? (
-        <Stack.Toolbar placement="right">
-          {rightActions.map(({ androidIcon: _androidIcon, key, ...action }) => (
-            <Stack.Toolbar.Button key={key} {...action} />
-          ))}
-        </Stack.Toolbar>
-      ) : null}
-    </>
-  );
+  return <Stack.Screen options={options} />;
 }
