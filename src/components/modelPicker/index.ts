@@ -1,8 +1,12 @@
-export { ModelPickerBottomSheet } from './components/ModelPickerBottomSheet';
+export {
+  ModelPickerBottomSheet,
+  type ModelPickerBottomSheetHandle,
+} from './components/ModelPickerBottomSheet';
 export { ModelPickerIcon } from './components/ModelPickerIcon';
 export { ModelPickerSheetContent } from './components/ModelPickerSheetContent';
 export { useModelPickerData } from './hooks/useModelPickerData';
 export { useModelSettingSelections } from './hooks/useModelSettingSelections';
+export { usePrefetchModelPickerData } from './hooks/usePrefetchModelPickerData';
 export {
   buildModelPickerGroups,
   getAvailableModelPickerFilterTags,
@@ -18,6 +22,7 @@ export {
   type ModelPickerTag,
 } from './utils/modelPickerData';
 export { resolveModelPickerProviderIcon } from './utils/modelPickerIcons';
+export { buildModelPickerListItems, type ModelPickerListItem } from './utils/modelPickerListItems';
 export {
   getNextModelSelection,
   MODEL_SETTING_KIND_TITLE_KEYS,

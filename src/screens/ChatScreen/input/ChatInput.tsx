@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   getNextModelSelection,
   ModelPickerBottomSheet,
+  type ModelPickerBottomSheetHandle,
   type ModelPickerModelItem,
   useModelSettingSelections,
+  usePrefetchModelPickerData,
 } from '@/components/modelPicker';
 import { isUniqueModelId } from '@/data/types/model';
 import { useModelById } from '@/hooks/chat';
@@ -13,17 +15,15 @@ import { ChatInputProvider } from '@/screens/ChatScreen/input/context/ChatInputP
 
 export function ChatInput() {
   const modelSettings = useModelSettingSelections();
-  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
+  usePrefetchModelPickerData();
+  const modelPickerRef = useRef<ModelPickerBottomSheetHandle>(null);
   const selectedModelId = isUniqueModelId(modelSettings.selections.default)
     ? modelSettings.selections.default
     : null;
   const { model: selectedModel } = useModelById(selectedModelId);
   const selectedModelLabel = selectedModel?.name;
   const openModelPicker = useCallback(() => {
-    setIsModelPickerOpen(true);
-  }, []);
-  const closeModelPicker = useCallback(() => {
-    setIsModelPickerOpen(false);
+    modelPickerRef.current?.present();
   }, []);
   const handleModelSelect = useCallback(
     (item: ModelPickerModelItem) => {
@@ -39,9 +39,8 @@ export function ChatInput() {
       <ChatInputSurface modelLabel={selectedModelLabel} onModelPickerPress={openModelPicker} />
       <ChatInputActionSheet />
       <ModelPickerBottomSheet
-        isOpen={isModelPickerOpen}
+        ref={modelPickerRef}
         selectedModelId={selectedModelId}
-        onClose={closeModelPicker}
         onSelect={handleModelSelect}
       />
     </ChatInputProvider>

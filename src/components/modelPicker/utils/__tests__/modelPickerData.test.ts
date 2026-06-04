@@ -13,6 +13,7 @@ import {
   getModelPickerModelItem,
   getPinnedModelIds,
 } from '../modelPickerData';
+import { buildModelPickerListItems } from '../modelPickerListItems';
 
 const fixtureTimestamp = '2026-01-01T00:00:00.000Z';
 
@@ -282,5 +283,25 @@ describe('model picker data helpers', () => {
       'anthropic::claude-3-5-sonnet',
       'deepseek::deepseek-r1',
     ]);
+  });
+
+  test('builds list items up to the visible limit without a trailing empty group', () => {
+    const groups = buildModelPickerGroups({
+      models,
+      pinnedModelIds: [],
+      providers,
+      searchText: '',
+    });
+    const listItems = buildModelPickerListItems(groups, 3);
+
+    expect(listItems.map((item) => item.key)).toEqual([
+      'header:provider:openai',
+      'openai::gpt-4o:provider',
+      'openai::gpt-4o-mini:provider',
+    ]);
+    expect(listItems.at(-1)).toMatchObject({
+      key: 'openai::gpt-4o-mini:provider',
+      type: 'model',
+    });
   });
 });

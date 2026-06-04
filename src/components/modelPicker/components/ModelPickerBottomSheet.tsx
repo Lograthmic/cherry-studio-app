@@ -4,40 +4,40 @@ import {
   BottomSheetView,
 } from '@expo/ui/community/bottom-sheet';
 import { SearchField } from 'heroui-native/search-field';
-import { useCallback, useRef, useState } from 'react';
+import { type Ref, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  type LayoutChangeEvent,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { type LayoutChangeEvent, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import {
-  type ModelPickerModelItem,
-  type ModelPickerTag,
-} from '../utils/modelPickerData';
 import { useModelPickerData } from '../hooks/useModelPickerData';
+import { type ModelPickerModelItem, type ModelPickerTag } from '../utils/modelPickerData';
+import { buildModelPickerListItems } from '../utils/modelPickerListItems';
 import { ModelPickerFilterTagBar } from './ModelPickerFilterTagBar';
 import { ModelPickerSheetContent } from './ModelPickerSheetContent';
 
 const modelPickerSnapPoints = ['85%'];
 const modelPickerSnapPointFraction = 0.85;
 const defaultModelPickerHeaderHeight = 96;
+const initialModelPickerListItemCount = 12;
+const modelPickerListItemBatchSize = 24;
 
 type ModelPickerBottomSheetProps = {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   onSelect: (item: ModelPickerModelItem) => void;
+  ref?: Ref<ModelPickerBottomSheetHandle>;
   selectedModelId: string | null;
+};
+
+export type ModelPickerBottomSheetHandle = {
+  dismiss: () => void;
+  present: () => void;
 };
 
 export function ModelPickerBottomSheet({
   isOpen,
   onClose,
   onSelect,
+  ref,
   selectedModelId,
 }: ModelPickerBottomSheetProps) {
   const { t } = useTranslation();
@@ -47,20 +47,25 @@ export function ModelPickerBottomSheet({
   const [searchText, setSearchText] = useState('');
   const [headerHeight, setHeaderHeight] = useState(0);
   const [selectedTags, setSelectedTags] = useState<ModelPickerTag[]>([]);
+  const [visibleListItemCount, setVisibleListItemCount] = useState(initialModelPickerListItemCount);
   const isSearching = searchText.trim().length > 0;
   const sheetHeight = (windowHeight - insets.top - insets.bottom) * modelPickerSnapPointFraction;
   const modelListHeight = Math.max(
     sheetHeight - (headerHeight || defaultModelPickerHeaderHeight),
     120,
   );
-  const {
-    availableTags,
-    groups,
-    isLoading,
-    isPinActionDisabled,
-    pinnedModelIds,
-    togglePin,
-  } = useModelPickerData({ searchText, selectedTags });
+  const { availableTags, groups, isLoading, isPinActionDisabled, pinnedModelIds, togglePin } =
+    useModelPickerData({ searchText, selectedTags });
+  const totalListItemCount = useMemo(
+    () => groups.reduce((total, group) => total + 1 + group.items.length, 0),
+    [groups],
+  );
+  const listItems = useMemo(
+    () => buildModelPickerListItems(groups, visibleListItemCount),
+    [groups, visibleListItemCount],
+  );
+  const hasMoreListItems = listItems.length < totalListItemCount;
+  const sheetIndex = isOpen === undefined ? -1 : isOpen ? 0 : -1;
 
   const handleSelect = useCallback(
     (item: ModelPickerModelItem) => {
@@ -73,29 +78,53 @@ export function ModelPickerBottomSheet({
     (modelId: ModelPickerModelItem['modelId']) => togglePin(modelId),
     [togglePin],
   );
+  const handleSearchTextChange = useCallback((nextSearchText: string) => {
+    setSearchText(nextSearchText);
+    setVisibleListItemCount(initialModelPickerListItemCount);
+  }, []);
   const handleToggleTag = useCallback((tag: ModelPickerTag) => {
+    setVisibleListItemCount(initialModelPickerListItemCount);
     setSelectedTags((current) =>
-      current.includes(tag) ? current.filter((selectedTag) => selectedTag !== tag) : [...current, tag],
+      current.includes(tag)
+        ? current.filter((selectedTag) => selectedTag !== tag)
+        : [...current, tag],
     );
   }, []);
   const handleClose = useCallback(() => {
     setSearchText('');
     setSelectedTags([]);
-    onClose();
+    setVisibleListItemCount(initialModelPickerListItemCount);
+    onClose?.();
   }, [onClose]);
   const handleHeaderLayout = useCallback((event: LayoutChangeEvent) => {
     const nextHeight = Math.round(event.nativeEvent.layout.height);
-    setHeaderHeight((currentHeight) =>
-      currentHeight === nextHeight ? currentHeight : nextHeight,
-    );
+    setHeaderHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
   }, []);
+  const handleListEndReached = useCallback(() => {
+    setVisibleListItemCount((currentCount) => {
+      if (currentCount >= totalListItemCount) {
+        return currentCount;
+      }
+
+      return Math.min(currentCount + modelPickerListItemBatchSize, totalListItemCount);
+    });
+  }, [totalListItemCount]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      dismiss: () => sheetRef.current?.dismiss(),
+      present: () => sheetRef.current?.present(),
+    }),
+    [],
+  );
 
   return (
     <BottomSheet
       enablePanDownToClose
       enableDynamicSizing={false}
       handleComponent={null}
-      index={isOpen ? 0 : -1}
+      index={sheetIndex}
       ref={sheetRef}
       snapPoints={modelPickerSnapPoints}
       onClose={handleClose}
@@ -103,7 +132,7 @@ export function ModelPickerBottomSheet({
       <BottomSheetView style={styles.sheetContent}>
         <View style={[styles.sheetViewport, { height: sheetHeight }]}>
           <View className="px-4 pt-5" onLayout={handleHeaderLayout}>
-            <SearchField className="w-full" onChange={setSearchText} value={searchText}>
+            <SearchField className="w-full" onChange={handleSearchTextChange} value={searchText}>
               <SearchField.Group className="h-10 rounded-xl bg-settings-grouped-surface">
                 <SearchField.SearchIcon iconProps={{ size: 18 }} />
                 <SearchField.Input
@@ -130,30 +159,21 @@ export function ModelPickerBottomSheet({
               onToggleTag={handleToggleTag}
             />
           </View>
-          <View
-            style={[styles.modelListViewport, { height: modelListHeight }]}
-          >
-            <ScrollView
-              alwaysBounceVertical={false}
-              keyboardDismissMode="on-drag"
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled
-              showsVerticalScrollIndicator={false}
-              style={styles.modelListScrollView}
-            >
-              <ModelPickerSheetContent
-                emptyText={t('settings.provider.models.search.empty')}
-                groups={groups}
-                isLoading={isLoading}
-                isPinActionDisabled={isPinActionDisabled}
-                isSearching={isSearching}
-                loadingText={t('settings.provider.models.loading')}
-                pinnedModelIds={pinnedModelIds}
-                selectedModelId={selectedModelId}
-                onSelect={handleSelect}
-                onTogglePin={handleTogglePin}
-              />
-            </ScrollView>
+          <View style={[styles.modelListViewport, { height: modelListHeight }]}>
+            <ModelPickerSheetContent
+              emptyText={t('settings.provider.models.search.empty')}
+              isLoading={isLoading}
+              isPinActionDisabled={isPinActionDisabled}
+              isSearching={isSearching}
+              hasMoreItems={hasMoreListItems}
+              listItems={listItems}
+              loadingText={t('settings.provider.models.loading')}
+              pinnedModelIds={pinnedModelIds}
+              selectedModelId={selectedModelId}
+              onEndReached={handleListEndReached}
+              onSelect={handleSelect}
+              onTogglePin={handleTogglePin}
+            />
           </View>
         </View>
       </BottomSheetView>
@@ -165,9 +185,6 @@ const styles = StyleSheet.create({
   modelListViewport: {
     flex: 1,
     minHeight: 0,
-  },
-  modelListScrollView: {
-    flex: 1,
   },
   sheetContent: {
     flex: 1,

@@ -1,4 +1,4 @@
-export const chatInputMinTextAreaHeight = 44;
+export const chatInputMinTextAreaHeight = 52;
 export const chatInputMaxTextAreaHeight = 132;
 export const chatInputBottomToolbarHeight = 44;
 export const chatInputMinComposerHeight = chatInputMinTextAreaHeight + chatInputBottomToolbarHeight;

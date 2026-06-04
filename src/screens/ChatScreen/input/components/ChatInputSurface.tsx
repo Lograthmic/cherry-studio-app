@@ -1,7 +1,7 @@
 import ExpoQuickLook from '@magrinj/expo-quick-look';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, View } from 'react-native';
+import { Keyboard, Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { loggerService } from '@/core/logger/loggerService';
 import {
@@ -18,6 +18,7 @@ import { ChatInputVoiceErrorDialog } from '@/screens/ChatScreen/input/components
 import { ChatInputVoiceRecordingSurface } from '@/screens/ChatScreen/input/components/ChatInputVoiceRecordingSurface';
 import {
   useChatInputActions,
+  useChatInputMeta,
   useChatInputState,
 } from '@/screens/ChatScreen/input/context/ChatInputProvider';
 import { useChatInputVoiceInput } from '@/screens/ChatScreen/input/hooks/useChatInputVoiceInput';
@@ -40,8 +41,11 @@ type ChatInputSurfaceProps = {
 };
 
 export function ChatInputSurface({ modelLabel, onModelPickerPress }: ChatInputSurfaceProps) {
-  const { clearReasoningEffort, clearSelectedTool, removeAttachment } = useChatInputActions();
-  const { attachments, selectedTool, shouldShowReasoningEffortTag } = useChatInputState();
+  const { clearReasoningEffort, clearSelectedTool, removeAttachment, setInputFocused } =
+    useChatInputActions();
+  const { inputRef } = useChatInputMeta();
+  const { attachments, isInputFocused, selectedTool, shouldShowReasoningEffortTag } =
+    useChatInputState();
   const voiceInput = useChatInputVoiceInput();
   const isVoiceBusy =
     voiceInput.status === 'requesting-permission' || voiceInput.status === 'transcribing';
@@ -53,6 +57,15 @@ export function ChatInputSurface({ modelLabel, onModelPickerPress }: ChatInputSu
       logger.warn('Failed to preview attachment', error instanceof Error ? error : null);
     });
   }, []);
+  const handleModelPickerPress = useCallback(() => {
+    if (isInputFocused) {
+      inputRef.current?.blur();
+      Keyboard.dismiss();
+      setInputFocused(false);
+    }
+
+    onModelPickerPress();
+  }, [inputRef, isInputFocused, onModelPickerPress, setInputFocused]);
 
   return (
     <>
@@ -92,7 +105,7 @@ export function ChatInputSurface({ modelLabel, onModelPickerPress }: ChatInputSu
                 style={inputBottomToolbarStyle}
               >
                 <ChatInputAddButton />
-                <ModelPickerPill label={modelLabel} onPress={onModelPickerPress} />
+                <ModelPickerPill label={modelLabel} onPress={handleModelPickerPress} />
               </View>
               <ChatInputPrimaryActionButton
                 isVoiceBusy={isVoiceBusy}

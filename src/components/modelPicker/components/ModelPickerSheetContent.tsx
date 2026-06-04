@@ -1,41 +1,98 @@
+import { LegendList, type LegendListRenderItemProps } from '@legendapp/list/react-native';
 import { useThemeColor } from 'heroui-native/hooks';
 import { cn } from 'heroui-native/utils';
 import { Pin as NativePinIcon } from 'lucide-react-native';
-import { useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ModelPickerGroup, ModelPickerModelItem } from '../utils/modelPickerData';
 import { getModelPickerTags } from '../utils/modelPickerData';
+import type { ModelPickerListItem } from '../utils/modelPickerListItems';
 import { ModelPickerIcon } from './ModelPickerIcon';
 import { ModelPickerTagChip } from './ModelPickerTagChip';
 
+const modelPickerEstimatedItemSize = 64;
+
 type ModelPickerSheetContentProps = {
   emptyText?: string;
-  groups: readonly ModelPickerGroup[];
+  hasMoreItems?: boolean;
   isLoading?: boolean;
   isPinActionDisabled?: boolean;
   isSearching: boolean;
+  listItems: readonly ModelPickerListItem[];
   loadingText?: string;
+  onEndReached?: () => void;
   onSelect: (item: ModelPickerModelItem) => void;
   onTogglePin: (modelId: ModelPickerModelItem['modelId']) => Promise<void> | void;
   pinnedModelIds: readonly string[];
   selectedModelId: string | null;
 };
 
+type ModelPickerSheetContentExtraData = {
+  isPinActionDisabled: boolean;
+  pinnedModelIdSet: ReadonlySet<string>;
+  selectedModelId: string | null;
+};
+
 export function ModelPickerSheetContent({
   emptyText,
-  groups,
+  hasMoreItems = false,
   isLoading = false,
   isPinActionDisabled = false,
+  listItems,
   loadingText,
+  onEndReached,
   onSelect,
   onTogglePin,
   pinnedModelIds,
   selectedModelId,
 }: ModelPickerSheetContentProps) {
-  const { t } = useTranslation();
+  const pinnedModelIdSet = useMemo(() => new Set(pinnedModelIds), [pinnedModelIds]);
+  const listExtraData = useMemo<ModelPickerSheetContentExtraData>(
+    () => ({
+      isPinActionDisabled,
+      pinnedModelIdSet,
+      selectedModelId,
+    }),
+    [isPinActionDisabled, pinnedModelIdSet, selectedModelId],
+  );
+  const renderItem = useCallback(
+    ({ extraData, item }: LegendListRenderItemProps<ModelPickerListItem>) => {
+      if (item.type === 'groupHeader') {
+        return (
+          <ModelPickerGroupHeader
+            count={item.count}
+            groupKind={item.groupKind}
+            isFirstGroup={item.isFirstGroup}
+            title={item.title}
+          />
+        );
+      }
 
-  if (groups.length === 0) {
+      return (
+        <ModelPickerRow
+          isPinned={extraData.pinnedModelIdSet.has(item.item.modelId)}
+          isPinActionDisabled={extraData.isPinActionDisabled}
+          isSelected={item.item.modelId === extraData.selectedModelId}
+          item={item.item}
+          onSelect={onSelect}
+          onTogglePin={onTogglePin}
+        />
+      );
+    },
+    [onSelect, onTogglePin],
+  );
+  const keyExtractor = useCallback((item: ModelPickerListItem) => item.key, []);
+  const getItemType = useCallback((item: ModelPickerListItem) => item.type, []);
+  const handleEndReached = useCallback(() => {
+    if (!hasMoreItems) {
+      return;
+    }
+
+    onEndReached?.();
+  }, [hasMoreItems, onEndReached]);
+
+  if (listItems.length === 0) {
     return (
       <View className="px-4 pb-5 pt-3">
         <View className="min-h-12 items-center justify-center rounded-xl bg-settings-grouped-surface px-4 py-4">
@@ -48,37 +105,54 @@ export function ModelPickerSheetContent({
   }
 
   return (
-    <View className="gap-3 px-4 pb-5 pt-3">
-      {groups.map((group) => (
-        <View className="gap-1" key={group.key}>
-          <View className="flex-row items-center gap-2 px-1">
-            <Text className="font-medium text-default-foreground text-sm">
-              {group.groupKind === 'pinned' ? t(group.title) : group.title}
-            </Text>
-            {group.groupKind === 'pinned' ? (
-              <Text className="text-default-foreground text-sm">{group.items.length}</Text>
-            ) : null}
-          </View>
-          <View className="overflow-hidden rounded-xl">
-            {group.items.map((item) => (
-              <ModelPickerRow
-                isPinned={pinnedModelIds.includes(item.modelId)}
-                isPinActionDisabled={isPinActionDisabled}
-                isSelected={item.modelId === selectedModelId}
-                item={item}
-                key={item.key}
-                onSelect={onSelect}
-                onTogglePin={onTogglePin}
-              />
-            ))}
-          </View>
-        </View>
-      ))}
+    <LegendList
+      contentContainerStyle={styles.listContentContainer}
+      data={listItems}
+      drawDistance={320}
+      estimatedItemSize={modelPickerEstimatedItemSize}
+      extraData={listExtraData}
+      getItemType={getItemType}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      keyExtractor={keyExtractor}
+      maintainVisibleContentPosition={false}
+      nestedScrollEnabled
+      onEndReached={handleEndReached}
+      onEndReachedThreshold={0.15}
+      recycleItems
+      renderItem={renderItem}
+      showsVerticalScrollIndicator={false}
+      style={styles.list}
+    />
+  );
+}
+
+function ModelPickerGroupHeader({
+  count,
+  groupKind,
+  isFirstGroup,
+  title,
+}: {
+  count: number;
+  groupKind: ModelPickerGroup['groupKind'];
+  isFirstGroup: boolean;
+  title: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <View className={cn('mx-4 flex-row items-center gap-2 px-1 pb-1', !isFirstGroup && 'mt-3')}>
+      <Text className="font-medium text-default-foreground text-sm">
+        {groupKind === 'pinned' ? t(title) : title}
+      </Text>
+      {groupKind === 'pinned' ? (
+        <Text className="text-default-foreground text-sm">{count}</Text>
+      ) : null}
     </View>
   );
 }
 
-function ModelPickerRow({
+const ModelPickerRow = memo(function ModelPickerRow({
   isPinned,
   isPinActionDisabled,
   isSelected,
@@ -97,6 +171,16 @@ function ModelPickerRow({
   const defaultForegroundColor = useThemeColor('default-foreground');
   const pinColor = defaultForegroundColor;
   const tags = useMemo(() => getModelPickerTags(item.model), [item.model]);
+  const handleSelect = useCallback(() => {
+    onSelect(item);
+  }, [item, onSelect]);
+  const handleTogglePin = useCallback(
+    (event: { stopPropagation: () => void }) => {
+      event.stopPropagation();
+      void onTogglePin(item.modelId);
+    },
+    [item.modelId, onTogglePin],
+  );
 
   return (
     <Pressable
@@ -104,10 +188,10 @@ function ModelPickerRow({
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
       className={cn(
-        'flex-row items-center gap-3 px-3 py-2 active:opacity-60',
+        'mx-4 flex-row items-center gap-3 rounded-xl px-3 py-2 active:opacity-60',
         isSelected ? 'bg-settings-grouped-surface' : 'bg-transparent',
       )}
-      onPress={() => onSelect(item)}
+      onPress={handleSelect}
     >
       <ModelPickerIcon item={item} />
       <View className="min-w-0 flex-1 gap-1">
@@ -134,10 +218,7 @@ function ModelPickerRow({
         className="size-8 items-center justify-center rounded-xl active:bg-surface-secondary active:opacity-70 disabled:opacity-40"
         disabled={isPinActionDisabled}
         hitSlop={6}
-        onPress={(event) => {
-          event.stopPropagation();
-          void onTogglePin(item.modelId);
-        }}
+        onPress={handleTogglePin}
       >
         <View className={isPinned ? 'rotate-45' : undefined}>
           <NativePinIcon color={pinColor} height={16} strokeWidth={2} width={16} />
@@ -145,4 +226,14 @@ function ModelPickerRow({
       </Pressable>
     </Pressable>
   );
-}
+});
+
+const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+  },
+  listContentContainer: {
+    paddingBottom: 20,
+    paddingTop: 12,
+  },
+});
