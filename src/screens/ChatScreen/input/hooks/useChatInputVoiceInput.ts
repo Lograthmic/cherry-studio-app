@@ -17,7 +17,7 @@ import {
   type VoiceInputError,
   type VoiceInputStatus,
   voiceInputService,
-} from '@/service/chat/voice';
+} from '@/services/chat/voice';
 
 const voiceInputVolumeSampleLimit = 16;
 const logger = loggerService.withContext('ChatInputVoiceInput');

@@ -2,7 +2,7 @@ import { Button } from 'heroui-native/button';
 import { Dialog } from 'heroui-native/dialog';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
-import type { VoiceInputError } from '@/service/chat/voice';
+import type { VoiceInputError } from '@/services/chat/voice';
 
 type ChatInputVoiceErrorDialogProps = {
   error: VoiceInputError | null;
