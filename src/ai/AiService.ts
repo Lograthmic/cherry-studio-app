@@ -6,10 +6,11 @@ import { MODEL_CAPABILITY } from '@cherrystudio/provider-registry';
 import { type LanguageModelUsage, type ModelMessage, type UIMessageChunk } from 'ai';
 import type { AssistantService } from '@/data/services/AssistantService';
 import type { ModelService } from '@/data/services/ModelService';
+import type { PreferenceService } from '@/data/services/PreferenceService';
 import type { ProviderService } from '@/data/services/ProviderService';
 import type { Assistant } from '@/data/types/assistant';
-import type { Model } from '@/data/types/model';
-import { parseUniqueModelId } from '@/data/types/model';
+import type { Model, UniqueModelId } from '@/data/types/model';
+import { isUniqueModelId, parseUniqueModelId } from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 
 import { resolveUIMessageFileUrls } from './messages/messageConverter';
@@ -61,6 +62,7 @@ export interface AiImageResult {
 export interface AiServiceDependencies {
   assistant: AssistantService;
   model: ModelService;
+  preference: PreferenceService;
   provider: ProviderService;
 }
 
@@ -334,31 +336,46 @@ export class AiService {
     return params;
   }
 
-  /** Priority: explicit `uniqueModelId` > `assistant.modelId`. */
+  /**
+   * Priority: explicit `uniqueModelId` > `assistant.modelId` > runtime default model.
+   * Assistant-less topics do not persist `DEFAULT_ASSISTANT_ID`; they resolve
+   * `chat.default_model_id` at send time, matching desktop.
+   */
   private async getProviderAndModel(request: AiBaseRequest & { chatId?: string }) {
     let assistant: Assistant | undefined;
     if (request.assistantId) {
-      assistant = await this.services.assistant.getById(request.assistantId).catch(() => undefined);
+      assistant = await this.services.assistant.getById(request.assistantId);
     }
 
-    let providerId: string | undefined;
-    let modelId: string | undefined;
+    let uniqueModelId: UniqueModelId | null | undefined;
     if (request.uniqueModelId) {
-      const parsed = parseUniqueModelId(request.uniqueModelId);
-      providerId = parsed.providerId;
-      modelId = parsed.modelId;
-    } else if (assistant?.modelId) {
-      const parsed = parseUniqueModelId(assistant.modelId);
-      providerId = parsed.providerId;
-      modelId = parsed.modelId;
+      uniqueModelId = request.uniqueModelId;
+    } else if (request.assistantId) {
+      if (!assistant?.modelId) {
+        throw new Error(`Assistant ${request.assistantId} has no model configured`);
+      }
+      uniqueModelId = assistant.modelId;
+    } else {
+      const defaultModelId = await this.services.preference.get('chat.default_model_id');
+      if (!defaultModelId) {
+        uniqueModelId = null;
+      } else if (!isUniqueModelId(defaultModelId)) {
+        throw new Error(
+          `Invalid default model configured for assistant-less topic: ${defaultModelId}`,
+        );
+      } else {
+        uniqueModelId = defaultModelId;
+      }
     }
-    if (!providerId)
-      throw new Error('Cannot resolve providerId: not in request and assistant has no model');
-    if (!modelId)
-      throw new Error('Cannot resolve modelId: not in request and assistant has no model');
+
+    if (!uniqueModelId) {
+      throw new Error('No default model configured for assistant-less topic');
+    }
+
+    const { providerId, modelId } = parseUniqueModelId(uniqueModelId);
 
     const provider = await this.services.provider.getByProviderId(providerId);
-    const model = await this.services.model.getById(`${providerId}::${modelId}`);
+    const model = await this.services.model.getById(uniqueModelId);
     if (!model) {
       throw new Error(`Cannot resolve model: ${providerId}::${modelId}`);
     }

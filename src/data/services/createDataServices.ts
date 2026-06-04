@@ -27,7 +27,7 @@ export function createDataServices(dbService: DbService) {
   const topic = new TopicService(dbService, pin, tag);
   const message = new MessageService(dbService, topic);
   const webSearch = new WebSearchService(preference);
-  const ai = new AiService({ assistant, model, provider });
+  const ai = new AiService({ assistant, model, preference, provider });
 
   return {
     ai,

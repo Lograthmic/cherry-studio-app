@@ -1,8 +1,8 @@
 import { embedMany as aiCoreEmbedMany } from '@cherrystudio/ai-core';
 import { ENDPOINT_TYPE, MODEL_CAPABILITY } from '@cherrystudio/provider-registry';
 import { AiService, type AiServiceDependencies } from '@/ai/AiService';
-import { DEFAULT_ASSISTANT_SETTINGS, type Assistant } from '@/data/types/assistant';
-import { createUniqueModelId, type Model } from '@/data/types/model';
+import { type Assistant, DEFAULT_ASSISTANT_SETTINGS } from '@/data/types/assistant';
+import { createUniqueModelId, type Model, type UniqueModelId } from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 
 const mockGenerate = jest.fn(async () => ({ text: 'ok', usage: undefined }));
@@ -118,23 +118,110 @@ describe('AiService.checkModel', () => {
     );
     expect(mockGenerate).toHaveBeenCalledWith({ prompt: 'hi' }, expect.any(AbortSignal));
   });
+
+  it('uses the runtime default model for assistant-less requests', async () => {
+    const defaultModel = createModel('gpt-4o');
+    const service = new AiService(
+      createServices({
+        defaultModelId: defaultModel.id,
+        model: defaultModel,
+      }),
+    );
+
+    await service.checkModel({
+      requestOptions: { maxRetries: 1 },
+      timeout: 1000,
+    });
+
+    expect(mockAgentConstructor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: defaultModel.modelId,
+      }),
+    );
+  });
+
+  it('fails assistant-less requests when no default model is configured', async () => {
+    const model = createModel('gpt-4o');
+    const service = new AiService(createServices({ defaultModelId: null, model }));
+
+    await expect(
+      service.checkModel({
+        timeout: 1000,
+      }),
+    ).rejects.toThrow('No default model configured for assistant-less topic');
+  });
+
+  it('does not fall back to the runtime default model when a persisted assistant has no model', async () => {
+    const defaultModel = createModel('gpt-4o');
+    const assistant = createAssistant(null);
+    const service = new AiService(
+      createServices({
+        assistant,
+        defaultModelId: defaultModel.id,
+        model: defaultModel,
+      }),
+    );
+
+    await expect(
+      service.checkModel({
+        assistantId: assistant.id,
+        timeout: 1000,
+      }),
+    ).rejects.toThrow(`Assistant ${assistant.id} has no model configured`);
+  });
+
+  it('prefers explicit uniqueModelId over assistant and runtime default models', async () => {
+    const explicitModel = createModel('gpt-4o');
+    const assistantModel = createModel('claude-sonnet');
+    const defaultModel = createModel('gemini-pro');
+    const assistant = createAssistant(assistantModel.id);
+    const service = new AiService(
+      createServices({
+        assistant,
+        defaultModelId: defaultModel.id,
+        models: [explicitModel, assistantModel, defaultModel],
+      }),
+    );
+
+    await service.checkModel({
+      assistantId: assistant.id,
+      timeout: 1000,
+      uniqueModelId: explicitModel.id,
+    });
+
+    expect(mockAgentConstructor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: explicitModel.modelId,
+      }),
+    );
+  });
 });
 
 function createServices({
   assistant,
+  defaultModelId,
   model,
+  models,
   provider = createProvider(),
 }: {
   assistant?: Assistant;
-  model: Model;
+  defaultModelId?: UniqueModelId | null;
+  model?: Model;
+  models?: Model[];
   provider?: Provider;
 }) {
+  const modelList = models ?? (model ? [model] : []);
+  const modelsById = new Map(modelList.map((item) => [item.id, item]));
+
   return {
     assistant: {
       getById: jest.fn(async () => assistant),
     },
     model: {
-      getById: jest.fn(async () => model),
+      getById: jest.fn(async (id: UniqueModelId) => modelsById.get(id)),
+    },
+    preference: {
+      get: jest.fn(async () => defaultModelId ?? null),
     },
     provider: {
       getAuthConfig: jest.fn(async () => null),
@@ -188,7 +275,7 @@ function createModel(modelId: string, overrides: Partial<Model> = {}): Model {
   };
 }
 
-function createAssistant(modelId: Model['id']): Assistant {
+function createAssistant(modelId: Model['id'] | null): Assistant {
   return {
     createdAt: '2026-01-01T00:00:00.000Z',
     description: '',
