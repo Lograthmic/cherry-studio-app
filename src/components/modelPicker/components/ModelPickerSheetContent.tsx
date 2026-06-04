@@ -120,11 +120,6 @@ function ModelPickerRow({
               | {item.provider.name}
             </Text>
           ) : null}
-          {item.showIdentifier && item.modelIdentifier !== item.model.name ? (
-            <Text className="max-w-32 shrink text-default-foreground text-xs" numberOfLines={1}>
-              {item.modelIdentifier}
-            </Text>
-          ) : null}
         </View>
         <View className="min-h-5 flex-row items-center gap-1">
           {tags.slice(0, 4).map((tag) => (
