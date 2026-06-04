@@ -5,11 +5,13 @@ import { View } from 'react-native';
 
 import type {
   WebSearchCapability,
+  WebSearchProvider,
   WebSearchProviderId,
   WebSearchProviderOverride,
   WebSearchProviderOverrides,
 } from '@/data/preference';
 import type { WebSearchProviderPreset } from '@/data/presets/webSearchProviders';
+import { useDataServices } from '@/data/runtime';
 import { WebSearchApiServiceFieldGroup } from '../apiService';
 import {
   WebSearchApiManagementContext,
@@ -39,6 +41,7 @@ export function WebSearchApiManagementSection({
 }: WebSearchApiManagementSectionProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { webSearch } = useDataServices();
   const providerOverride = providerOverrides[provider.id];
   const sections = getWebSearchProviderDetailSections(provider.id);
 
@@ -61,12 +64,18 @@ export function WebSearchApiManagementSection({
       },
     });
   }, [provider.id, provider.name, router]);
+  const checkProvider = useCallback(
+    (providerConfig: WebSearchProvider, capability?: WebSearchCapability) =>
+      webSearch.checkProvider({ provider: providerConfig, capability }),
+    [webSearch],
+  );
 
   const contextValue = useMemo<WebSearchApiManagementContextValue>(
     () => ({
       actions: {
         onCapabilityApiHostChange,
         onProviderOverrideChange,
+        checkProvider,
         openApiKeySettings,
         openZhipuApiKeySettings,
       },
@@ -81,6 +90,7 @@ export function WebSearchApiManagementSection({
     [
       onCapabilityApiHostChange,
       onProviderOverrideChange,
+      checkProvider,
       openApiKeySettings,
       openZhipuApiKeySettings,
       provider,

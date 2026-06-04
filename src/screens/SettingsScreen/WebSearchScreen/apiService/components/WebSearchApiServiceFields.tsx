@@ -1,5 +1,11 @@
+import { useToast } from 'heroui-native/toast';
 import { useCallback, useMemo, useState } from 'react';
 import { Keyboard, Pressable, Text, View } from 'react-native';
+import type {
+  WebSearchCapability,
+  WebSearchProvider,
+  WebSearchProviderOverride,
+} from '@/data/preference';
 import { useWebSearchApiManagementContext } from '../../context/WebSearchApiManagementContext';
 import {
   getWebSearchCapabilityTitleKey,
@@ -59,12 +65,18 @@ function DescriptionSection() {
 
 function ApiKeysSection() {
   const {
-    actions: { onProviderOverrideChange, openApiKeySettings },
+    actions: { checkProvider, onProviderOverrideChange, openApiKeySettings },
     meta: { t },
     state: { provider, providerOverride },
   } = useWebSearchApiManagementContext();
+  const { toast } = useToast();
   const [apiKeysVisible, setApiKeysVisible] = useState(false);
   const [isCheckSheetOpen, setIsCheckSheetOpen] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<{
+    status: 'error';
+    message: string;
+  } | null>(null);
   const [selectedCheckApiKeyId, setSelectedCheckApiKeyId] = useState<string | null>(null);
   const apiKeysInput = useMemo(
     () => buildWebSearchApiKeysInput(providerOverride?.apiKeys ?? []),
@@ -98,6 +110,7 @@ function ApiKeysSection() {
   }, []);
   const openCheckSheet = useCallback(() => {
     Keyboard.dismiss();
+    setCheckResult(null);
     setSelectedCheckApiKeyId((current) =>
       checkApiKeyOptions.some((option) => option.value === current)
         ? current
@@ -106,9 +119,76 @@ function ApiKeysSection() {
     setIsCheckSheetOpen(true);
   }, [checkApiKeyOptions]);
   const closeCheckSheet = useCallback(() => {
+    if (isChecking) {
+      return;
+    }
     setIsCheckSheetOpen(false);
-  }, []);
-  const startCheck = useCallback(() => undefined, []);
+  }, [isChecking]);
+  const startCheck = useCallback(async () => {
+    if (isChecking) {
+      return;
+    }
+
+    const selectedApiKey =
+      checkApiKeyOptions.find((option) => option.value === selectedCheckApiKeyId) ??
+      checkApiKeyOptions[0];
+    if (!selectedApiKey) {
+      setCheckResult({
+        status: 'error',
+        message: t('settings.websearch.provider.checkNoApiKeys'),
+      });
+      return;
+    }
+
+    setIsChecking(true);
+    setCheckResult(null);
+
+    try {
+      const result = await checkProvider(
+        buildCheckProviderConfig(provider, providerOverride, selectedApiKey.key),
+        resolveDefaultCheckCapability(provider),
+      );
+
+      if (result.valid) {
+        setIsCheckSheetOpen(false);
+        toast.show({
+          label: t('settings.websearch.provider.checkSuccess'),
+          variant: 'success',
+        });
+        return;
+      }
+
+      setCheckResult({
+        status: 'error',
+        message: result.error || t('settings.websearch.provider.checkFailed'),
+      });
+      toast.show({
+        label: t('settings.websearch.provider.checkFailed'),
+        variant: 'danger',
+      });
+    } catch (error) {
+      setCheckResult({
+        status: 'error',
+        message:
+          error instanceof Error ? error.message : t('settings.websearch.provider.checkFailed'),
+      });
+      toast.show({
+        label: t('settings.websearch.provider.checkFailed'),
+        variant: 'danger',
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  }, [
+    checkApiKeyOptions,
+    checkProvider,
+    isChecking,
+    provider,
+    providerOverride,
+    selectedCheckApiKeyId,
+    t,
+    toast,
+  ]);
 
   return (
     <>
@@ -122,6 +202,8 @@ function ApiKeysSection() {
       />
       <WebSearchApiServiceCheckSheet
         apiKeyOptions={checkApiKeyOptions}
+        checkResult={checkResult}
+        isChecking={isChecking}
         isOpen={isCheckSheetOpen}
         selectedApiKeyId={selectedCheckApiKeyId}
         onApiKeyChange={setSelectedCheckApiKeyId}
@@ -130,6 +212,47 @@ function ApiKeysSection() {
       />
     </>
   );
+}
+
+function buildCheckProviderConfig(
+  provider: {
+    id: WebSearchProvider['id'];
+    name: string;
+    type: WebSearchProvider['type'];
+    capabilities: readonly WebSearchProvider['capabilities'][number][];
+  },
+  override: WebSearchProviderOverride | undefined,
+  selectedApiKey: string,
+): WebSearchProvider {
+  return {
+    id: provider.id,
+    name: provider.name,
+    type: provider.type,
+    apiKeys: [selectedApiKey],
+    capabilities: provider.capabilities.map((capability) => {
+      const apiHostOverride = override?.capabilities?.[capability.feature]?.apiHost;
+
+      if (capability.apiHost === undefined || apiHostOverride === undefined) {
+        return capability;
+      }
+
+      return {
+        ...capability,
+        apiHost: apiHostOverride.trim(),
+      };
+    }),
+    engines: override?.engines?.map((engine) => engine.trim()).filter(Boolean) ?? [],
+    basicAuthUsername: override?.basicAuthUsername?.trim() ?? '',
+    basicAuthPassword: override?.basicAuthPassword?.trim() ?? '',
+  };
+}
+
+function resolveDefaultCheckCapability(provider: {
+  capabilities: readonly WebSearchProvider['capabilities'][number][];
+}): WebSearchCapability {
+  return provider.capabilities.some((capability) => capability.feature === 'searchKeywords')
+    ? 'searchKeywords'
+    : 'fetchUrls';
 }
 
 function maskWebSearchApiKey(apiKey: string): string {

@@ -17,6 +17,10 @@ export type WebSearchApiServiceCheckApiKeyOption = {
 
 type WebSearchApiServiceCheckSheetProps = {
   apiKeyOptions: WebSearchApiServiceCheckApiKeyOption[];
+  checkResult?: {
+    status: 'error';
+    message: string;
+  } | null;
   isChecking?: boolean;
   isOpen: boolean;
   onApiKeyChange: (apiKeyId: string) => void;
@@ -27,6 +31,7 @@ type WebSearchApiServiceCheckSheetProps = {
 
 export function WebSearchApiServiceCheckSheet({
   apiKeyOptions,
+  checkResult,
   isChecking = false,
   isOpen,
   onApiKeyChange,
@@ -108,6 +113,9 @@ export function WebSearchApiServiceCheckSheet({
                 </Select.Portal>
               </Select>
             </View>
+            {checkResult ? (
+              <Text className="px-1 text-danger text-sm">{checkResult.message}</Text>
+            ) : null}
           </View>
 
           <View className="flex-row justify-end gap-3">

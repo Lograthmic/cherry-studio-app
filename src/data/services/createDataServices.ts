@@ -11,6 +11,7 @@ import { PromptService } from './PromptService';
 import { ProviderService } from './ProviderService';
 import { TagService } from './TagService';
 import { TopicService } from './TopicService';
+import { WebSearchService } from './WebSearchService';
 
 export type DataServices = ReturnType<typeof createDataServices>;
 
@@ -25,6 +26,7 @@ export function createDataServices(dbService: DbService) {
   const assistant = new AssistantService(dbService, model, preference, tag, pin);
   const topic = new TopicService(dbService, pin, tag);
   const message = new MessageService(dbService, topic);
+  const webSearch = new WebSearchService(preference);
   const ai = new AiService({ assistant, model, provider });
 
   return {
@@ -39,5 +41,6 @@ export function createDataServices(dbService: DbService) {
     provider,
     tag,
     topic,
+    webSearch,
   };
 }

@@ -3,6 +3,7 @@ import type { useTranslation } from 'react-i18next';
 
 import type {
   WebSearchCapability,
+  WebSearchProvider,
   WebSearchProviderId,
   WebSearchProviderOverride,
 } from '@/data/preference';
@@ -21,6 +22,10 @@ export type WebSearchApiManagementContextValue = {
     ) => void;
     openApiKeySettings: () => void;
     openZhipuApiKeySettings: () => void;
+    checkProvider: (
+      provider: WebSearchProvider,
+      capability?: WebSearchCapability,
+    ) => Promise<{ error?: string; valid: boolean }>;
   };
   meta: {
     t: ReturnType<typeof useTranslation>['t'];

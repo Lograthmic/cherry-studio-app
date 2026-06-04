@@ -10,3 +10,4 @@ export * from './provider';
 export * from './tag';
 export * from './topic';
 export * from './uiParts';
+export * from './webSearch';

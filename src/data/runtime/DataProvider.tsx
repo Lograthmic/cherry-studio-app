@@ -71,6 +71,7 @@ export function DataProvider({ bootstrap, children }: DataProviderProps) {
 
     return () => {
       disposed = true;
+      services.webSearch.dispose();
       dbService.dispose();
     };
   }, [bootstrap, dbService, services]);
