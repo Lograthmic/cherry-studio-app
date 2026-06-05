@@ -18,7 +18,7 @@ export function MainHeader() {
   const separatorColor = useThemeColor('separator');
 
   const openNewTopic = useCallback(() => {
-    router.setParams({ topicId: undefined });
+    router.replace('/topics');
   }, [router]);
 
   const openEditAssistant = useCallback(() => undefined, []);

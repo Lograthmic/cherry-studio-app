@@ -25,6 +25,10 @@ export function MessageParts({ message, renderMode = 'markdown' }: MessagePartsP
   }
 
   return parts.map((part, index) => (
-    <MessagePart key={getMessagePartKey(message, part, index)} part={part} renderMode={renderMode} />
+    <MessagePart
+      key={getMessagePartKey(message, part, index)}
+      part={part}
+      renderMode={renderMode}
+    />
   ));
 }

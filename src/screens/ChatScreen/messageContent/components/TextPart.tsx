@@ -11,7 +11,7 @@ type TextPartProps = {
 export function TextPart({ part, renderMode = 'markdown' }: TextPartProps) {
   if (renderMode === 'plainText') {
     return (
-      <Text className="leading-6" selectable type="body">
+      <Text className="leading-6" type="body">
         {part.text}
       </Text>
     );

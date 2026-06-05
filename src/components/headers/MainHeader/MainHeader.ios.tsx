@@ -9,7 +9,7 @@ export function MainHeader() {
   const router = useRouter();
 
   const openNewTopic = useCallback(() => {
-    router.setParams({ topicId: undefined });
+    router.replace('/topics');
   }, [router]);
 
   const openEditAssistant = useCallback(() => undefined, []);
