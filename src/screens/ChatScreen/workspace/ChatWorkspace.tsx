@@ -37,12 +37,12 @@ export function ChatWorkspace({ messageWindow, renderGateKey }: ChatWorkspacePro
         contentBottomInset={contentBottomInset}
         listRef={listRef}
         messages={messages}
-        onLoad={markListLoaded}
         onLoadOlder={loadOlder}
         onPrefetchOlder={messageWindow.prefetchOlder}
+        onReady={markListLoaded}
       />
       <FloatingChatInput onHeightChange={handleInputHeightChange} />
-      <ChatInitialRenderCover isVisible={isCoverVisible} />
+      <ChatInitialRenderCover bottomInset={contentBottomInset} isVisible={isCoverVisible} />
     </ChatWorkspaceFrame>
   );
 }
