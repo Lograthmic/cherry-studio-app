@@ -1,6 +1,6 @@
 import { inferAdapterFamily } from '@cherrystudio/provider-registry';
 import { asc, eq, inArray } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import * as Crypto from 'expo-crypto';
 
 import type { DbService } from '@/data/db/DbService';
 import type { UserProviderInsert, UserProviderSelect } from '@/data/db/schema/userProvider';
@@ -135,7 +135,7 @@ function normalizeApiKeys(apiKeys: ApiKeyEntry[] | undefined): ApiKeyEntry[] {
   const seenKeys = new Set<string>();
 
   return (apiKeys ?? []).map((entry) => {
-    const id = entry.id || uuidv4();
+    const id = entry.id || Crypto.randomUUID();
     const key = entry.key.trim();
 
     if (!key) {

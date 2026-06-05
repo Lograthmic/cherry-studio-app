@@ -1,10 +1,9 @@
+import * as Crypto from 'expo-crypto';
+
 import type { ApiKeyEntry } from '@/data/types/provider';
 
 function createApiKeyEntryId(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `api-key-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
+  return Crypto.randomUUID();
 }
 
 export function formatApiKeysInput(apiKeys: readonly ApiKeyEntry[]): string {

@@ -10,6 +10,7 @@ import { createAgent } from '@cherrystudio/ai-core';
 import type { StringKeys } from '@cherrystudio/ai-core/provider';
 import type { JSONValue, LanguageModelUsage, ModelMessage, UIMessage, UIMessageChunk } from 'ai';
 import { convertToModelMessages } from 'ai';
+import * as Crypto from 'expo-crypto';
 
 import type { AppProviderSettingsMap } from '../../types';
 
@@ -115,7 +116,7 @@ export class Agent<T extends AppProviderKey = AppProviderKey> {
 
       const uiStream = result.toUIMessageStream({
         originalMessages: initialMessages,
-        generateMessageId: () => params.messageId ?? crypto.randomUUID(),
+        generateMessageId: () => params.messageId ?? Crypto.randomUUID(),
       });
       const reader = uiStream.getReader();
       try {

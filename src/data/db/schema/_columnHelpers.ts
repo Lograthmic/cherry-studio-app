@@ -15,25 +15,52 @@
  */
 
 import { type AnySQLiteColumn, index, integer, text } from 'drizzle-orm/sqlite-core';
-import { v4 as uuidv4, v7 as uuidv7 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 const createTimestamp = () => Date.now();
 
+type ExpoCryptoModule = {
+  getRandomValues: (typedArray: Uint8Array) => Uint8Array;
+  randomUUID: () => string;
+};
+
 // Keep Expo Crypto out of the schema module's top-level imports so drizzle-kit
 // can load schemas in a plain Node.js process.
+const loadExpoCrypto = (): ExpoCryptoModule | null => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- Keep Expo Crypto lazy for drizzle-kit.
+    return require('expo-crypto') as ExpoCryptoModule;
+  } catch {
+    return null;
+  }
+};
+
+const createRandomUuid = () => {
+  const crypto = loadExpoCrypto();
+  if (crypto?.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  const randomUuid = globalThis.crypto?.randomUUID?.();
+  if (randomUuid) {
+    return randomUuid;
+  }
+
+  throw new Error('No secure UUID generator is available');
+};
+
 const createUuidBytes = () => {
   const bytes = new Uint8Array(16);
+  const crypto = loadExpoCrypto();
+  if (crypto?.getRandomValues) {
+    return crypto.getRandomValues(bytes);
+  }
 
   if (globalThis.crypto?.getRandomValues) {
     return globalThis.crypto.getRandomValues(bytes);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Keep Expo Crypto lazy for drizzle-kit.
-  const Crypto = require('expo-crypto') as {
-    getRandomValues: (typedArray: Uint8Array) => Uint8Array;
-  };
-
-  return Crypto.getRandomValues(bytes);
+  throw new Error('No secure random byte generator is available');
 };
 
 /**
@@ -43,7 +70,7 @@ const createUuidBytes = () => {
 export const uuidPrimaryKey = () =>
   text()
     .primaryKey()
-    .$defaultFn(() => uuidv4({ rng: createUuidBytes }));
+    .$defaultFn(createRandomUuid);
 
 /**
  * UUID v7 primary key with auto-generation (time-ordered).
