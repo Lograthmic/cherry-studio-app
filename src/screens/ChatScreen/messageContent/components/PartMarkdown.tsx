@@ -1,20 +1,19 @@
-import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
+import { StreamdownText } from 'react-native-streamdown';
 
-import { useMarkdownRenderConfig } from '../hooks/useMarkdownRenderConfig';
+import { useMarkdownLinkPress } from '../hooks/useMarkdownLinkPress';
 
 type PartMarkdownProps = {
   markdown: string;
 };
 
 export function PartMarkdown({ markdown }: PartMarkdownProps) {
-  const { handleLinkPress, markdownStyle } = useMarkdownRenderConfig();
+  const { handleLinkPress } = useMarkdownLinkPress();
 
   return (
-    <EnrichedMarkdownText
+    <StreamdownText
       allowTrailingMargin={false}
       flavor="github"
       markdown={markdown}
-      markdownStyle={markdownStyle}
       md4cFlags={{ latexMath: true, underline: false }}
       onLinkPress={handleLinkPress}
       selectable

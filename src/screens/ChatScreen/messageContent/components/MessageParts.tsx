@@ -4,7 +4,10 @@ import { MessagePart } from './MessagePart';
 
 type MessagePartsProps = {
   message: Message;
+  renderMode?: MessagePartRenderMode;
 };
+
+export type MessagePartRenderMode = 'markdown' | 'plainText';
 
 function getMessagePartKey(
   message: Message,
@@ -14,7 +17,7 @@ function getMessagePartKey(
   return `${message.id}-${part.type}-${index}`;
 }
 
-export function MessageParts({ message }: MessagePartsProps) {
+export function MessageParts({ message, renderMode = 'markdown' }: MessagePartsProps) {
   const parts = message.data.parts;
 
   if (!parts?.length) {
@@ -22,6 +25,6 @@ export function MessageParts({ message }: MessagePartsProps) {
   }
 
   return parts.map((part, index) => (
-    <MessagePart key={getMessagePartKey(message, part, index)} part={part} />
+    <MessagePart key={getMessagePartKey(message, part, index)} part={part} renderMode={renderMode} />
   ));
 }

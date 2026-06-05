@@ -4,6 +4,7 @@ import { CodePart } from './CodePart';
 import { CompactPart } from './CompactPart';
 import { ErrorPart } from './ErrorPart';
 import { FilePart } from './FilePart';
+import type { MessagePartRenderMode } from './MessageParts';
 import { ReasoningPart } from './ReasoningPart';
 import { SourceDocumentPart } from './SourceDocumentPart';
 import { SourceUrlPart } from './SourceUrlPart';
@@ -16,9 +17,10 @@ import { VideoPart } from './VideoPart';
 
 type MessagePartProps = {
   part: CherryMessagePart;
+  renderMode?: MessagePartRenderMode;
 };
 
-export function MessagePart({ part }: MessagePartProps) {
+export function MessagePart({ part, renderMode = 'markdown' }: MessagePartProps) {
   const partType = part.type;
 
   if (isStaticToolPart(part)) {
@@ -27,7 +29,7 @@ export function MessagePart({ part }: MessagePartProps) {
 
   switch (part.type) {
     case 'text':
-      return <TextPart part={part} />;
+      return <TextPart part={part} renderMode={renderMode} />;
     case 'reasoning':
       return <ReasoningPart part={part} />;
     case 'data-code':
