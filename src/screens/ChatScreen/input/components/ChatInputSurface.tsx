@@ -1,7 +1,9 @@
 import ExpoQuickLook from '@magrinj/expo-quick-look';
+import { useToast } from 'heroui-native/toast';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 import Animated from 'react-native-reanimated';
 import { loggerService } from '@/core/logger/loggerService';
 import {
@@ -36,15 +38,40 @@ const inputBottomToolbarStyle = {
 const logger = loggerService.withContext('ChatInputSurface');
 
 type ChatInputSurfaceProps = {
+  isSendEnabled: boolean;
+  isStreaming: boolean;
   modelLabel?: string;
   onModelPickerPress: () => void;
+  onSendPress: (payload: ChatInputSendPayload) => Promise<void>;
+  onStopPress: () => void;
 };
 
-export function ChatInputSurface({ modelLabel, onModelPickerPress }: ChatInputSurfaceProps) {
-  const { clearReasoningEffort, clearSelectedTool, removeAttachment, setInputFocused } =
-    useChatInputActions();
+export type ChatInputSendPayload = {
+  attachments: readonly ChatInputAttachmentDraft[];
+  text: string;
+};
+
+export function ChatInputSurface({
+  isSendEnabled,
+  isStreaming,
+  modelLabel,
+  onModelPickerPress,
+  onSendPress,
+  onStopPress,
+}: ChatInputSurfaceProps) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const {
+    clearAttachments,
+    clearReasoningEffort,
+    clearSelectedTool,
+    removeAttachment,
+    setAttachments,
+    setDraft,
+    setInputFocused,
+  } = useChatInputActions();
   const { inputRef } = useChatInputMeta();
-  const { attachments, isInputFocused, selectedTool, shouldShowReasoningEffortTag } =
+  const { attachments, draft, isInputFocused, selectedTool, shouldShowReasoningEffortTag } =
     useChatInputState();
   const voiceInput = useChatInputVoiceInput();
   const isVoiceBusy =
@@ -59,13 +86,48 @@ export function ChatInputSurface({ modelLabel, onModelPickerPress }: ChatInputSu
   }, []);
   const handleModelPickerPress = useCallback(() => {
     if (isInputFocused) {
+      void KeyboardController.dismiss();
       inputRef.current?.blur();
-      Keyboard.dismiss();
       setInputFocused(false);
     }
 
     onModelPickerPress();
   }, [inputRef, isInputFocused, onModelPickerPress, setInputFocused]);
+  const handleSendPress = useCallback(
+    async (text: string) => {
+      const draftSnapshot = draft;
+      const attachmentSnapshot = [...attachments];
+
+      inputRef.current?.blur();
+      setInputFocused(false);
+      await KeyboardController.dismiss();
+      setDraft('');
+      clearAttachments();
+
+      try {
+        await onSendPress({ attachments: attachmentSnapshot, text });
+      } catch {
+        setDraft(draftSnapshot);
+        setAttachments(attachmentSnapshot);
+        toast.show({
+          label: t('chat.input.sendFailed'),
+          variant: 'danger',
+        });
+      }
+    },
+    [
+      attachments,
+      clearAttachments,
+      draft,
+      inputRef,
+      onSendPress,
+      setAttachments,
+      setDraft,
+      setInputFocused,
+      t,
+      toast,
+    ],
+  );
 
   return (
     <>
@@ -108,7 +170,11 @@ export function ChatInputSurface({ modelLabel, onModelPickerPress }: ChatInputSu
                 <ModelPickerPill label={modelLabel} onPress={handleModelPickerPress} />
               </View>
               <ChatInputPrimaryActionButton
+                isSendEnabled={isSendEnabled}
+                isStreaming={isStreaming}
                 isVoiceBusy={isVoiceBusy}
+                onSendPress={handleSendPress}
+                onStopPress={onStopPress}
                 onVoiceInputPress={voiceInput.start}
               />
             </Animated.View>

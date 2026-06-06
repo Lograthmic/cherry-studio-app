@@ -1,9 +1,11 @@
 import {
   appendChatInputAttachments,
   type ChatInputAttachmentDraft,
+  createChatInputMessageParts,
   createDocumentAttachmentDraft,
   createPhotoAttachmentDraft,
   getChatInputFileExtension,
+  hasChatInputSendableContent,
   isChatInputImageFileName,
   isChatInputImageMediaType,
   removeChatInputAttachment,
@@ -93,5 +95,34 @@ describe('chat input attachments', () => {
     expect(getChatInputFileExtension('report.pdf')).toBe('PDF');
     expect(getChatInputFileExtension('archive.longextension')).toBe('LONGE');
     expect(getChatInputFileExtension('README')).toBe('');
+  });
+
+  test('creates message parts with text before file attachments', () => {
+    expect(createChatInputMessageParts('  summarize this  ', [fileAttachment])).toEqual([
+      { type: 'text', text: 'summarize this' },
+      {
+        filename: 'file-a.pdf',
+        mediaType: 'application/pdf',
+        type: 'file',
+        url: 'file-a.pdf',
+      },
+    ]);
+  });
+
+  test('creates file-only message parts', () => {
+    expect(createChatInputMessageParts('   ', [fileAttachment])).toEqual([
+      {
+        filename: 'file-a.pdf',
+        mediaType: 'application/pdf',
+        type: 'file',
+        url: 'file-a.pdf',
+      },
+    ]);
+  });
+
+  test('detects sendable text or attachment content', () => {
+    expect(hasChatInputSendableContent('  hi  ', [])).toBe(true);
+    expect(hasChatInputSendableContent('   ', [fileAttachment])).toBe(true);
+    expect(hasChatInputSendableContent('   ', [])).toBe(false);
   });
 });

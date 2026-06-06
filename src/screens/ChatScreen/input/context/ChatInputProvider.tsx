@@ -50,6 +50,7 @@ type ChatInputActionsContextValue = {
   removeAttachment: (attachmentId: string) => void;
   selectAction: (actionId: ChatInputActionId) => void;
   selectReasoningEffort: (reasoningEffort: ChatInputReasoningEffort) => void;
+  setAttachments: (attachments: ChatInputAttachmentDraft[]) => void;
   setDraft: (draft: string) => void;
   setInputFocused: (isFocused: boolean) => void;
 };
@@ -189,6 +190,7 @@ export function ChatInputProvider({ children }: PropsWithChildren) {
       removeAttachment,
       selectAction,
       selectReasoningEffort,
+      setAttachments,
       setDraft,
       setInputFocused: setIsInputFocused,
     }),

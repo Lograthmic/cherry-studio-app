@@ -12,20 +12,19 @@ export function useMessageListInitialRenderGate({
   renderGateKey,
 }: MessageListInitialRenderGateOptions) {
   const [readyListRenderKey, setReadyListRenderKey] = useState<string | null>(null);
-  const listRenderKey = `${renderGateKey}:${hasMessages ? 'messages' : 'empty'}`;
-  const isCoverVisible = isLoadingInitial || (hasMessages && readyListRenderKey !== listRenderKey);
+  const isCoverVisible = isLoadingInitial || (hasMessages && readyListRenderKey !== renderGateKey);
 
   const markListLoaded = useCallback(() => {
-    const loadedListRenderKey = listRenderKey;
+    const loadedListRenderKey = renderGateKey;
 
     requestAnimationFrame(() => {
       setReadyListRenderKey(loadedListRenderKey);
     });
-  }, [listRenderKey]);
+  }, [renderGateKey]);
 
   return {
     isCoverVisible,
-    listRenderKey,
+    listRenderKey: renderGateKey,
     markListLoaded,
   };
 }

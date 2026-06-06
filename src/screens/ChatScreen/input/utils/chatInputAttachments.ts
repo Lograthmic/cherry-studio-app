@@ -1,6 +1,8 @@
 import type { DocumentPickerAsset } from 'expo-document-picker';
 import type { ImagePickerAsset } from 'expo-image-picker';
 
+import type { CherryMessagePart } from '@/data/types/message';
+
 export type ChatInputAttachmentKind = 'file' | 'image';
 
 export type ChatInputAttachmentDraft = {
@@ -115,4 +117,32 @@ export function getPhotoAttachmentId(photoId: string) {
 
 export function getFileAttachmentId(uri: string) {
   return `file:${uri}`;
+}
+
+export function createChatInputMessageParts(
+  text: string,
+  attachments: readonly ChatInputAttachmentDraft[],
+): CherryMessagePart[] {
+  const trimmedText = text.trim();
+  const parts: CherryMessagePart[] = trimmedText
+    ? ([{ type: 'text', text: trimmedText }] as CherryMessagePart[])
+    : [];
+
+  for (const attachment of attachments) {
+    parts.push({
+      type: 'file',
+      filename: attachment.name,
+      mediaType: attachment.mediaType,
+      url: attachment.uri,
+    } as CherryMessagePart);
+  }
+
+  return parts;
+}
+
+export function hasChatInputSendableContent(
+  text: string,
+  attachments: readonly ChatInputAttachmentDraft[],
+) {
+  return text.trim().length > 0 || attachments.length > 0;
 }

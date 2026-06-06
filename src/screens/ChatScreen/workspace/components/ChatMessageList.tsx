@@ -6,6 +6,7 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  View,
 } from 'react-native';
 
 import { LinearGradient } from '@/components/uniwind';
@@ -16,6 +17,7 @@ import { getMessageListScrollSignal } from '../utils/messageListScrollSignals';
 
 type ChatMessageListProps = {
   contentBottomInset: number;
+  contentTopInset: number;
   listRef: RefObject<LegendListRef | null>;
   messages: readonly Message[];
   onLoadOlder: () => Promise<void>;
@@ -33,6 +35,7 @@ function renderMessageItem({ item }: LegendListRenderItemProps<Message>) {
 
 export function ChatMessageList({
   contentBottomInset,
+  contentTopInset,
   listRef,
   messages,
   onLoadOlder,
@@ -46,6 +49,7 @@ export function ChatMessageList({
   const pendingReadyFrameRef = useRef<number | null>(null);
   const readyGenerationRef = useRef(0);
   const lastMessageId = messages[messages.length - 1]?.id;
+  const listHeader = useMemo(() => <View style={{ height: contentTopInset }} />, [contentTopInset]);
   const handleStartReached = useCallback(() => {
     void onLoadOlder();
   }, [onLoadOlder]);
@@ -174,14 +178,16 @@ export function ChatMessageList({
         ref={listRef}
         automaticallyAdjustsScrollIndicatorInsets
         contentContainerStyle={contentContainerStyle}
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         data={messages}
         drawDistance={80}
         estimatedItemSize={300}
+        estimatedHeaderSize={contentTopInset}
         keyExtractor={(item) => item.id}
         keyboardDismissMode="interactive"
         keyboardLiftBehavior="whenAtEnd"
         keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={listHeader}
         maintainScrollAtEnd={{
           animated: false,
           on: {

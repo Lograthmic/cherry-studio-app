@@ -14,21 +14,16 @@ export function ChatScreen() {
   const isTopicAvailable =
     topicId !== undefined && !topic.isError && (topic.isLoading || Boolean(topic.data));
 
-  if (isTopicAvailable) {
-    return (
-      <>
-        <MainHeader />
-        <View className="flex-1">
-          <ChatWorkspace messageWindow={messageWindow} renderGateKey={topicId} />
-        </View>
-      </>
-    );
-  }
-
   return (
     <>
       <MainHeader />
-      <NewTopicScreen />
+      {isTopicAvailable ? (
+        <View className="flex-1">
+          <ChatWorkspace messageWindow={messageWindow} renderGateKey={topicId} topicId={topicId} />
+        </View>
+      ) : (
+        <NewTopicScreen />
+      )}
     </>
   );
 }
