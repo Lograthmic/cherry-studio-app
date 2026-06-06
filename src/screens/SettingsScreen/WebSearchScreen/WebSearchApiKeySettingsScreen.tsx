@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 
 import { BackHeader } from '@/components/headers';
 import { WEB_SEARCH_PROVIDER_IDS, type WebSearchProviderId } from '@/data/preference';
+import { isMobileSupportedWebSearchProviderId } from '@/data/presets/webSearchProviders';
 import {
   normalizeWebSearchApiKeys,
   useWebSearchApiKeySettings,
@@ -28,7 +29,12 @@ export default function WebSearchApiKeySettingsScreen() {
   }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const validProviderId = providerId && isWebSearchProviderId(providerId) ? providerId : undefined;
+  const validProviderId =
+    providerId &&
+    isWebSearchProviderId(providerId) &&
+    isMobileSupportedWebSearchProviderId(providerId)
+      ? providerId
+      : undefined;
   const provider = validProviderId ? getWebSearchProviderPreset(validProviderId) : undefined;
   const canManageApiKeys =
     provider &&

@@ -9,7 +9,7 @@ import type {
   WebSearchProviderOverride,
 } from '@/data/preference';
 import {
-  getWebSearchProvidersByCapability,
+  getMobileSupportedWebSearchProvidersByCapability,
   type WebSearchProviderPreset,
 } from '@/data/presets/webSearchProviders';
 import type { SettingSelectOption } from '../components/SettingSelect';
@@ -25,11 +25,15 @@ const preferenceMapping = {
 } as const;
 
 const searchKeywordsProviderOptions = createWebSearchProviderOptions(
-  getWebSearchProvidersByCapability('searchKeywords').filter((provider) => provider.type === 'api'),
+  getMobileSupportedWebSearchProvidersByCapability('searchKeywords').filter(
+    (provider) => provider.type === 'api',
+  ),
 );
 
 const fetchUrlsProviderOptions = createWebSearchProviderOptions(
-  getWebSearchProvidersByCapability('fetchUrls').filter((provider) => provider.type === 'api'),
+  getMobileSupportedWebSearchProvidersByCapability('fetchUrls').filter(
+    (provider) => provider.type === 'api',
+  ),
 );
 
 function createWebSearchProviderOptions(

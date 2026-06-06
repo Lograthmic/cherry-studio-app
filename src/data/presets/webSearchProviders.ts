@@ -79,8 +79,38 @@ export const PRESETS_WEB_SEARCH_PROVIDERS: readonly WebSearchProviderPreset[] =
     ...WEB_SEARCH_PROVIDER_PRESET_MAP[id],
   }));
 
+export const MOBILE_SUPPORTED_WEB_SEARCH_PROVIDER_IDS = [
+  'zhipu',
+  'tavily',
+  'searxng',
+  'exa',
+  'bocha',
+  'querit',
+  'jina',
+] as const satisfies readonly WebSearchProviderId[];
+
+const MOBILE_SUPPORTED_WEB_SEARCH_PROVIDER_ID_SET = new Set<WebSearchProviderId>(
+  MOBILE_SUPPORTED_WEB_SEARCH_PROVIDER_IDS,
+);
+
+export const MOBILE_SUPPORTED_WEB_SEARCH_PROVIDERS: readonly WebSearchProviderPreset[] =
+  MOBILE_SUPPORTED_WEB_SEARCH_PROVIDER_IDS.map((id) => ({
+    id,
+    ...WEB_SEARCH_PROVIDER_PRESET_MAP[id],
+  }));
+
 export function getWebSearchProvidersByCapability(capability: WebSearchCapability) {
   return PRESETS_WEB_SEARCH_PROVIDERS.filter((provider) =>
     provider.capabilities.some((item) => item.feature === capability),
   );
+}
+
+export function getMobileSupportedWebSearchProvidersByCapability(capability: WebSearchCapability) {
+  return MOBILE_SUPPORTED_WEB_SEARCH_PROVIDERS.filter((provider) =>
+    provider.capabilities.some((item) => item.feature === capability),
+  );
+}
+
+export function isMobileSupportedWebSearchProviderId(providerId: WebSearchProviderId): boolean {
+  return MOBILE_SUPPORTED_WEB_SEARCH_PROVIDER_ID_SET.has(providerId);
 }

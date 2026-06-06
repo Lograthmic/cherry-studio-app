@@ -43,16 +43,12 @@ describe('web search provider settings', () => {
       'searchKeywords:tavily',
       'searchKeywords:searxng',
       'searchKeywords:exa',
-      'searchKeywords:exa-mcp',
       'searchKeywords:bocha',
       'searchKeywords:querit',
       'searchKeywords:jina',
     ]);
     expect(sections[1].capability).toBe('fetchUrls');
-    expect(sections[1].entries.map((entry) => entry.key)).toEqual([
-      'fetchUrls:fetch',
-      'fetchUrls:jina',
-    ]);
+    expect(sections[1].entries.map((entry) => entry.key)).toEqual(['fetchUrls:jina']);
   });
 
   test('normalizes api host input without strict url validation', () => {

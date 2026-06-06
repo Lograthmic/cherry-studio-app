@@ -6,6 +6,7 @@ import { Linking, ScrollView, View } from 'react-native';
 
 import { BackHeader, type HeaderToolbarAction } from '@/components/headers';
 import { WEB_SEARCH_PROVIDER_IDS, type WebSearchProviderId } from '@/data/preference';
+import { isMobileSupportedWebSearchProviderId } from '@/data/presets/webSearchProviders';
 import { useWebSearchProviderPreferences } from '../hooks/useWebSearchProviderPreferences';
 import { WebSearchApiManagementSection } from './components/WebSearchApiManagementSection';
 import {
@@ -21,7 +22,12 @@ export default function WebSearchProviderSettingsScreen() {
   const { providerId } = useLocalSearchParams<{ providerId?: string }>();
   const { t } = useTranslation();
   const webSearchProviders = useWebSearchProviderPreferences();
-  const validProviderId = providerId && isWebSearchProviderId(providerId) ? providerId : undefined;
+  const validProviderId =
+    providerId &&
+    isWebSearchProviderId(providerId) &&
+    isMobileSupportedWebSearchProviderId(providerId)
+      ? providerId
+      : undefined;
   const provider = validProviderId ? getWebSearchProviderPreset(validProviderId) : undefined;
   const officialWebsite = validProviderId
     ? getWebSearchProviderOfficialWebsite(validProviderId)

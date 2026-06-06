@@ -5,7 +5,7 @@ import type {
   WebSearchProviderOverrides,
 } from '@/data/preference';
 import {
-  PRESETS_WEB_SEARCH_PROVIDERS,
+  MOBILE_SUPPORTED_WEB_SEARCH_PROVIDERS,
   WEB_SEARCH_PROVIDER_PRESET_MAP,
   type WebSearchProviderPreset,
 } from '@/data/presets/webSearchProviders';
@@ -134,7 +134,7 @@ export function createWebSearchMenuEntry(
 }
 
 export function getWebSearchFeatureSections(
-  providers: readonly WebSearchProviderPreset[] = PRESETS_WEB_SEARCH_PROVIDERS,
+  providers: readonly WebSearchProviderPreset[] = MOBILE_SUPPORTED_WEB_SEARCH_PROVIDERS,
 ): WebSearchProviderFeatureSection[] {
   return WEB_SEARCH_CAPABILITY_ORDER.map((capability) => {
     const entries = providers

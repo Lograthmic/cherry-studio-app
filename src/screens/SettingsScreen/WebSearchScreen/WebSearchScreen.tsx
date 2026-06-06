@@ -7,7 +7,7 @@ import { useUniwind } from 'uniwind';
 
 import { BackHeader } from '@/components/headers';
 import type { WebSearchProviderId } from '@/data/preference';
-import { PRESETS_WEB_SEARCH_PROVIDERS } from '@/data/presets/webSearchProviders';
+import { MOBILE_SUPPORTED_WEB_SEARCH_PROVIDERS } from '@/data/presets/webSearchProviders';
 import { SettingNumberInput } from '../components/SettingNumberInput';
 import { SettingSelect, type SettingSelectOption } from '../components/SettingSelect';
 import { SettingsSection } from '../components/SettingsSection';
@@ -30,7 +30,7 @@ export default function WebSearchSettingsScreen() {
   );
   const apiWebSearchProviderItems = useMemo<SettingsServiceRowProps[]>(
     () =>
-      PRESETS_WEB_SEARCH_PROVIDERS.filter((provider) => provider.type === 'api').map(
+      MOBILE_SUPPORTED_WEB_SEARCH_PROVIDERS.filter((provider) => provider.type === 'api').map(
         (provider) => ({
           id: provider.id,
           imageSource: resolveWebSearchProviderIcon(provider.id)?.[iconTheme],
