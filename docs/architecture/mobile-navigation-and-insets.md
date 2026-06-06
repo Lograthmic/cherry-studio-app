@@ -1,11 +1,11 @@
 # Cherry Mobile Navigation And Insets
 
-Status: draft
+Status: current
 
 Related decisions:
 
 - [ADR 0006: Use Platform-Native Navigation Gestures](../adr/0006-use-platform-native-navigation-gestures.md)
-- [ADR 0007: Use Route-Level Form Sheets For Page-Like Pickers](../adr/0007-use-route-level-form-sheets-for-page-like-pickers.md)
+- [ADR 0007: Use Component Bottom Sheets For Model Picker](../adr/0007-use-component-bottom-sheets-for-model-picker.md)
 - [ADR 0003: Use Pressable Wrappers For Product Buttons](../adr/0003-use-pressable-wrappers-for-product-buttons.md)
 
 This document defines Cherry Mobile v1 navigation gestures, Android predictive back, edge-to-edge, and safe-area/inset strategy. Terms follow [CONTEXT.md](../../CONTEXT.md).
@@ -14,10 +14,10 @@ This document defines Cherry Mobile v1 navigation gestures, Android predictive b
 
 - Android edge back is a platform-native capability. Cherry Mobile does not simulate edge-swipe back in JavaScript.
 - Expo Router `Stack` / React Navigation native-stack bridges native screen stacks and back animations through `react-native-screens`.
-- Edge-to-edge is a platform window layout capability. The app is responsible for fitting headers, tabs, chat input, message lists, and keyboard areas against insets.
+- Edge-to-edge is a platform window layout capability. The app is responsible for fitting headers, chat input, message lists, sheets, and keyboard areas against insets.
 - System gesture zones belong to the system. Product horizontal gestures must not compete with Android screen edges.
 - Back interception is limited to explicit product states such as unsaved edits, active generation confirmation, or dangerous action confirmation.
-- Page-like pickers and selection flows that can grow should be route-level `formSheet` screens so Android system back dismisses the sheet first.
+- Route-level sheets are used for page-like flows such as settings. Model selection uses a component-level BottomSheet.
 
 ## Android Back Gesture
 
@@ -57,15 +57,23 @@ Before enabling it, verify:
 - Local `BackHandler` usage does not break system preview.
 - Active generation, unsaved edits, and dangerous confirmations can block or confirm back correctly.
 
+## Current Navigation Shape
+
+- `src/app/_layout.tsx` owns the app root wrappers: gesture handler root, keyboard provider, HeroUI provider, QueryProvider, DataProvider, InitialDataGate, navigation theme, and DrawerRoot.
+- `DrawerRoot` owns the root Stack. The `(drawer)` route hides its header; `settings` uses route-level `presentation: 'formSheet'`.
+- `DrawerLayout` owns the Expo drawer route group and bridges drawer open/close state into the drawer provider.
+- The chat route group is wrapped in `ChatRuntimeProvider`.
+- Route files stay thin and generally re-export screen modules from `src/screens`.
+
 ## Picker Sheets
 
 Short local pickers, such as model setting selection, use reusable Expo UI `BottomSheet`
 components owned by their feature module. These sheets are plain overlays controlled by local
 state; their triggers should only pass open/close and selection state.
 
-Long-list pickers with search/grouping/explanations default to Expo Router route-level
-`formSheet`. This kind of sheet is the top route in the navigation stack, not a plain overlay;
-Android system back should dismiss/pop the sheet before the underlying screen receives back.
+Model selection is a reusable component-level `ModelPickerBottomSheet`. It is used by chat input and settings/model selection, includes search, tags, grouped model rows, pinning, and an 85% snap point.
+
+Route-level `formSheet` remains appropriate for page-like flows that need navigation history, deep linking, or system-back dismissal semantics. Settings is the current route-level form sheet.
 
 Recommended shape:
 
@@ -81,26 +89,23 @@ Recommended shape:
 />
 ```
 
-In v1, `formSheet` content stays single-screen. Search, provider grouping, recent models, and capability labels are allowed in the same sheet, but do not push nested detail screens inside the Android sheet. If details are needed, close the sheet and enter a normal page, or expand detail with local state inside the sheet.
+Do not migrate model selection to a route-level `formSheet` just to reuse page navigation. Reconsider only if the picker becomes a page-like flow with nested navigation, deep linking, or system-back semantics that cannot be handled cleanly as a local sheet.
 
 ## Component Sheet Boundary
 
 Component-level bottom sheets are only for local, short-lived panels that do not need navigation history, such as a few quick actions, local filters, or temporary action menus.
 
-Do not build growing pickers such as model selection as JavaScript bottom sheets unless the flow explicitly does not need system back preview, deep linking, page-like dismissal semantics, or navigation history. JS sheets usually need their own `BackHandler`, which weakens Android predictive back continuity.
+Do not add more growing pickers as JavaScript bottom sheets unless the flow explicitly does not need system back preview, deep linking, page-like dismissal semantics, or navigation history. JS sheets usually need their own `BackHandler`, which weakens Android predictive back continuity.
 
 ## Edge-to-Edge And Insets
 
 Android edge-to-edge should not be avoided by pinning a system navigation bar background color. Cherry Mobile must handle layout explicitly:
 
 - Top headers avoid the status bar inset.
-- Bottom tabs avoid the navigation bar inset.
 - Chat input handles both bottom inset and keyboard inset.
-- Message list `contentContainerStyle` leaves room for chat input, tabs, and bottom inset.
+- Message list `contentContainerStyle` leaves room for chat input and bottom inset.
 - Full-screen pages, image previews, modals, and sheets explicitly choose whether they draw behind system bars.
-- `formSheet` screens opened from chat input blur the keyboard first, so keyboard, bottom inset, and sheet detents do not fight each other.
-
-NativeTabs can cover part of this platform adaptation, but chat input and message list bottom spacing remain product layout responsibilities.
+- Sheets opened from chat input should not leave keyboard, bottom inset, and sheet detents fighting each other.
 
 ## Gesture Conflict Boundaries
 
@@ -109,12 +114,13 @@ NativeTabs can cover part of this platform adaptation, but chat input and messag
 - If a page must use an edge horizontal gesture, validate on Android that system back remains intact.
 - iOS interactive pop and Android system back are not the same product contract; do not flatten them into one JavaScript gesture.
 
+Current drawer implementation uses `swipeEdgeWidth: width`, so drawer swipe can start across the screen. Treat this as a validation risk against Android system edge back until real-device testing confirms the gestures do not conflict.
+
 ## Acceptance
 
 - Android system edge back works in normal screens, nested stacks, and modal/sheet flows.
-- When the model picker `formSheet` is open, Android system back closes the sheet before leaving the chat screen.
 - Back targets, animations, and product confirmation states are predictable before and after enabling predictive back.
-- In edge-to-edge mode, headers, tabs, chat input, and message lists are not obscured by the status bar, navigation bar, or keyboard.
-- Opening model selection from chat input dismisses the keyboard and keeps sheet detents plus bottom inset stable.
+- In edge-to-edge mode, headers, chat input, and message lists are not obscured by the status bar, navigation bar, or keyboard.
+- Opening model selection from chat input keeps keyboard, sheet detents, and bottom inset stable.
 - Product horizontal gestures do not steal system edge back.
 - Only screens with explicit product reasons use local back interception.

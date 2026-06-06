@@ -117,7 +117,7 @@ function createComplexMessageContent(seed: BenchmarkTopicSeed, messageNumber: nu
     `## ${seed.name} message ${messageNumber}`,
     '',
     'This fixture combines long prose, nested lists, tables, fenced code, inline math, and display math.',
-    'It is the stress group for the Stable Renderer and the Message list initial paint path.',
+    'It is the stress group for the Markdown Renderer and the Message list initial paint path.',
     '',
     '- Rendering concerns',
     '  - paragraphs should wrap consistently',

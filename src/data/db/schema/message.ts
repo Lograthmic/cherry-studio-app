@@ -65,7 +65,6 @@ export const messageTable = sqliteTable(
 /**
  * FTS5 SQL statements for message full-text search
  *
- * This file contains SQL statements that must be manually added to migration files.
  * Drizzle does not auto-generate virtual tables or triggers.
  *
  * Architecture:
@@ -74,7 +73,7 @@ export const messageTable = sqliteTable(
  * 3. Triggers sync both searchable_text and FTS5 index
  *
  * Usage:
- * - Copy MESSAGE_FTS_MIGRATION_SQL to migration file when generating migrations
+ * - Keep these statements idempotent. DbService executes them after bundled migrations.
  */
 
 /**

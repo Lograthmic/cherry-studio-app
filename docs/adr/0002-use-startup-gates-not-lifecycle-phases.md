@@ -1,6 +1,6 @@
 # Use Startup Gates Instead Of Lifecycle Phases
 
-Cherry Mobile will use `Bootstrap`, `InitialDataGate`, and `AfterFirstPaint` as startup gates for performance and first chat paint boundaries. These gates are not Expo, React Native, OS, or desktop lifecycle phases.
+Cherry Mobile uses startup gates for performance and first chat paint boundaries instead of desktop lifecycle phases. The current gate is `InitialDataGate`, which waits for the mobile Data Runtime to become ready; current topic, message window, and Chat Runtime loading remain route-level work.
 
 **Considered Options**
 
@@ -9,4 +9,4 @@ Cherry Mobile will use `Bootstrap`, `InitialDataGate`, and `AfterFirstPaint` as 
 
 **Consequences**
 
-`InitialDataGate` is the only gate allowed to block first chat paint, and it must stay small: database readiness, initial preferences, current assistant/topic, minimum message window, and minimum chat stream ownership. Provider catalog refresh, search index, full history, sync, and diagnostics run after first paint.
+`InitialDataGate` is the only current gate allowed to block app rendering, and it must stay small: database readiness, initial preferences, and boot preferences. Provider catalog refresh, non-current history, sync, diagnostics, current topic hydration, and message window loading must not be folded into the gate without a deliberate performance decision.

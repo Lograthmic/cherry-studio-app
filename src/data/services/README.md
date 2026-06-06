@@ -9,8 +9,8 @@ Mobile DB services migrated from the desktop `src/main/data/services` directory.
 - Mobile services receive the Provider-owned `DbService` through the constructor instead of using
   the desktop `application.get('DbService')` singleton.
 - Desktop logger calls are omitted here unless mobile has an equivalent logging service.
-- Excluded desktop domains are not migrated here yet: agent, MCP, knowledge, job, translate,
-  miniapp, file, and agent workspace services.
+- Full agent, MCP, knowledge, job, translate, miniapp, file, and agent workspace services are not
+  migrated yet. Assistant relation ids may exist before those full domains are implemented.
 
 ## Runtime
 

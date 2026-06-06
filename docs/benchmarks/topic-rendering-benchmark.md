@@ -56,7 +56,7 @@ Changes under test:
 - Moved Message prefetch Interface into chat query options.
 - Extracted Message list initial render gate.
 - Extracted Topic detail cache hydration.
-- Memoized Stable Renderer Markdown style and link handling.
+- Memoized Markdown Renderer style and link handling.
 
 Scenario:
 - Same device/session/app target as baseline.

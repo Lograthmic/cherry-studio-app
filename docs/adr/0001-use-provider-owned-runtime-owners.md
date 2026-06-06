@@ -1,6 +1,6 @@
 # Use Provider-Owned Runtime Owners
 
-Cherry Mobile will not port Cherry Studio desktop's lifecycle framework, global service registry, descriptor service DSL, or phase dependency graph. Long-lived resources will be owned by local React Providers through runtime objects with explicit `resume`, `background`, and `dispose` behavior, following a bsky-style mobile pattern.
+Cherry Mobile will not port Cherry Studio desktop's lifecycle framework, global service registry, descriptor service DSL, or phase dependency graph. Long-lived resources are owned by local React Providers through runtime objects with explicit cleanup and only the pause/resume behavior each runtime actually needs.
 
 **Considered Options**
 
