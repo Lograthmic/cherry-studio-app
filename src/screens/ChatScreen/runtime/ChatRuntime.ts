@@ -20,6 +20,7 @@ export type ChatRuntimeTopicStatus = 'aborting' | 'idle' | 'reserving' | 'stream
 export type ChatRuntimeTopicSnapshot = {
   error?: Error;
   overlayMessage?: Message;
+  pendingUserMessage?: Message;
   status: ChatRuntimeTopicStatus;
 };
 
@@ -218,6 +219,7 @@ export class ChatRuntime {
     const { activeTurn, model, parts, topic } = input;
     const topicId = topic.id;
     const { abortController } = activeTurn;
+    let userMessage: Message | undefined;
     let assistantPlaceholder: Message | undefined;
     let latestAssistantMessage: CherryUIMessage | undefined;
     let terminalAssistantMessage: Message | undefined;
@@ -257,11 +259,15 @@ export class ChatRuntime {
         return;
       }
 
+      userMessage = reservedTurn.userMessage;
       assistantPlaceholder = reservedTurn.placeholders[0];
       activeTurn.assistantMessageId = assistantPlaceholder.id;
       throwIfAborted(abortController.signal);
+      // Overlay the freshly created user message immediately so it renders
+      // without waiting for the invalidate -> refetch round trip below.
       this.setTurnSnapshot(topicId, {
         overlayMessage: assistantPlaceholder,
+        pendingUserMessage: userMessage,
         status: 'streaming',
       });
       await this.dependencies.invalidateTopicMessages(topicId);
@@ -291,6 +297,7 @@ export class ChatRuntime {
         throwIfAborted(abortController.signal);
         this.setTurnSnapshot(topicId, {
           overlayMessage: applyStreamingMessage(assistantPlaceholder, nextAssistantMessage),
+          pendingUserMessage: userMessage,
           status: 'streaming',
         });
       }
@@ -320,6 +327,7 @@ export class ChatRuntime {
       if (terminalAssistantMessage) {
         this.setTurnSnapshot(topicId, {
           overlayMessage: terminalAssistantMessage,
+          pendingUserMessage: userMessage,
           status: 'idle',
         });
       }
@@ -440,7 +448,12 @@ export class ChatRuntime {
   }
 
   private setTopicSnapshot(topicId: string, snapshot: ChatRuntimeTopicSnapshot): void {
-    if (snapshot.status === 'idle' && !snapshot.overlayMessage && !snapshot.error) {
+    if (
+      snapshot.status === 'idle' &&
+      !snapshot.overlayMessage &&
+      !snapshot.pendingUserMessage &&
+      !snapshot.error
+    ) {
       this.topicSnapshots.delete(topicId);
     } else {
       this.topicSnapshots.set(topicId, snapshot);

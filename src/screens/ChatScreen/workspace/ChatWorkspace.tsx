@@ -28,7 +28,8 @@ export function ChatWorkspace({ messageWindow, renderGateKey, topicId }: ChatWor
   const chatRuntime = useChatRuntimeTopic(topicId);
   const headerHeight = useHeaderHeight();
   const listRef = useRef<LegendListRef | null>(null);
-  const visibleMessages = mergeMessagesWithOverlay(messages, chatRuntime.overlayMessage);
+  const messagesWithUser = mergeMessagesWithOverlay(messages, chatRuntime.pendingUserMessage);
+  const visibleMessages = mergeMessagesWithOverlay(messagesWithUser, chatRuntime.overlayMessage);
   const { isCoverVisible, listRenderKey, markListLoaded } = useMessageListInitialRenderGate({
     hasMessages: visibleMessages.length > 0,
     isLoadingInitial,
