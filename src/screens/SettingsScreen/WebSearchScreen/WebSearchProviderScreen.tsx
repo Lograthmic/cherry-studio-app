@@ -1,5 +1,5 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
-import { SquareArrowOutUpRightIcon } from 'lucide-uniwind';
+import { SquareArrowOutUpRightIcon } from 'lucide-uniwind/png';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Linking, ScrollView, View } from 'react-native';

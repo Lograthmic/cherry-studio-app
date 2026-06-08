@@ -1,4 +1,4 @@
-import { LibraryIcon } from 'lucide-uniwind';
+import { LibraryIcon } from 'lucide-uniwind/png';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';

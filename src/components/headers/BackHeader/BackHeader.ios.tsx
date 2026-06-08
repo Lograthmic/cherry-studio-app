@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { ChevronLeftIcon } from 'lucide-uniwind';
+import { ChevronLeftIcon } from 'lucide-uniwind/png';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

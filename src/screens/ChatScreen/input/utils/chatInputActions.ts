@@ -1,9 +1,14 @@
-import { BrainIcon, GlobeIcon, ImageIcon, PaperclipIcon } from 'lucide-uniwind';
+import {
+  BrainIcon,
+  GlobeIcon,
+  ImageIcon,
+  PaperclipIcon,
+  type PngIconProps,
+} from 'lucide-uniwind/png';
 import type { ComponentType } from 'react';
-import type { SvgProps } from 'react-native-svg';
 
 type ChatInputActionConfig = {
-  icon: ComponentType<SvgProps>;
+  icon: ComponentType<PngIconProps>;
   id: string;
   tagTitleKey: string;
   titleKey: string;

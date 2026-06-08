@@ -1,7 +1,4 @@
-import {
-  getNextModelSelection,
-  MODEL_SETTING_PREFERENCE_KEYS,
-} from '../modelSettings';
+import { getNextModelSelection, MODEL_SETTING_PREFERENCE_KEYS } from '../modelSettings';
 
 describe('model settings helpers', () => {
   test('maps picker targets to model preference keys', () => {

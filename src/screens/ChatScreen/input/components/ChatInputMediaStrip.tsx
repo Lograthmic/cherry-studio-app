@@ -1,9 +1,8 @@
 import { cn } from 'heroui-native/utils';
-import { CameraIcon, FileIcon, ImagesIcon, XIcon } from 'lucide-uniwind';
+import { CameraIcon, FileIcon, ImagesIcon, type PngIconProps, XIcon } from 'lucide-uniwind/png';
 import { type ComponentType, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type GestureResponderEvent, Pressable, ScrollView, Text, View } from 'react-native';
-import type { SvgProps } from 'react-native-svg';
 import { Image } from '@/components/uniwind';
 import {
   ChatInputAccessoryItem,
@@ -18,7 +17,7 @@ type ChatInputMediaStripProps = {
 
 type MediaTileProps = {
   accessibilityLabel: string;
-  icon: ComponentType<SvgProps>;
+  icon: ComponentType<PngIconProps>;
   label: string;
   onPress: () => void;
 };

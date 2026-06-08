@@ -1,7 +1,6 @@
 import { primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-
-import { assistantTable } from './assistant';
 import { createUpdateTimestamps } from './_columnHelpers';
+import { assistantTable } from './assistant';
 
 // NOTE: assistant-model relationship is 1:1 (default model) stored as assistant.modelId.
 // Multi-model (@mention) list is ephemeral UI state stored in persist-cache.

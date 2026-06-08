@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { XIcon } from 'lucide-uniwind';
+import { XIcon } from 'lucide-uniwind/png';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 

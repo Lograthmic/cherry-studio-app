@@ -1,6 +1,6 @@
 import { Button } from 'heroui-native/button';
 import { useThemeColor } from 'heroui-native/hooks';
-import { SettingsIcon } from 'lucide-uniwind';
+import { SettingsIcon } from 'lucide-uniwind/png';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';

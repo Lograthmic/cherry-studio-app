@@ -1,4 +1,4 @@
-import { BotIcon } from 'lucide-uniwind';
+import { BotIcon } from 'lucide-uniwind/png';
 import { ActivityIndicator, View } from 'react-native';
 
 import type { Message } from '@/data/types/message';

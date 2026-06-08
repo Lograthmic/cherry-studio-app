@@ -1,4 +1,4 @@
-import { InfoIcon } from 'lucide-uniwind';
+import { InfoIcon } from 'lucide-uniwind/png';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 

@@ -8,7 +8,7 @@ import type { ImageSource } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useThemeColor } from 'heroui-native/hooks';
 import { Input } from 'heroui-native/input';
-import { CameraIcon, PencilIcon } from 'lucide-uniwind';
+import { CameraIcon, PencilIcon } from 'lucide-uniwind/png';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';

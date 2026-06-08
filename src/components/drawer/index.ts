@@ -1,5 +1,3 @@
-export { DrawerLayout } from './DrawerLayout';
-export { DrawerRoot } from './DrawerRoot';
 export {
   DrawerProvider,
   useDrawer,
@@ -7,3 +5,5 @@ export {
   useDrawerPanelState,
   useDrawerTopics,
 } from './context/DrawerProvider';
+export { DrawerLayout } from './DrawerLayout';
+export { DrawerRoot } from './DrawerRoot';

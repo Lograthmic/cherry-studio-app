@@ -67,10 +67,7 @@ const createUuidBytes = () => {
  * UUID v4 primary key with auto-generation.
  * Use for general purpose tables.
  */
-export const uuidPrimaryKey = () =>
-  text()
-    .primaryKey()
-    .$defaultFn(createRandomUuid);
+export const uuidPrimaryKey = () => text().primaryKey().$defaultFn(createRandomUuid);
 
 /**
  * UUID v7 primary key with auto-generation (time-ordered).

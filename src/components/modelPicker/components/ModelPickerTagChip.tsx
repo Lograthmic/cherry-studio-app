@@ -7,7 +7,7 @@ import {
   GlobeIcon,
   SparklesIcon,
   WrenchIcon,
-} from 'lucide-uniwind';
+} from 'lucide-uniwind/png';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

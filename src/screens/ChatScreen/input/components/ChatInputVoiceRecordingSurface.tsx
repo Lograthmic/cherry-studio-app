@@ -1,4 +1,4 @@
-import { ArrowUpIcon, SquareIcon } from 'lucide-uniwind';
+import { ArrowUpIcon } from 'lucide-uniwind/png';
 import { Pressable, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { chatInputMinTextAreaHeight } from '@/screens/ChatScreen/input/chatInputLayout';
@@ -57,7 +57,8 @@ export function ChatInputVoiceRecordingSurface({
         onPress={onStopPress}
         style={{ height: actionButtonSize, width: actionButtonSize }}
       >
-        <SquareIcon className="size-5 text-foreground" fill="currentColor" strokeWidth={0} />
+        {/* Solid stop square — a filled rounded rect, so no icon/SVG is needed. */}
+        <View className="size-[15px] rounded-[2px] bg-foreground" />
       </Pressable>
 
       <View className="min-w-0 flex-1 flex-row items-center justify-center gap-1">

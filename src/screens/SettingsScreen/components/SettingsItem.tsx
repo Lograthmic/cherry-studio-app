@@ -1,12 +1,11 @@
-import { ChevronRightIcon } from 'lucide-uniwind';
+import { ChevronRightIcon, type PngIconProps } from 'lucide-uniwind/png';
 import type { ComponentType, ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { SvgProps } from 'react-native-svg';
 
 export type SettingsItemProps = {
   accessory?: ReactNode;
   hideAccessory?: boolean;
-  icon?: ComponentType<SvgProps>;
+  icon?: ComponentType<PngIconProps>;
   iconEmoji?: string;
   id?: string;
   onPress?: () => void;

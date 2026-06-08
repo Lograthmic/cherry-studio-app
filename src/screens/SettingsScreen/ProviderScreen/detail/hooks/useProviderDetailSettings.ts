@@ -1,5 +1,5 @@
-import { useDataMutation, useDataQuery } from '@/data/hooks';
 import { queryKeys } from '@/data/api';
+import { useDataMutation, useDataQuery } from '@/data/hooks';
 
 const providerModelStaleTime = 1000 * 60 * 5;
 

@@ -7,7 +7,7 @@ import {
   InfoIcon,
   SparklesIcon,
   SunIcon,
-} from 'lucide-uniwind';
+} from 'lucide-uniwind/png';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 

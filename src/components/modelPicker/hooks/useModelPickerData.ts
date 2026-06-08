@@ -22,7 +22,11 @@ export function useModelPickerData({
   showPinnedModels = true,
 }: UseModelPickerDataOptions = {}) {
   const { isLoading: isModelsLoading, models, modelsQuery } = useModels({ enabled: true });
-  const { isLoading: isProvidersLoading, providers, providersQuery } = useProviders({
+  const {
+    isLoading: isProvidersLoading,
+    providers,
+    providersQuery,
+  } = useProviders({
     enabled: true,
   });
   const pins = usePins('model');

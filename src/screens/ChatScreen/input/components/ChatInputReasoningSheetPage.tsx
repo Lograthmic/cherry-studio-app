@@ -1,5 +1,5 @@
 import { cn } from 'heroui-native/utils';
-import { CheckIcon, ChevronLeftIcon } from 'lucide-uniwind';
+import { CheckIcon, ChevronLeftIcon } from 'lucide-uniwind/png';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';
 

@@ -1,8 +1,7 @@
+import { loggerService } from '@logger';
 import { drizzle, type ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import * as SQLite from 'expo-sqlite';
-
-import { loggerService } from '@logger';
 
 import { customSqlStatements } from './customSql';
 import { migrations } from './migrations';

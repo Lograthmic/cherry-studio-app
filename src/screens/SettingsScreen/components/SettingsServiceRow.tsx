@@ -1,6 +1,6 @@
 import type { ImageSource } from 'expo-image';
 import { cn } from 'heroui-native/utils';
-import { ChevronRightIcon } from 'lucide-uniwind';
+import { ChevronRightIcon } from 'lucide-uniwind/png';
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from '@/components/uniwind';

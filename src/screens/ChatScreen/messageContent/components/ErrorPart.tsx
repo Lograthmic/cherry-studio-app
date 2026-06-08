@@ -1,4 +1,4 @@
-import { CircleAlertIcon } from 'lucide-uniwind';
+import { CircleAlertIcon } from 'lucide-uniwind/png';
 import { Text, View } from 'react-native';
 
 import type { CherryMessagePart } from '@/data/types/message';

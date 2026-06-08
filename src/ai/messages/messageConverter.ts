@@ -4,8 +4,8 @@
  * FileSystem.
  */
 
-import type { CherryMessagePart, CherryUIMessage, Message } from '@/data/types/message';
 import { convertToModelMessages, type ModelMessage, type UIMessage } from 'ai';
+import type { CherryMessagePart, CherryUIMessage, Message } from '@/data/types/message';
 
 import { resolveFileUIPart } from './fileProcessor';
 

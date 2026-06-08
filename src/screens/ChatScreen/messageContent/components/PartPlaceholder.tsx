@@ -6,7 +6,7 @@ import {
   StepForwardIcon,
   VideoIcon,
   WrenchIcon,
-} from 'lucide-uniwind';
+} from 'lucide-uniwind/png';
 import { Text, View } from 'react-native';
 
 export type PartPlaceholderIcon = 'data' | 'document' | 'file' | 'link' | 'step' | 'tool' | 'video';

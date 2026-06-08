@@ -3,7 +3,7 @@
  * / `maxOutputTokens`.
  */
 
-import { DEFAULT_ASSISTANT_SETTINGS, type Assistant } from '@/data/types/assistant';
+import { type Assistant, DEFAULT_ASSISTANT_SETTINGS } from '@/data/types/assistant';
 import type { Model } from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 

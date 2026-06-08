@@ -1,7 +1,7 @@
 import { LegendList, type LegendListRenderItemProps } from '@legendapp/list/react-native';
 import { useThemeColor } from 'heroui-native/hooks';
 import { cn } from 'heroui-native/utils';
-import { Pin as NativePinIcon } from 'lucide-react-native';
+import { PinIcon as NativePinIcon } from 'lucide-uniwind/png';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

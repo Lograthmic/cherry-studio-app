@@ -23,8 +23,8 @@ export type { DraftSnapshot } from './utils/providerApiServiceDraft';
 export {
   buildAddableEndpointOptions,
   canEditProviderEndpoint,
-  getEndpointLabel,
   getConfigurableEndpointTypesForProvider,
+  getEndpointLabel,
 } from './utils/providerApiServiceEndpointRules';
 export {
   buildProviderApiServiceEndpointUpdates,

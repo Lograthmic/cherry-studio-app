@@ -7,7 +7,7 @@ import {
   RefreshCwIcon,
   Trash2Icon,
   UploadIcon,
-} from 'lucide-uniwind';
+} from 'lucide-uniwind/png';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';

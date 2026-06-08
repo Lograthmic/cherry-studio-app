@@ -1,6 +1,6 @@
 import type { ImageSource } from 'expo-image';
 import { Select } from 'heroui-native';
-import { ChevronsUpDownIcon } from 'lucide-uniwind';
+import { ChevronsUpDownIcon } from 'lucide-uniwind/png';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';

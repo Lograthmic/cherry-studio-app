@@ -1,7 +1,7 @@
 import { MenuView } from '@expo/ui/community/menu';
 import { Stack, useRouter } from 'expo-router';
 import { useThemeColor } from 'heroui-native/hooks';
-import { EllipsisIcon, MenuIcon, SquarePenIcon } from 'lucide-uniwind';
+import { EllipsisIcon, MenuIcon, SquarePenIcon } from 'lucide-uniwind/png';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';

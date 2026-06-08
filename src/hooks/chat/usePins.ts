@@ -44,12 +44,7 @@ export function usePins(entityType: EntityType) {
   const togglePin = useCallback(
     async (entityId: string) => {
       const state = stateRef.current;
-      if (
-        state.isLoading ||
-        state.isRefreshing ||
-        state.isMutating ||
-        toggleInFlightRef.current
-      ) {
+      if (state.isLoading || state.isRefreshing || state.isMutating || toggleInFlightRef.current) {
         return;
       }
 

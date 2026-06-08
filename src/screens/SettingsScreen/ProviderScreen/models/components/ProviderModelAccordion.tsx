@@ -1,6 +1,6 @@
 import { LegendList, type LegendListRenderItemProps } from '@legendapp/list/react-native';
 import { cn } from 'heroui-native/utils';
-import { ChevronRightIcon } from 'lucide-uniwind';
+import { ChevronRightIcon } from 'lucide-uniwind/png';
 import { memo, type ReactElement, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

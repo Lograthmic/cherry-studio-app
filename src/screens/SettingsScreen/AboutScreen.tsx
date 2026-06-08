@@ -6,7 +6,7 @@ import {
   MailIcon,
   RssIcon,
   SquareArrowOutUpRightIcon,
-} from 'lucide-uniwind';
+} from 'lucide-uniwind/png';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, ScrollView, Text, View } from 'react-native';

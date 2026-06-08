@@ -2,7 +2,14 @@ import * as Clipboard from 'expo-clipboard';
 import { Button } from 'heroui-native/button';
 import { Input } from 'heroui-native/input';
 import { Switch } from 'heroui-native/switch';
-import { CopyIcon, EyeIcon, EyeOffIcon, KeyRoundIcon, PlusIcon, Trash2Icon } from 'lucide-uniwind';
+import {
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  KeyRoundIcon,
+  PlusIcon,
+  Trash2Icon,
+} from 'lucide-uniwind/png';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TextInputEndEditingEvent } from 'react-native';

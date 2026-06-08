@@ -13,6 +13,7 @@
     "prebuild": "expo prebuild",
     "db:generate": "drizzle-kit generate",
     "generate:icons": "tsx packages/lucide-uniwind/scripts/generate-icons.ts",
+    "generate:icons:png": "tsx packages/lucide-uniwind/scripts/generate-png-icons.ts",
     "ui:icons:generate": "tsx packages/ui/src/scripts/generate-icons.ts",
     "ui:icons:generate:png": "tsx packages/ui/src/scripts/generate-icons.ts",
     "ui:icons:generate:general": "tsx packages/ui/src/scripts/generate-icons.ts --type=general",

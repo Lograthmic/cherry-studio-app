@@ -1,11 +1,6 @@
 import { MODALITY, MODEL_CAPABILITY } from '@cherrystudio/provider-registry';
-
+import { isUniqueModelId, type Model, type UniqueModelId } from '@/data/types/model';
 import type { Pin } from '@/data/types/pin';
-import {
-  isUniqueModelId,
-  type Model,
-  type UniqueModelId,
-} from '@/data/types/model';
 import type { Provider } from '@/data/types/provider';
 
 export type ModelPickerGroupKind = 'pinned' | 'provider';
@@ -74,10 +69,7 @@ export function getPinnedModelIds(pins: readonly Pin[]): UniqueModelId[] {
   );
 }
 
-export function getModelPickerModelLabel(
-  modelId: string | null,
-  models: readonly Model[],
-) {
+export function getModelPickerModelLabel(modelId: string | null, models: readonly Model[]) {
   return models.find((model) => model.id === modelId)?.name;
 }
 

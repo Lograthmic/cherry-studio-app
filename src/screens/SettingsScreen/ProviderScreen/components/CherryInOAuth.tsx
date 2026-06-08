@@ -1,6 +1,6 @@
 import { resolveProviderIcon } from '@cherrystudio/ui/icons-png/providers';
 import { Button, Card, Spinner, useToast } from 'heroui-native';
-import { LogInIcon, LogOutIcon, WalletIcon } from 'lucide-uniwind';
+import { LogInIcon, LogOutIcon, WalletIcon } from 'lucide-uniwind/png';
 import { Fragment, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, Text, View } from 'react-native';

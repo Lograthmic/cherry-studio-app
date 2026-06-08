@@ -1,6 +1,6 @@
 import { useThemeColor } from 'heroui-native/hooks';
 import { Spinner } from 'heroui-native/spinner';
-import { ActivityIcon, DownloadIcon, PlusIcon } from 'lucide-uniwind';
+import { ActivityIcon, DownloadIcon, PlusIcon } from 'lucide-uniwind/png';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text, View } from 'react-native';

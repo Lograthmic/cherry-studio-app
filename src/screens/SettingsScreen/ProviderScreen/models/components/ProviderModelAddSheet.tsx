@@ -7,7 +7,7 @@ import { Button } from 'heroui-native/button';
 import { Input } from 'heroui-native/input';
 import { Spinner } from 'heroui-native/spinner';
 import { cn } from 'heroui-native/utils';
-import { ChevronDownIcon, ChevronUpIcon } from 'lucide-uniwind';
+import { ChevronDownIcon, ChevronUpIcon } from 'lucide-uniwind/png';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {

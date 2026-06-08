@@ -1,6 +1,5 @@
-import { inArray } from 'drizzle-orm';
-
 import { loggerService } from '@logger';
+import { inArray } from 'drizzle-orm';
 import type { DbService } from '@/data/db/DbService';
 import { appStateTable } from '@/data/db/schema/appState';
 

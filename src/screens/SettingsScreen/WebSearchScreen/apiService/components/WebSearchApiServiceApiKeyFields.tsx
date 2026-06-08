@@ -9,7 +9,7 @@ import {
   KeyRoundIcon,
   PlusIcon,
   Trash2Icon,
-} from 'lucide-uniwind';
+} from 'lucide-uniwind/png';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TextInputEndEditingEvent } from 'react-native';

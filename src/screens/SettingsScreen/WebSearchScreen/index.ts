@@ -1,8 +1,5 @@
-export { default as WebSearchApiKeySettingsScreen } from './WebSearchApiKeySettingsScreen';
 export { WebSearchApiManagementSection } from './components/WebSearchApiManagementSection';
 export { useWebSearchApiManagementContext } from './context/WebSearchApiManagementContext';
-export { default as WebSearchProviderScreen } from './WebSearchProviderScreen';
-export { default as WebSearchScreen } from './WebSearchScreen';
 export {
   getWebSearchCapabilityTitleKey,
   getWebSearchFeatureSections,
@@ -12,3 +9,6 @@ export {
   mergeWebSearchProviderOverride,
   type WebSearchProviderMenuEntry,
 } from './utils/providerSettings';
+export { default as WebSearchApiKeySettingsScreen } from './WebSearchApiKeySettingsScreen';
+export { default as WebSearchProviderScreen } from './WebSearchProviderScreen';
+export { default as WebSearchScreen } from './WebSearchScreen';

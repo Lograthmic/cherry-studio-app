@@ -1,7 +1,7 @@
 import { Select } from 'heroui-native';
 import { Input } from 'heroui-native/input';
 import { cn } from 'heroui-native/utils';
-import { PlusIcon, SettingsIcon, Trash2Icon } from 'lucide-uniwind';
+import { PlusIcon, SettingsIcon, Trash2Icon } from 'lucide-uniwind/png';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TextInputEndEditingEvent } from 'react-native';

@@ -1,4 +1,4 @@
-import { ChevronsUpDownIcon } from 'lucide-uniwind';
+import { ChevronsUpDownIcon } from 'lucide-uniwind/png';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, Text, View } from 'react-native';
@@ -98,10 +98,7 @@ function SelectedModelAccessory({
 }) {
   return (
     <View className="max-w-[62%] flex-row items-center justify-end gap-1">
-      <Text
-        className="min-w-0 shrink text-right text-default-foreground text-sm"
-        numberOfLines={1}
-      >
+      <Text className="min-w-0 shrink text-right text-default-foreground text-sm" numberOfLines={1}>
         {item?.model.name ?? placeholder}
       </Text>
       <ChevronsUpDownIcon className="size-6 text-default-foreground" strokeWidth={2} />

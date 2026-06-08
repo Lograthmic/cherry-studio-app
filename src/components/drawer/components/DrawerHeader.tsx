@@ -1,6 +1,6 @@
 import { CloseButton } from 'heroui-native/close-button';
 import { cn } from 'heroui-native/utils';
-import { SearchIcon } from 'lucide-uniwind';
+import { SearchIcon } from 'lucide-uniwind/png';
 import { memo, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Pressable, Text, TextInput, View, type ViewStyle } from 'react-native';

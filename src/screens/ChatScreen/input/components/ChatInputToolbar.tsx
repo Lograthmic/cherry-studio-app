@@ -1,4 +1,4 @@
-import { BrainIcon, XIcon } from 'lucide-uniwind';
+import { BrainIcon, XIcon } from 'lucide-uniwind/png';
 import { useTranslation } from 'react-i18next';
 import { Pressable, Text } from 'react-native';
 

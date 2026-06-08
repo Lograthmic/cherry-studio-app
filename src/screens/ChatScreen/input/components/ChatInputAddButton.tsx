@@ -1,4 +1,4 @@
-import { PlusIcon } from 'lucide-uniwind';
+import { PlusIcon } from 'lucide-uniwind/png';
 import { Pressable } from 'react-native';
 import { useChatInputActions } from '@/screens/ChatScreen/input/context/ChatInputProvider';
 

@@ -1,4 +1,4 @@
-import { ArrowUpIcon, AudioLinesIcon, SquareIcon } from 'lucide-uniwind';
+import { ArrowUpIcon, AudioLinesIcon, SquareIcon } from 'lucide-uniwind/png';
 import { useTranslation } from 'react-i18next';
 import { Pressable } from 'react-native';
 import {

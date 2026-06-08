@@ -1,12 +1,11 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-
-import { assistantTable } from './assistant';
 import {
   createUpdateDeleteTimestamps,
   orderKeyColumns,
   scopedOrderKeyIndex,
   uuidPrimaryKey,
 } from './_columnHelpers';
+import { assistantTable } from './assistant';
 import { groupTable } from './group';
 
 /**
