@@ -1,0 +1,13 @@
+# Public skills tracked by skills:sync and skills:check.
+# One skill name per line.
+agent-device
+building-native-ui
+eas-update-insights
+expo-cicd-workflows
+expo-deployment
+expo-dev-client
+expo-tailwind-setup
+native-data-fetching
+react-devtools
+uniwind
+upgrading-expo
