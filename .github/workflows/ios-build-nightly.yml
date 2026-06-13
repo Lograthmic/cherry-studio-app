@@ -29,6 +29,13 @@ jobs:
       # Step 5: Prebuild iOS project
       - name: Prebuild iOS project
         run: pnpm prebuild --platform ios
+
+      - name: Clean and reinstall Pods
+        run: |
+          cd ios
+          pod deintegrate
+          pod cache clean --all
+          pod install
       
       # Step 6: Build unsigned .app
       - name: Build unsigned .app
